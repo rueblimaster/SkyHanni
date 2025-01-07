@@ -156,6 +156,11 @@ object HypixelCommands {
         else -> send("setmaxspeed $speed")
     }
 
+    // Changes the direction, yaw/pitch, of the Squeaky Mousemat (the squeaky mousemat must be held in the player's hand)
+    fun setMousematDirection(type: String, value: Float) {
+        send("set$type $value")
+    }
+
     fun showRng(major: String? = null, minor: String? = null) = when {
         major == null || minor == null -> send("rng")
         else -> send("rng $major $minor")
