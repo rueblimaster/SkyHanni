@@ -97,7 +97,7 @@ object KingTalismanHelper {
         LorenzUtils.skyBlockArea == "Royal Palace" &&
         kingLocation.distanceToPlayer() < 10
 
-    @SubscribeEvent
+    @HandleEvent
     fun onSecondPassed(event: SecondPassedEvent) {
         if (!isEnabled()) return
         val storage = storage ?: return
@@ -135,8 +135,8 @@ object KingTalismanHelper {
         LorenzUtils.inSkyBlock &&
         (IslandType.DWARVEN_MINES.isInIsland() || config.outsideMines)
 
-    @SubscribeEvent
-    fun onInventoryOpen(event: InventoryFullyOpenedEvent) {
+    @HandleEvent
+    fun onInventoryFullyOpened(event: InventoryFullyOpenedEvent) {
         if (event.inventoryName != "Commissions") return
         if (!isEnabled()) return
         if (getCurrentOffset() == null) return

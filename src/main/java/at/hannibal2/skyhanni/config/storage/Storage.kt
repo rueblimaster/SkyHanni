@@ -17,7 +17,7 @@ class Storage {
     @Expose
     var savedMouseloweredSensitivity: Float = .5f
 
-    @Deprecated("")
+    @Deprecated("Moved into separate file")
     @Expose
     var knownFeatureToggles: Map<String, List<String>> = HashMap()
 
