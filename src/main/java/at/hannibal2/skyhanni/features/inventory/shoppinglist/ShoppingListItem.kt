@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
+import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
 import at.hannibal2.skyhanni.utils.ItemUtils.getItemRarityOrCommon
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
@@ -7,6 +8,8 @@ import at.hannibal2.skyhanni.utils.LorenzRarity
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.NeuItems.getItemStackOrNull
+import at.hannibal2.skyhanni.utils.PrimitiveIngredient
+import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 
 class ShoppingListItem(
@@ -16,6 +19,8 @@ class ShoppingListItem(
 ) {
 
     var hidden = false
+
+    var recipe: PrimitiveRecipe? = null
 
     private val subItems = mutableListOf<ShoppingListItem>()
 
@@ -30,7 +35,43 @@ class ShoppingListItem(
     fun getRecipe() {
         println("getting the Recipe")
 
-        val allRecipes = NeuItems.getRecipes(name)
+        if (recipe != null) {
+            println("Recipe already found")
+        } else {
+            val allRecipes: List<PrimitiveRecipe> = NeuItems.getRecipes(name).filter { it.isCraftingRecipe() }
+
+            if (allRecipes.isEmpty()) {
+                println("No recipes found for ${name.itemName}")
+                return
+            }
+
+            allRecipes.forEach { recipe ->
+                println("Recipe: $recipe")
+            }
+            if (allRecipes.size > 1) {
+                println("Multiple recipes found for ${name.itemName}")
+                viewRecipe(name.itemName)
+            } else {
+                recipe = allRecipes[0]
+            }
+        }
+
+        addRecipe()
+    }
+
+    fun addRecipe() {
+        println("adding recipe for $name: $recipe")
+        if (recipe == null) {
+            return
+        }
+
+        for (ingredient: PrimitiveIngredient in recipe!!.ingredients) {
+            // TODO: why is .count a double, is there the possibility for half an item or what???
+            println("add item: ${ingredient.internalName} amount: ${ingredient.count}")
+            subItems.add(ShoppingListItem(ingredient.internalName, ingredient.count.toInt(), false))
+        }
+
+        ShoppingList.update()
     }
 
     fun changeAmountBy(amount: Int) {
