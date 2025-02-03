@@ -61,11 +61,9 @@ class ShoppingListItem(
 
     fun addRecipe() {
         println("adding recipe for $name: $recipe")
-        if (recipe == null) {
-            return
-        }
+        var usedRecipe: PrimitiveRecipe = recipe?.copy() ?: return
 
-        for (ingredient: PrimitiveIngredient in recipe!!.ingredients) {
+        for (ingredient: PrimitiveIngredient in usedRecipe.ingredients) {
             // TODO: why is .count a double, is there the possibility for half an item or what???
             println("add item: ${ingredient.internalName} amount: ${ingredient.count}")
             subItems.add(ShoppingListItem(ingredient.internalName, ingredient.count.toInt(), false))
