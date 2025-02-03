@@ -17,4 +17,9 @@ class ShoppingListConfig {
     @Expose
     @ConfigLink(owner = ShoppingListConfig::class, field = "enabled")
     var position: Position = Position(10, 10, false, false)
+
+    @Expose
+    @ConfigOption(name = "Show summary", desc = "Show a summary of all items needed in recipes at the bottom of the shopping list")
+    @ConfigEditorBoolean
+    var showSummary: Boolean = true
 }
