@@ -20,7 +20,7 @@ class ShoppingListCategory(val name: String) {
             return
         }
 
-        val item = items.firstOrNull { it.name == itemName } as ShoppingListItem?
+        val item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
 
         if (item == null) {
             items.add(ShoppingListItem(itemName, amount))
@@ -35,7 +35,7 @@ class ShoppingListCategory(val name: String) {
             return
         }
 
-        val item = items.firstOrNull { it.name == itemName } as ShoppingListItem?
+        val item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
 
         if (item == null) {
             ChatUtils.userError("Item ${itemName.itemName} not found in category $name")
@@ -56,7 +56,7 @@ class ShoppingListCategory(val name: String) {
     }
 
     fun contains(itemName: NeuInternalName): Boolean {
-        return items.any { it.name == itemName }
+        return items.any { it.internalName == itemName }
     }
 
     fun getRenderables(indent: Int): List<Renderable> {

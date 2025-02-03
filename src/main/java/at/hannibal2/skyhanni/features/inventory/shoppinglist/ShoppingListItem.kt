@@ -1,75 +1,104 @@
 package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
+import at.hannibal2.skyhanni.data.SackApi.getAmountInSacks
 import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
-import at.hannibal2.skyhanni.utils.ItemUtils.getItemRarityOrCommon
+import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventory
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
-import at.hannibal2.skyhanni.utils.LorenzRarity
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
-import at.hannibal2.skyhanni.utils.NeuItems.getItemStackOrNull
 import at.hannibal2.skyhanni.utils.PrimitiveIngredient
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 
 class ShoppingListItem(
-    val name: NeuInternalName,
+    val internalName: NeuInternalName,
     var amount: Int = 1,
-    val isToplevelItem: Boolean = true,
+    val topLevelItem: ShoppingListItem? = null,
+    var recipe: PrimitiveRecipe? = null,
 ) {
-
     var hidden = false
 
-    var recipe: PrimitiveRecipe? = null
+    val totalAmount: Int
+        get() = amount * (topLevelItem?.amount ?: 1)
+
+    val remainingAmount: Int
+        get() = totalAmount - getCurrentAmount()
+
+    var possibleRecipes: List<PrimitiveRecipe> = emptyList()
 
     private val subItems = mutableListOf<ShoppingListItem>()
 
+    init {
+        getPossibleRecipes()
+    }
+
     override fun toString(): String {
-        return "${name.itemName} x$amount" + if (subItems.isNotEmpty()) {
+        return "${internalName.itemName} x$amount" + if (subItems.isNotEmpty()) {
             " (${subItems.joinToString(", ")})"
         } else {
             ""
         }
     }
 
-    fun getRecipe() {
-        println("getting the Recipe")
+    fun breakDownIntoSubitems() {
+        println("Breaking down $internalName into subitems")
 
         if (recipe != null) {
             println("Recipe already found")
         } else {
-            val allRecipes: List<PrimitiveRecipe> = NeuItems.getRecipes(name).filter { it.isCraftingRecipe() }
-
-            if (allRecipes.isEmpty()) {
-                println("No recipes found for ${name.itemName}")
-                return
-            }
-
-            allRecipes.forEach { recipe ->
-                println("Recipe: $recipe")
-            }
-            if (allRecipes.size > 1) {
-                println("Multiple recipes found for ${name.itemName}")
-                viewRecipe(name.itemName)
-            } else {
-                recipe = allRecipes[0]
-            }
+            decideRecipe()
         }
 
+        if (recipe == null) {
+            println("No recipe found for $internalName")
+            return
+        }
+        subItems.clear()
+
         addRecipe()
+
+        ShoppingList.update()
+    }
+
+    fun getPossibleRecipes() {
+        println("getting the all possible recipes")
+
+        possibleRecipes = NeuItems.getRecipes(internalName).filter { it.isCraftingRecipe() }
+        possibleRecipes.forEach { recipe ->
+            println("Recipe: $recipe")
+        }
+    }
+
+    fun decideRecipe() {
+        if (possibleRecipes.isEmpty() != false) {
+            println("No recipes found for ${internalName.itemName}")
+            return
+        }
+
+        if (possibleRecipes.size > 1) {
+            println("Multiple recipes found for ${internalName.itemName}")
+            viewRecipe(internalName.itemName)
+        } else {
+            recipe = possibleRecipes[0]
+        }
     }
 
     fun addRecipe() {
-        println("adding recipe for $name: $recipe")
-        var usedRecipe: PrimitiveRecipe = recipe?.copy() ?: return
+        println("adding recipe for $internalName: $recipe")
+        val usedRecipe: PrimitiveRecipe = recipe?.copy() ?: return
 
         for (ingredient: PrimitiveIngredient in usedRecipe.ingredients) {
             // TODO: why is .count a double, is there the possibility for half an item or what???
-            println("add item: ${ingredient.internalName} amount: ${ingredient.count}")
-            subItems.add(ShoppingListItem(ingredient.internalName, ingredient.count.toInt(), false))
-        }
+            println("add item: ${ingredient.internalName} amount: ${ingredient.count.toInt()}")
+            val item = subItems.firstOrNull { it.internalName == ingredient.internalName } as ShoppingListItem?
 
-        ShoppingList.update()
+            if (item == null) {
+                subItems.add(ShoppingListItem(ingredient.internalName, ingredient.count.toInt(), this))
+            } else {
+                item.changeAmountBy(ingredient.count.toInt())
+            }
+        }
     }
 
     fun changeAmountBy(amount: Int) {
@@ -80,6 +109,15 @@ class ShoppingListItem(
         this.amount = amount
     }
 
+    fun getCurrentAmount(): Int {
+        println("Getting current amount for $internalName, amount: ${internalName.getAmountInInventory()} + ${internalName.getAmountInSacks()} = ${internalName.getAmountInInventory() + internalName.getAmountInSacks()}")
+        return internalName.getAmountInInventory() + internalName.getAmountInSacks()
+    }
+
+    fun hasItems(): Boolean {
+        return totalAmount <= getCurrentAmount()
+    }
+
     fun getIndent(amount: Int): String {
         return "- ".repeat(amount)
     }
@@ -87,21 +125,34 @@ class ShoppingListItem(
     fun getRenderables(indent: Int): List<Renderable> {
         val renderables = mutableListOf<Renderable>()
         if (!hidden) {
-            println(name.itemName)
-            val rarity: LorenzRarity? = name.getItemStackOrNull()?.getItemRarityOrCommon()
-            val displayName: String = if (rarity == null || rarity == LorenzRarity.COMMON || rarity == LorenzRarity.UNCOMMON) {
-                "§e" + name.itemNameWithoutColor
-            } else {
-                name.itemName
+            println(internalName.itemName)
+            println("Adding §e${internalName.itemNameWithoutColor} x$amount to renderables")
+
+            var string = getIndent(indent) + "§e${internalName.itemNameWithoutColor} ${getCurrentAmount()}/$totalAmount"
+            if (topLevelItem != null) {
+                string += " ($amount each)"
             }
-            println("Adding $displayName x$amount to renderables, rarity: $rarity")
-            renderables.add(
-                Renderable.link(
-                    getIndent(indent) + "$displayName§e x$amount" + " §7Click to view recipe", true,
-                ) {
-                    getRecipe()
-                },
-            )
+
+            val downBreakable: Boolean
+            if (subItems.isEmpty() && possibleRecipes.isNotEmpty()) {
+                downBreakable = true
+                string += " §7Click to break down into recipe"
+            } else {
+                downBreakable = false
+            }
+
+            if (downBreakable) {
+                renderables.add(
+                    Renderable.link(
+                        string, true,
+                    ) {
+                        breakDownIntoSubitems()
+                    },
+                )
+            } else {
+                renderables.add(
+                    Renderable.string(string))
+            }
             subItems.forEach {
                 renderables.addAll(it.getRenderables(indent + 1))
             }

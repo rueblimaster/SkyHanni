@@ -5,6 +5,10 @@ import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
+import at.hannibal2.skyhanni.events.OwnInventoryItemUpdateEvent
+import at.hannibal2.skyhanni.events.SackDataUpdateEvent
+import at.hannibal2.skyhanni.features.garden.GardenApi
+import at.hannibal2.skyhanni.features.garden.visitor.GardenVisitorFeatures
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.CollectionUtils.addString
@@ -144,9 +148,7 @@ object ShoppingList {
     fun test() {
         ChatUtils.chat("test triggered")
 
-        add("Carrot".toInternalName(), 49)
-
-        ChatUtils.chat(categories.toString() + items.toString())
+        add("enchanted carrot".toInternalName(), 49)
 
         createDisplay()
 
@@ -155,6 +157,16 @@ object ShoppingList {
 
 
     // all events come here
+    @HandleEvent
+    fun onOwnInventoryItemUpdate(event: OwnInventoryItemUpdateEvent) {
+        update()
+    }
+
+    @HandleEvent
+    fun onSackUpdate(event: SackDataUpdateEvent) {
+        update()
+    }
+
     @HandleEvent
     fun onRender(event: GuiRenderEvent.GuiOverlayRenderEvent) {
         config.position.renderRenderables(display, posLabel = "Shopping List")
@@ -187,6 +199,26 @@ object ShoppingList {
             aliases = listOf("shslremove")
             autoComplete { listOf("Carrot", "Potato", "Wheat") }
             callback { remove(it[0], it.getOrNull(1)?.toIntOrNull(), it.getOrNull(2)) }
+        }
+        event.register("shshoppinglistremovecategory") {
+            description = "Remove a category from the shopping list"
+            category = CommandCategory.USERS_ACTIVE
+            aliases = listOf("shslremovecategory")
+            autoComplete { categories.map { it.name } }
+            callback { removeCategory(it[0]) }
+        }
+//         TODO: implement set
+//         event.register("shshoppinglistset") {
+//             description = "Set the amount of an item in the shopping list"
+//             category = CommandCategory.USERS_ACTIVE
+//             aliases = listOf("shslset")
+//             callback { set(it[0].toInternalName(), it.getOrNull(1)?.toIntOrNull() ?: 1, it.getOrNull(2)) }
+//         }
+        event.register("shshoppinglistupdate") {
+            description = "Update the shopping list"
+            category = CommandCategory.USERS_ACTIVE
+            aliases = listOf("shslupdate")
+            callback { update() }
         }
         event.register("shshoppinglisttest") {
             description = "Test the shopping list feature"
