@@ -7,8 +7,6 @@ import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.OwnInventoryItemUpdateEvent
 import at.hannibal2.skyhanni.events.SackDataUpdateEvent
-import at.hannibal2.skyhanni.features.garden.GardenApi
-import at.hannibal2.skyhanni.features.garden.visitor.GardenVisitorFeatures
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.CollectionUtils.addString
@@ -204,7 +202,7 @@ object ShoppingList {
             description = "Remove a category from the shopping list"
             category = CommandCategory.USERS_ACTIVE
             aliases = listOf("shslremovecategory")
-            autoComplete { categories.map { it.name } }
+            autoComplete { categories.map { it -> it.name } }
             callback { removeCategory(it[0]) }
         }
 //         TODO: implement set

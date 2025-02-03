@@ -110,7 +110,11 @@ class ShoppingListItem(
     }
 
     fun getCurrentAmount(): Int {
-        println("Getting current amount for $internalName, amount: ${internalName.getAmountInInventory()} + ${internalName.getAmountInSacks()} = ${internalName.getAmountInInventory() + internalName.getAmountInSacks()}")
+        println(
+            "Getting current amount for $internalName, " +
+                "amount: ${internalName.getAmountInInventory()} + ${internalName.getAmountInSacks()} = " +
+                "${internalName.getAmountInInventory() + internalName.getAmountInSacks()}",
+        )
         return internalName.getAmountInInventory() + internalName.getAmountInSacks()
     }
 
@@ -151,7 +155,8 @@ class ShoppingListItem(
                 )
             } else {
                 renderables.add(
-                    Renderable.string(string))
+                    Renderable.string(string),
+                )
             }
             subItems.forEach {
                 renderables.addAll(it.getRenderables(indent + 1))
