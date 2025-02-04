@@ -202,7 +202,7 @@ object ShoppingList {
             description = "Remove a category from the shopping list"
             category = CommandCategory.USERS_ACTIVE
             aliases = listOf("shslremovecategory")
-            autoComplete { categories.map { it -> it.name } }
+            autoComplete { categories.map { category -> category.name } }
             callback { removeCategory(it[0]) }
         }
 //         TODO: implement set
