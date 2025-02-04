@@ -4,18 +4,33 @@ import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
+import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
+import at.hannibal2.skyhanni.events.InventoryCloseEvent
+import at.hannibal2.skyhanni.events.InventoryFullyOpenedEvent
+import at.hannibal2.skyhanni.events.InventoryUpdatedEvent
 import at.hannibal2.skyhanni.events.OwnInventoryItemUpdateEvent
 import at.hannibal2.skyhanni.events.SackDataUpdateEvent
+import at.hannibal2.skyhanni.events.entity.ItemAddInInventoryEvent
+import at.hannibal2.skyhanni.events.minecraft.WorldChangeEvent
+import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.CollectionUtils.addString
+import at.hannibal2.skyhanni.utils.InventoryUtils.closeInventory
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.LorenzUtils
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
+import at.hannibal2.skyhanni.utils.NeuItems
+import at.hannibal2.skyhanni.utils.PrimitiveIngredient
+import at.hannibal2.skyhanni.utils.PrimitiveItemStack.Companion.toPrimitiveStackOrNull
+import at.hannibal2.skyhanni.utils.PrimitiveRecipe
+import at.hannibal2.skyhanni.utils.RecipeType
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.renderables.Renderable
+import net.minecraft.entity.player.InventoryPlayer
+import net.minecraft.item.ItemStack
 
 @SkyHanniModule
 object ShoppingList {
@@ -29,8 +44,11 @@ object ShoppingList {
     // TODO: somehow also make it searchable?
     private var display = listOf<Renderable>()
 
+    var currentlyOpenRecipe: PrimitiveRecipe? = null
+    var displayItem: ItemStack? = null
+
     // all the functions for interacting with the shopping list come here
-    fun add(itemName: NeuInternalName, amount: Int = 1, categoryName: String? = null) {
+    fun add(itemName: NeuInternalName, amount: Double = 1.0, categoryName: String? = null) {
         // TODO: shouldn't happen @Thunderblade73
         if (!isEnabled()) return
         println("Adding ${itemName.itemName} x$amount to $categoryName")
@@ -59,7 +77,7 @@ object ShoppingList {
     }
 
     // removeCommand ???
-    fun remove(name: String, amount: Int? = null, categoryName: String? = null) {
+    fun remove(name: String, amount: Double? = null, categoryName: String? = null) {
         if (!isEnabled()) return
         println("Removing $name x$amount from $categoryName")
 
@@ -123,7 +141,11 @@ object ShoppingList {
 
     // all display related functions come here
     fun createDisplay() {
-        println("Creating display")
+//         println("Creating display")
+        if (!isEnabled() || (categories.isEmpty() && items.items.isEmpty())) {
+            display = emptyList()
+            return
+        }
         display = buildList {
             addString("§l" + "Shopping List")
             categories.forEach {
@@ -143,16 +165,36 @@ object ShoppingList {
         createDisplay()
     }
 
+    fun resetDisplayItem() {
+        displayItem = null
+    }
+
+    fun PrimitiveRecipe.isRecursing(): Boolean {
+        ingredients.forEach {
+            println("${it.internalName}, ${output?.internalName}: ${ it.internalName == output?.internalName }")
+            if (it.internalName == output?.internalName) {
+                return true
+            }
+        }
+        return ingredients.any { it.internalName == output?.internalName }
+    }
+
+
     fun test() {
         ChatUtils.chat("test triggered")
 
-        add("enchanted carrot".toInternalName(), 49)
+        add("enchanted carrot".toInternalName(), 49.0)
+        add("aspect of the end".toInternalName(), 1.0, "Weapons")
+        add("diamond".toInternalName(), 1.0)
+
+        println("${NeuItems.getRecipes("diamond".toInternalName()).first { it.isCraftingRecipe() }.isRecursing()}")
 
         createDisplay()
 
         ChatUtils.chat("test done")
     }
 
+    fun InventoryFullyOpenedEvent.isRecipe() = inventoryName.contains("Recipe") && inventorySize == 54
 
     // all events come here
     @HandleEvent
@@ -161,8 +203,73 @@ object ShoppingList {
     }
 
     @HandleEvent
+    fun onItemAddInInventoryEvent(event: ItemAddInInventoryEvent) {
+        update()
+    }
+
+    @HandleEvent
     fun onSackUpdate(event: SackDataUpdateEvent) {
         update()
+    }
+
+    @HandleEvent
+    fun onInventoryClose(event: InventoryCloseEvent) {
+        update()
+    }
+
+    @HandleEvent
+    fun onInventoryUpdated(event: InventoryUpdatedEvent) {
+        update()
+    }
+
+    @HandleEvent
+    fun onWorldChange(event: WorldChangeEvent) {
+        update()
+    }
+
+    // this triggers only when opening another inventory, not the own inventory
+    @HandleEvent
+    fun onInventorOpen(event: InventoryFullyOpenedEvent) {
+        if (!isEnabled()) return
+        if (!event.isRecipe()) {
+            currentlyOpenRecipe = null
+            return
+        }
+
+        val ingredients = listOf(10, 11, 12, 13, 19, 20, 21, 28, 29, 30).mapNotNull {
+            event.inventoryItems[it]?.toPrimitiveStackOrNull()?.toPrimitiveIngredient()
+        }.toSet<PrimitiveIngredient>()
+
+        val result = event.inventoryItems[25]?.toPrimitiveStackOrNull()?.toPrimitiveIngredient()
+
+        println("Relevant items: $ingredients")
+        currentlyOpenRecipe = PrimitiveRecipe(ingredients, setOf(result ?: return), RecipeType.CRAFTING)
+    }
+
+    @HandleEvent
+    fun replaceItem(event: ReplaceItemEvent) {
+        if (!isEnabled()) return
+        if (event.inventory !is InventoryPlayer && event.slot == 51) {
+            displayItem?.let { event.replace(it) }
+        }
+    }
+
+    @HandleEvent(priority = HandleEvent.HIGH)
+    fun onSlotClick(event: GuiContainerEvent.SlotClickEvent) {
+        if (!isEnabled()) return
+        if (event.slotId != 51) return
+        if (event.item == null) return
+
+        println("Slot click event: ${event.item.displayName}")
+        if (event.item.displayName == "§bSelect Recipe") {
+            event.cancel()
+            for (category in categories + items) {
+                if (category.onItemClicked(event.item)) {
+                    closeInventory()
+                    return
+                }
+            }
+        }
     }
 
     @HandleEvent
@@ -189,14 +296,14 @@ object ShoppingList {
             category = CommandCategory.USERS_ACTIVE
             aliases = listOf("shsladd")
             autoComplete { listOf("Carrot", "Potato", "Wheat") }
-            callback { add(it[0].toInternalName(), it.getOrNull(1)?.toIntOrNull() ?: 1, it.getOrNull(2)) }
+            callback { add(it[0].toInternalName(), it.getOrNull(1)?.toDoubleOrNull() ?: 1.0, it.getOrNull(2)) }
         }
         event.register("shshoppinglistremove") {
             description = "Remove an item from the shopping list"
             category = CommandCategory.USERS_ACTIVE
             aliases = listOf("shslremove")
             autoComplete { listOf("Carrot", "Potato", "Wheat") }
-            callback { remove(it[0], it.getOrNull(1)?.toIntOrNull(), it.getOrNull(2)) }
+            callback { remove(it[0], it.getOrNull(1)?.toDoubleOrNull(), it.getOrNull(2)) }
         }
         event.register("shshoppinglistremovecategory") {
             description = "Remove a category from the shopping list"

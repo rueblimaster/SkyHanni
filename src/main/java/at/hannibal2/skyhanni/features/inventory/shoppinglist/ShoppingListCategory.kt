@@ -4,6 +4,7 @@ import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.renderables.Renderable
+import net.minecraft.item.ItemStack
 
 class ShoppingListCategory(val name: String) {
     val items = mutableListOf<ShoppingListItem>()
@@ -14,7 +15,7 @@ class ShoppingListCategory(val name: String) {
         return name
     }
 
-    fun add(itemName: NeuInternalName, amount: Int = 1) {
+    fun add(itemName: NeuInternalName, amount: Double = 1.0) {
         if (!itemName.isKnownItem()) {
             ChatUtils.userError("Item ${itemName.itemName} not found")
             return
@@ -29,7 +30,7 @@ class ShoppingListCategory(val name: String) {
         }
     }
 
-    fun remove(itemName: NeuInternalName, amount: Int? = null) {
+    fun remove(itemName: NeuInternalName, amount: Double? = null) {
         if (!itemName.isKnownItem()) {
             ChatUtils.userError("Item ${itemName.itemName} not found")
             return
@@ -44,7 +45,7 @@ class ShoppingListCategory(val name: String) {
                 items.remove(item)
             } else {
                 item.changeAmountBy(-amount)
-                if (item.amount <= 0) {
+                if (item.amount <= 0.0) {
                     items.remove(item)
                 }
             }
@@ -57,6 +58,15 @@ class ShoppingListCategory(val name: String) {
 
     fun contains(itemName: NeuInternalName): Boolean {
         return items.any { it.internalName == itemName }
+    }
+
+    fun onItemClicked(clickedItem: ItemStack): Boolean {
+        items.forEach {
+            if (it.onItemClicked(clickedItem)) {
+                return true
+            }
+        }
+        return false
     }
 
     fun getRenderables(indent: Int): List<Renderable> {
