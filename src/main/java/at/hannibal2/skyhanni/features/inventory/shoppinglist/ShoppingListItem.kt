@@ -68,16 +68,32 @@ class ShoppingListItem(
     }
 
     fun PrimitiveRecipe.isRecursing(): Boolean {
-        return ingredients.any { it.internalName == internalName }
+        return ingredients.any { it.internalName == topLevelItem?.internalName }
+    }
+
+    fun PrimitiveRecipe.isRecursingCompacting(): Boolean {
+        val firstIngredient = ingredients.firstOrNull() ?: return false
+        if (ingredients.any { it.internalName != firstIngredient.internalName }) {
+            return false
+        } else if (ingredients.size == 1) {
+            return false
+        }
+        possibleRecipes = NeuItems.getRecipes(firstIngredient.internalName).filter { it.isCraftingRecipe() }
+        if (possibleRecipes.any { recipe -> recipe.ingredients.any { it.internalName == internalName } }) {
+            return true
+        } else {
+            return false
+        }
     }
 
     fun getPossibleRecipes() {
         println("getting the all possible recipes")
 
         possibleRecipes = NeuItems.getRecipes(internalName).filter { it.isCraftingRecipe() }.filter { recipe ->
-            println(recipe.toString() + " " + (!recipe.ingredients.any { it.internalName.toString() == internalName.toString() }).toString())
-            !recipe.ingredients.any { it.internalName.toString() == internalName.toString() }
+            !recipe.isRecursing() && !recipe.isRecursingCompacting()
         }
+
+
         possibleRecipes.forEach { recipe ->
             println("Recipe: $recipe")
             recipe.ingredients.forEach { println("Checking ${it.internalName} vs $internalName") }
