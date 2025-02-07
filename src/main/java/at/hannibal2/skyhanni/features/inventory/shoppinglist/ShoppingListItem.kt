@@ -4,9 +4,11 @@ import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.curren
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
 import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventoryAndSacks
+import at.hannibal2.skyhanni.utils.InventoryUtils.inInventory
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
+import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.PrimitiveIngredient
@@ -75,28 +77,15 @@ class ShoppingListItem(
         val firstIngredient = ingredients.firstOrNull() ?: return false
         if (ingredients.any { it.internalName != firstIngredient.internalName }) {
             return false
-        } else if (ingredients.size == 1) {
-            return false
         }
-        possibleRecipes = NeuItems.getRecipes(firstIngredient.internalName).filter { it.isCraftingRecipe() }
-        if (possibleRecipes.any { recipe -> recipe.ingredients.any { it.internalName == internalName } }) {
-            return true
-        } else {
-            return false
-        }
+
+        val recipes = NeuItems.getRecipes(firstIngredient.internalName).filter { it.isCraftingRecipe() }
+        return recipes.any { recipe -> recipe.ingredients.any { it.internalName == internalName } }
     }
 
     fun getPossibleRecipes() {
-        println("getting the all possible recipes")
-
         possibleRecipes = NeuItems.getRecipes(internalName).filter { it.isCraftingRecipe() }.filter { recipe ->
             !recipe.isRecursing() && !recipe.isRecursingCompacting()
-        }
-
-
-        possibleRecipes.forEach { recipe ->
-            println("Recipe: $recipe")
-            recipe.ingredients.forEach { println("Checking ${it.internalName} vs $internalName") }
         }
     }
 
@@ -149,12 +138,12 @@ class ShoppingListItem(
     }
 
     fun addRecipe() {
-        println("adding recipe for $internalName: $recipe")
+//         println("adding recipe for $internalName: $recipe")
         val usedRecipe: PrimitiveRecipe = recipe?.copy() ?: return
 
         for (ingredient: PrimitiveIngredient in usedRecipe.ingredients) {
             // TODO: why is .count a double, is there the possibility for half an item or what???
-            println("add item: ${ingredient.internalName} amount: ${ingredient.count.toInt()}")
+//             println("add item: ${ingredient.internalName} amount: ${ingredient.count.toInt()}")
             val item = subItems.firstOrNull { it.internalName == ingredient.internalName } as ShoppingListItem?
 
             val ingredientAmount = ingredient.count / (usedRecipe.output?.count ?: 1.0)
@@ -176,11 +165,6 @@ class ShoppingListItem(
     }
 
     fun getCurrentAmount(): Int {
-//         println(
-//             "Getting current amount for $internalName, " +
-//                 "amount: ${internalName.getAmountInInventory()} + ${internalName.getAmountInSacks()} = " +
-//                 "${internalName.getAmountInInventory() + internalName.getAmountInSacks()}: ${internalName.getAmountInInventoryAndSacks()}",
-//         )
         return internalName.getAmountInInventoryAndSacks()
     }
 
@@ -213,26 +197,37 @@ class ShoppingListItem(
 
             var string = getIndent(indent)
             if (topLevelItem != null) {
-                string += "§f${amount.displayAmount()}x "
+                string += "§7${amount.displayAmount()}x "
             }
 
-            string += "§e${internalName.itemNameWithoutColor} ${getCurrentAmount()}/${totalAmount.displayAmount()}"
+            string += "§e${internalName.itemNameWithoutColor} §f${getCurrentAmount()}/${totalAmount.displayAmount()}"
 
             val downBreakable: Boolean
             if (subItems.isEmpty() && possibleRecipes.isNotEmpty()) {
                 downBreakable = true
-                string += " §7Click to break down into recipe"
+                // TODO: isn't this really ressource intensive?
+                if (inInventory()) {
+                    string += " §7Click to break down into recipe"
+                }
             } else {
                 downBreakable = false
             }
 
             if (downBreakable) {
                 renderables.add(
-                    Renderable.link(
-                        string, true,
-                    ) {
-                        breakDownIntoSubitems()
-                    },
+                    if (inInventory()) Renderable.multiClickAndHover(
+                        string, listOf("test1", "test2"),
+                        false,
+                        mapOf<Int, () -> Unit>(
+                            0 to { println("test3") },
+                            1 to { println("test4") },
+                            2 to { println("test5") },
+                            3 to { println("test6") }),
+//                         onClick = {
+//                             if (KeyboardManager.isModifierKeyDown()) itemRemover.invoke(internalName, cleanName)
+//                             else itemHider.invoke(internalName, hidden)
+//                             update()
+                    ) else Renderable.string(string),
                 )
             } else {
                 renderables.add(

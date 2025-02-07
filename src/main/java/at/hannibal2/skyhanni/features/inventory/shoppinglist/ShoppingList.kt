@@ -150,7 +150,7 @@ object ShoppingList {
             addString("§l" + "Shopping List")
             categories.forEach {
 
-                addString("§n" + it.name)
+                addString("§a§n" + it.name)
 
                 addAll(it.getRenderables(1))
             }
