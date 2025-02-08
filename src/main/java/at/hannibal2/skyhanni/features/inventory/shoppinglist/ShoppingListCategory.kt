@@ -2,6 +2,7 @@ package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
+import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.renderables.Renderable
@@ -14,9 +15,9 @@ class ShoppingListCategory(val name: String, val color: LorenzColor = LorenzColo
 
     /*
     what do we want to be able to do from the display widget:
-        - remove it
-        - hide/unhide it
-        - pin/unpin it
+        - (right click) remove it
+        - (shift + right click) hide/unhide it along with tree
+        - (ctrl + right click) pin/unpin it
 
     what may we want to see:
         - name
@@ -37,7 +38,7 @@ class ShoppingListCategory(val name: String, val color: LorenzColor = LorenzColo
         val item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
 
         if (item == null) {
-            items.add(ShoppingListItem(itemName, amount))
+            items.add(ShoppingListItem(itemName, amount, this))
         } else {
             item.changeAmountBy(amount)
         }
@@ -82,10 +83,62 @@ class ShoppingListCategory(val name: String, val color: LorenzColor = LorenzColo
         return false
     }
 
-    fun getRenderables(indent: Int): List<Renderable> {
+    fun toggleHide() {
+        hidden = !hidden
+        items.forEach {
+            it.toggleHide(true, hidden)
+        }
+        ShoppingList.update()
+    }
+
+    fun onNormalRightClick() {
+        println("category: right click")
+        ShoppingList.removeCategory(this)
+    }
+
+    fun onShiftRightClick() {
+        println("category: shift right click")
+        toggleHide()
+    }
+
+    fun onCtrlRightClick() {
+        println("category: ctrl right click")
+        pinned = !pinned
+    }
+
+    fun getRenderables(indent: Int, showThis: Boolean = true): List<Renderable> {
         val renderables = mutableListOf<Renderable>()
-        items.forEach { item ->
-            renderables.addAll(item.getRenderables("  ".repeat(indent)))
+
+            if (!hidden || ShoppingList.isInventoryOpen()) {
+            if (showThis) {
+                renderables.add(
+                    Renderable.multiClickAndHover(
+                        "${if (!hidden) color.getChatColor() else "§8"}§n" + name,
+                        listOf(
+                            "§7Right click to remove",
+                            "§7Shift + right click to hide/unhide",
+                            "§7Ctrl + right click to pin/unpin",
+                        ),
+                        false,
+                        mapOf<Int, () -> Unit>(
+                            0 to { },
+                            1 to {
+                                if (KeyboardManager.isModifierKeyDown()) {
+                                    onCtrlRightClick()
+                                } else if (KeyboardManager.isShiftKeyDown()) {
+                                    onShiftRightClick()
+                                } else {
+                                    onNormalRightClick()
+                                }
+                            },
+                        ),
+                    ),
+                )
+            }
+
+            items.forEach { item ->
+                renderables.addAll(item.getRenderables("  ".repeat(indent)))
+            }
         }
         return renderables
     }

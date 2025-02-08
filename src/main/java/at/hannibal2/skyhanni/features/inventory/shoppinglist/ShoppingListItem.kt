@@ -20,6 +20,7 @@ import net.minecraft.item.ItemStack
 class ShoppingListItem(
     val internalName: NeuInternalName,
     var amount: Double = 1.0,
+    val topLevelCategory: ShoppingListCategory,
     val topLevelItem: ShoppingListItem? = null,
     var recipe: PrimitiveRecipe? = null,
 ) {
@@ -188,7 +189,7 @@ class ShoppingListItem(
             val ingredientAmount = ingredient.count / (usedRecipe.output?.count ?: 1.0)
 
             if (item == null) {
-                subItems.add(ShoppingListItem(ingredient.internalName, ingredientAmount, this))
+                subItems.add(ShoppingListItem(ingredient.internalName, ingredientAmount, topLevelCategory, this))
             } else {
                 item.changeAmountBy(ingredientAmount)
             }
@@ -211,6 +212,10 @@ class ShoppingListItem(
         return totalAmount <= getCurrentAmount()
     }
 
+    fun unhideCategory() {
+        topLevelCategory.hidden = false
+    }
+
     fun toggleHide(hideTree: Boolean = false, forceSetTo: Boolean? = null) {
         println("toggling hide for $internalName, hideTree: $hideTree")
         hidden = forceSetTo ?: !hidden
@@ -218,6 +223,10 @@ class ShoppingListItem(
             subItems.forEach {
                 it.toggleHide(true, forceSetTo ?: hidden)
             }
+        }
+        unhideCategory()
+        if (forceSetTo == null) {
+            ShoppingList.update()
         }
     }
 

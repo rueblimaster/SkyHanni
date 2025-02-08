@@ -76,6 +76,14 @@ object ShoppingList {
 
         val category = categories.firstOrNull { it.name == categoryName } ?: return
         categories.remove(category)
+        update()
+    }
+
+    fun removeCategory(category: ShoppingListCategory) {
+        if (!isEnabled()) return
+
+        categories.remove(category)
+        update()
     }
 
     // maybe name it removeCommand ???
@@ -166,12 +174,9 @@ object ShoppingList {
         display = buildList {
             addString("§l" + "Shopping List")
             categories.forEach {
-
-                addString("${it.color.getChatColor()}§n" + it.name)
-
                 addAll(it.getRenderables(1))
             }
-            addAll(items.getRenderables(0))
+            addAll(items.getRenderables(0, showThis = false))
         }
     }
 
