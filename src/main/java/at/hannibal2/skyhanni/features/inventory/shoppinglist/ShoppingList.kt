@@ -8,7 +8,6 @@ import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.InventoryCloseEvent
 import at.hannibal2.skyhanni.events.InventoryFullyOpenedEvent
-import at.hannibal2.skyhanni.events.InventoryUpdatedEvent
 import at.hannibal2.skyhanni.events.OwnInventoryItemUpdateEvent
 import at.hannibal2.skyhanni.events.SackDataUpdateEvent
 import at.hannibal2.skyhanni.events.entity.ItemAddInInventoryEvent
@@ -18,11 +17,11 @@ import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.CollectionUtils.addString
 import at.hannibal2.skyhanni.utils.InventoryUtils.closeInventory
+import at.hannibal2.skyhanni.utils.InventoryUtils.inAnyInventory
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.LorenzUtils
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
-import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.PrimitiveIngredient
 import at.hannibal2.skyhanni.utils.PrimitiveItemStack.Companion.toPrimitiveStackOrNull
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
@@ -38,11 +37,14 @@ object ShoppingList {
 
     private val categories = mutableListOf<ShoppingListCategory>()
     private val items = ShoppingListCategory("Items")
+    private val itemsOverall = ShoppingListCategory("Overall") // TODO
 
     // TODO: add a kind of summary over all items needed in recipes
 
     // TODO: somehow also make it searchable?
     private var display = listOf<Renderable>()
+
+    private var inventoryOpen = false
 
     var currentlyOpenRecipe: PrimitiveRecipe? = null
     var displayItem: ItemStack? = null
@@ -76,7 +78,7 @@ object ShoppingList {
         categories.remove(category)
     }
 
-    // removeCommand ???
+    // maybe name it removeCommand ???
     fun remove(name: String, amount: Double? = null, categoryName: String? = null) {
         if (!isEnabled()) return
         println("Removing $name x$amount from $categoryName")
@@ -109,8 +111,7 @@ object ShoppingList {
                 if (cat.contains(itemName)) {
                     if (category != null) {
                         ChatUtils.userError(
-                            "Item ${itemName.itemName} found in multiple categories, " +
-                                "please specify the category to remove from",
+                            "Item ${itemName.itemName} found in multiple categories, " + "please specify the category to remove from",
                         )
                         return
                     }
@@ -134,12 +135,28 @@ object ShoppingList {
         createDisplay()
     }
 
-    // logic
+    // logic and related functions
     fun isEnabled() = LorenzUtils.inSkyBlock && config.enabled
 
     fun String.isCategory() = categories.any { it.name == this }
 
-    // all display related functions come here
+    fun resetDisplayItem() {
+        displayItem = null
+    }
+
+    fun isInventoryOpen() = inventoryOpen
+
+    fun recheckInInventory() {
+        if (!isEnabled()) return
+        var currentlyOpen = inAnyInventory()
+        if (inventoryOpen != currentlyOpen) {
+            inventoryOpen = currentlyOpen
+            update()
+//             println("Inventory open: $inventoryOpen")
+        }
+    }
+
+    // all display related functions
     fun createDisplay() {
 //         println("Creating display")
         if (!isEnabled() || (categories.isEmpty() && items.items.isEmpty())) {
@@ -150,7 +167,7 @@ object ShoppingList {
             addString("§l" + "Shopping List")
             categories.forEach {
 
-                addString("§a§n" + it.name)
+                addString("${it.color.getChatColor()}§n" + it.name)
 
                 addAll(it.getRenderables(1))
             }
@@ -165,29 +182,12 @@ object ShoppingList {
         createDisplay()
     }
 
-    fun resetDisplayItem() {
-        displayItem = null
-    }
-
-    fun PrimitiveRecipe.isRecursing(): Boolean {
-        ingredients.forEach {
-            println("${it.internalName}, ${output?.internalName}: ${ it.internalName == output?.internalName }")
-            if (it.internalName == output?.internalName) {
-                return true
-            }
-        }
-        return ingredients.any { it.internalName == output?.internalName }
-    }
-
-
     fun test() {
         ChatUtils.chat("test triggered")
 
         add("enchanted carrot".toInternalName(), 49.0)
         add("aspect of the end".toInternalName(), 1.0, "Weapons")
         add("diamond".toInternalName(), 1.0)
-
-        println("${NeuItems.getRecipes("diamond".toInternalName()).first { it.isCraftingRecipe() }.isRecursing()}")
 
         createDisplay()
 
@@ -197,38 +197,35 @@ object ShoppingList {
     fun InventoryFullyOpenedEvent.isRecipe() = inventoryName.contains("Recipe") && inventorySize == 54
 
     // all events come here
-    @HandleEvent
+    @HandleEvent(onlyOnSkyblock = true)
     fun onOwnInventoryItemUpdate(event: OwnInventoryItemUpdateEvent) {
         update()
     }
 
-    @HandleEvent
+    @HandleEvent(onlyOnSkyblock = true)
     fun onItemAddInInventoryEvent(event: ItemAddInInventoryEvent) {
         update()
     }
 
-    @HandleEvent
+    @HandleEvent(onlyOnSkyblock = true)
     fun onSackUpdate(event: SackDataUpdateEvent) {
         update()
     }
 
-    @HandleEvent
+    @HandleEvent(onlyOnSkyblock = true)
     fun onInventoryClose(event: InventoryCloseEvent) {
+        recheckInInventory()
         update()
     }
 
-    @HandleEvent
-    fun onInventoryUpdated(event: InventoryUpdatedEvent) {
-        update()
-    }
-
-    @HandleEvent
+    @HandleEvent(onlyOnSkyblock = true)
     fun onWorldChange(event: WorldChangeEvent) {
+        recheckInInventory()
         update()
     }
 
     // this triggers only when opening another inventory, not the own inventory
-    @HandleEvent
+    @HandleEvent(onlyOnSkyblock = true)
     fun onInventorOpen(event: InventoryFullyOpenedEvent) {
         if (!isEnabled()) return
         if (!event.isRecipe()) {
@@ -244,9 +241,12 @@ object ShoppingList {
 
         println("Relevant items: $ingredients")
         currentlyOpenRecipe = PrimitiveRecipe(ingredients, setOf(result ?: return), RecipeType.CRAFTING)
+
+        recheckInInventory()
+        update()
     }
 
-    @HandleEvent
+    @HandleEvent(onlyOnSkyblock = true)
     fun replaceItem(event: ReplaceItemEvent) {
         if (!isEnabled()) return
         if (event.inventory !is InventoryPlayer && event.slot == 51) {
@@ -254,7 +254,7 @@ object ShoppingList {
         }
     }
 
-    @HandleEvent(priority = HandleEvent.HIGH)
+    @HandleEvent(onlyOnSkyblock = true, priority = HandleEvent.HIGH)
     fun onSlotClick(event: GuiContainerEvent.SlotClickEvent) {
         if (!isEnabled()) return
         if (event.slotId != 51) return
@@ -272,18 +272,28 @@ object ShoppingList {
         }
     }
 
-    @HandleEvent
+    @HandleEvent(onlyOnSkyblock = true)
     fun onRender(event: GuiRenderEvent.GuiOverlayRenderEvent) {
+        if (!isEnabled()) return
+//         println("Rendering shopping list, in GuiOverlayRenderEvent")
         config.position.renderRenderables(display, posLabel = "Shopping List")
     }
 
-    @HandleEvent
+    @HandleEvent(onlyOnSkyblock = true)
     fun onRender(event: GuiRenderEvent.ChestGuiOverlayRenderEvent) {
+        if (!isEnabled()) return
+//         println("Rendering shopping list, in ChestGuiOverlayRenderEvent")
+        if (!inventoryOpen) {
+            inventoryOpen = true
+            update()
+        }
+//         recheckInInventory()
         config.position.renderRenderables(display, posLabel = "Shopping List")
     }
 
     // this event should be last
-    @HandleEvent
+    // TODO: better argument handling
+    @HandleEvent()
     fun onCommandRegistration(event: CommandRegistrationEvent) {
         event.register("shshoppinglistclear") {
             description = "Clear the shopping list"
@@ -312,6 +322,7 @@ object ShoppingList {
             autoComplete { categories.map { category -> category.name } }
             callback { removeCategory(it[0]) }
         }
+//         TODO: add a hide command
 //         TODO: implement set
 //         event.register("shshoppinglistset") {
 //             description = "Set the amount of an item in the shopping list"

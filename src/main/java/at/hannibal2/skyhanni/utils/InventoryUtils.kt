@@ -49,6 +49,11 @@ object InventoryUtils {
 
     fun inInventory() = Minecraft.getMinecraft().currentScreen is GuiChest
 
+    // TODO: make this stuff consistently work
+    fun inOwnInventory() = Minecraft.getMinecraft().currentScreen is GuiInventory
+
+    fun inAnyInventory() = inInventory() || inOwnInventory()
+
     fun inContainer() = Minecraft.getMinecraft().currentScreen is GuiContainer
 
     fun ContainerChest.getInventoryName() = this.lowerChestInventory.displayName.unformattedText.trim()

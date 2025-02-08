@@ -4,15 +4,14 @@ import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.curren
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
 import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventoryAndSacks
-import at.hannibal2.skyhanni.utils.InventoryUtils.inInventory
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
-import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.PrimitiveIngredient
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
+import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import net.minecraft.init.Blocks
 import net.minecraft.item.ItemStack
@@ -24,6 +23,7 @@ class ShoppingListItem(
     var recipe: PrimitiveRecipe? = null,
 ) {
     var hidden = false
+    var pinned = false // TODO: implement this
 
     val totalAmount: Double
         get() = amount * (topLevelItem?.totalAmount ?: 1.0)
@@ -34,6 +34,10 @@ class ShoppingListItem(
     var possibleRecipes: List<PrimitiveRecipe> = emptyList()
     var currentlyDecidingRecipe = false // TODO: remove this as displayItem already tells if we are currently deciding a recipe
     var displayItem: ItemStack? = null
+    val downBreakable: Boolean
+        get() {
+            return subItems.isEmpty() && possibleRecipes.isNotEmpty()
+        }
 
     private val subItems = mutableListOf<ShoppingListItem>()
 
@@ -152,7 +156,7 @@ class ShoppingListItem(
         }
     }
 
-    fun onItemClicked(clickedItem: ItemStack): Boolean {
+    fun onItemClick(clickedItem: ItemStack): Boolean {
         if (currentlyDecidingRecipe && clickedItem == displayItem) {
             println("Clicked on display item for $internalName")
             recipe = currentlyOpenRecipe
@@ -164,7 +168,7 @@ class ShoppingListItem(
             return true
         }
         subItems.forEach {
-            if (it.onItemClicked(clickedItem)) {
+            if (it.onItemClick(clickedItem)) {
                 return true
             }
         }
@@ -206,13 +210,49 @@ class ShoppingListItem(
         return totalAmount <= getCurrentAmount()
     }
 
-    // TODO: do some nice indent
-    fun getIndent(amount: Int): String {
-        return if (topLevelItem == null || amount == 0) {
-            "  ".repeat(amount)
-        } else {
-            "§7  " + "| ".repeat(amount - 1)
+    fun toggleHide(hideTree: Boolean = false, forceSetTo: Boolean? = null) {
+        println("toggling hide for $internalName, hideTree: $hideTree")
+        hidden = forceSetTo ?: !hidden
+        if (hideTree) {
+            subItems.forEach {
+                it.toggleHide(true, forceSetTo ?: hidden)
+            }
         }
+    }
+
+    fun copyToClipboard() {
+        println("copying $internalName to clipboard")
+    }
+
+    fun onNormalLeftClick() {
+        println("left click")
+        breakDownIntoSubitems()
+    }
+
+    fun onShiftLeftClick() {
+        println("shift left click")
+    }
+
+    fun onCtrlLeftClick() {
+        println("ctrl left click")
+    }
+
+    fun onNormalRightClick() {
+        println("right click")
+    }
+
+    fun onShiftRightClick() {
+        println("shift right click")
+        toggleHide()
+    }
+
+    fun onCtrlRightClick() {
+        println("ctrl right click")
+    }
+
+    fun onCtrlShiftRightClick() {
+        println("ctrl shift right click")
+        toggleHide(true)
     }
 
     fun Double.displayAmount(): String {
@@ -223,53 +263,83 @@ class ShoppingListItem(
         }
     }
 
-    fun getRenderables(indent: Int): List<Renderable> {
+    fun getRenderables(indent: String, continuedIndent: String? = null): List<Renderable> {
         val renderables = mutableListOf<Renderable>()
-        if (!hidden) {
+        if (!hidden || ShoppingList.isInventoryOpen()) {
+//             renderables.add(
+//                 Renderable.line {
+
 //             println(internalName.itemName)
 //             println("Adding §e${internalName.itemNameWithoutColor} x$amount to renderables")
 
-            var string = getIndent(indent)
+            var string = "§8$indent"
             if (topLevelItem != null) {
                 string += "§7${amount.displayAmount()}x "
             }
 
-            string += "§e${internalName.itemNameWithoutColor} §f${getCurrentAmount()}/${totalAmount.displayAmount()}"
+            string += "${internalName.itemName} §f${getCurrentAmount()}/${totalAmount.displayAmount()}"
 
-            val downBreakable: Boolean
-            if (subItems.isEmpty() && possibleRecipes.isNotEmpty()) {
-                downBreakable = true
-                // TODO: isn't this really ressource intensive?
-                if (inInventory()) {
-                    string += " §7Click to break down into recipe"
-                }
-            } else {
-                downBreakable = false
+            if (hidden) {
+                string = "§8${string.removeColor()}"
             }
 
-            if (downBreakable) {
-                renderables.add(
-                    if (inInventory()) Renderable.multiClickAndHover(
-                        string, listOf("test1", "test2"),
-                        false,
-                        mapOf<Int, () -> Unit>(
-                            0 to { println("test3") },
-                            1 to { println("test4") },
-                            2 to { println("test5") },
-                            3 to { println("test6") }),
-//                         onClick = {
-//                             if (KeyboardManager.isModifierKeyDown()) itemRemover.invoke(internalName, cleanName)
-//                             else itemHider.invoke(internalName, hidden)
-//                             update()
-                    ) else Renderable.string(string),
-                )
+            renderables.add(
+                Renderable.multiClickAndHover(
+                    string, listOf("test1", "test2"),
+                    false,
+                    mapOf<Int, () -> Unit>(
+                        0 to {
+                            if (KeyboardManager.isModifierKeyDown()) {
+                                onCtrlLeftClick()
+                            } else if (KeyboardManager.isShiftKeyDown()) {
+                                onShiftLeftClick()
+                            } else {
+                                onNormalLeftClick()
+                            }
+                        },
+                        1 to {
+                            if (KeyboardManager.isModifierKeyDown() && KeyboardManager.isShiftKeyDown()) {
+                                onCtrlShiftRightClick()
+                            } else if (KeyboardManager.isModifierKeyDown()) {
+                                onCtrlRightClick()
+                            } else if (KeyboardManager.isShiftKeyDown()) {
+                                onShiftRightClick()
+                            } else {
+                                onNormalRightClick()
+                            }
+                        },
+                        2 to { copyToClipboard() },
+                    ),
+                ),
+            )
+        }
+//             val itemIcon = internalName.getItemStackOrNull()
+//             renderables.add(
+//                 if (itemIcon != null) {
+//                     Renderable.itemStack(itemIcon)
+//                 } else {
+//                     ItemNameResolver.getInternalNameOrNull(internalName.itemName)?.let { Renderable.itemStack(it.getItemStack()) }
+//                         ?: Renderable.string("§c?")
+//                 },
+//             )
+//                 },
+//             )
+
+        for (i in 0 until subItems.size) {
+            val isLastItem = i == subItems.size - 1
+            var newContinuedIndent = continuedIndent ?: indent
+
+            var newIndent = continuedIndent ?: indent
+            if (!isLastItem) {
+                newIndent += "|·"
+                newContinuedIndent += "| "
             } else {
-                renderables.add(
-                    Renderable.string(string),
-                )
+                newIndent += "`·"
+                newContinuedIndent += "  "
             }
-            subItems.forEach {
-                renderables.addAll(it.getRenderables(indent + 1))
+
+            subItems[i].getRenderables(newIndent, newContinuedIndent).forEach {
+                renderables.add(it)
             }
         }
         return renderables

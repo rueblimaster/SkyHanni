@@ -2,11 +2,12 @@ package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
+import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import net.minecraft.item.ItemStack
 
-class ShoppingListCategory(val name: String) {
+class ShoppingListCategory(val name: String, val color: LorenzColor = LorenzColor.GOLD, val icon: ItemStack? = null) {
     val items = mutableListOf<ShoppingListItem>()
     var hidden = false
     var pinned = false // TODO: implement this
@@ -74,7 +75,7 @@ class ShoppingListCategory(val name: String) {
 
     fun onItemClicked(clickedItem: ItemStack): Boolean {
         items.forEach {
-            if (it.onItemClicked(clickedItem)) {
+            if (it.onItemClick(clickedItem)) {
                 return true
             }
         }
@@ -84,7 +85,7 @@ class ShoppingListCategory(val name: String) {
     fun getRenderables(indent: Int): List<Renderable> {
         val renderables = mutableListOf<Renderable>()
         items.forEach { item ->
-            renderables.addAll(item.getRenderables(indent))
+            renderables.addAll(item.getRenderables("  ".repeat(indent)))
         }
         return renderables
     }
