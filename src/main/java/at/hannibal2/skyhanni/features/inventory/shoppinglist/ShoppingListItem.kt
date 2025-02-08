@@ -16,6 +16,7 @@ import at.hannibal2.skyhanni.utils.renderables.Renderable
 import net.minecraft.init.Blocks
 import net.minecraft.item.ItemStack
 
+@Suppress("TooManyFunctions")
 class ShoppingListItem(
     val internalName: NeuInternalName,
     var amount: Double = 1.0,
@@ -47,10 +48,10 @@ class ShoppingListItem(
 
     /*
     what do we want to be able to do from the display widget:
-        * left click is for doing stuff with it
+        left click is for doing stuff with it
         - (left click) break down into its subitems
         - (shift + left click) get from ah/bz  (switch ah/bz and break down as a setting) also only (click) if no recipe
-        * right click is for doing stuff with the item itself
+        right click is for doing stuff with the item itself
         - (right click) change the amount (but if nothing is entered remove if I can discriminate between cancel and remove)
         - remove completely (if it isn't a subitem of another item)
         - (shift + right click) hide/unhide

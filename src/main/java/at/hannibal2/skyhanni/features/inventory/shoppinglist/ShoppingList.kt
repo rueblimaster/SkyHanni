@@ -148,7 +148,7 @@ object ShoppingList {
 
     fun recheckInInventory() {
         if (!isEnabled()) return
-        var currentlyOpen = inAnyInventory()
+        val currentlyOpen = inAnyInventory()
         if (inventoryOpen != currentlyOpen) {
             inventoryOpen = currentlyOpen
             update()
