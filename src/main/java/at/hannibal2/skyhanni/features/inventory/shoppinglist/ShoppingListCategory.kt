@@ -11,6 +11,18 @@ class ShoppingListCategory(val name: String) {
     var hidden = false
     var pinned = false // TODO: implement this
 
+    /*
+    what do we want to be able to do from the display widget:
+        - remove it
+        - hide/unhide it
+        - pin/unpin it
+
+    what may we want to see:
+        - name
+        - optional icon?
+        - total cost
+    */
+
     override fun toString(): String {
         return name
     }
