@@ -52,6 +52,7 @@ class ShoppingListItem(
         left click is for doing stuff with it
         - (left click) break down into its subitems
         - (shift + left click) get from ah/bz  (switch ah/bz and break down as a setting) also only (click) if no recipe
+        - open recipe to craft it
         right click is for doing stuff with the item itself
         - (right click) change the amount (but if nothing is entered remove if I can discriminate between cancel and remove)
         - remove completely (if it isn't a subitem of another item)
