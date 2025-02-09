@@ -28,6 +28,7 @@ import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.RecipeType
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.renderables.Renderable
+import com.google.gson.annotations.Expose
 import net.minecraft.entity.player.InventoryPlayer
 import net.minecraft.item.ItemStack
 
@@ -37,9 +38,40 @@ object ShoppingList {
 
     private val categories = mutableListOf<ShoppingListCategory>()
     private val items = ShoppingListCategory("Items")
-    private val itemsOverall = ShoppingListCategory("Overall") // TODO
 
-    // TODO: add a kind of summary over all items needed in recipes
+    // TODO: add a kind of summary over all items needed in recipes, nope, in the item we add a text (xyz overall)
+    object ItemsOverall {
+        private val allItems: MutableMap<NeuInternalName, Double> = mutableMapOf()
+
+        fun add(item: ShoppingListItem) {
+            println("Adding ${item.internalName.itemName} x${item.totalAmount} to overall")
+            add(item.internalName, item.totalAmount)
+        }
+
+        fun add(itemName: NeuInternalName, amount: Double) {
+            allItems[itemName] = allItems.getOrDefault(itemName, 0.0) + amount
+        }
+
+        fun remove(itemName: NeuInternalName, amount: Double) {
+            if (itemName !in allItems) return
+
+            val prevAmount = allItems[itemName] ?: return
+
+            if (prevAmount <= amount) {
+                allItems.remove(itemName)
+            } else {
+                allItems[itemName] = prevAmount - amount
+            }
+        }
+
+        fun get(itemName: NeuInternalName): Double {
+            return allItems.getOrDefault(itemName, 0.0)
+        }
+
+        fun clear() {
+            allItems.clear()
+        }
+    }
 
     // TODO: somehow also make it searchable?
     private var display = listOf<Renderable>()
@@ -140,6 +172,8 @@ object ShoppingList {
         categories.clear()
         items.clear()
 
+        ItemsOverall.clear()
+
         createDisplay()
     }
 
@@ -189,6 +223,8 @@ object ShoppingList {
 
     fun test() {
         ChatUtils.chat("test triggered")
+
+        clear()
 
         add("enchanted carrot".toInternalName(), 49.0)
         add("aspect of the end".toInternalName(), 1.0, "Weapons")

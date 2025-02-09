@@ -8,7 +8,12 @@ import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import net.minecraft.item.ItemStack
 
-class ShoppingListCategory(val name: String, val color: LorenzColor = LorenzColor.GOLD, val icon: ItemStack? = null) {
+class ShoppingListCategory(
+    val name: String,
+    val color: LorenzColor = LorenzColor.GOLD,
+    val icon: ItemStack? = null,
+    val disabledDownBreakable: Boolean = false,
+) {
     val items = mutableListOf<ShoppingListItem>()
     var hidden = false
     var pinned = false // TODO: implement this
@@ -38,7 +43,7 @@ class ShoppingListCategory(val name: String, val color: LorenzColor = LorenzColo
         val item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
 
         if (item == null) {
-            items.add(ShoppingListItem(itemName, amount, this))
+            items.add(ShoppingListItem(itemName, amount, this, disabledDownBreakable = disabledDownBreakable))
         } else {
             item.changeAmountBy(amount)
         }
@@ -109,7 +114,7 @@ class ShoppingListCategory(val name: String, val color: LorenzColor = LorenzColo
     fun getRenderables(indent: Int, showThis: Boolean = true): List<Renderable> {
         val renderables = mutableListOf<Renderable>()
 
-            if (!hidden || ShoppingList.isInventoryOpen()) {
+        if (!hidden || ShoppingList.isInventoryOpen()) {
             if (showThis) {
                 renderables.add(
                     Renderable.multiClickAndHover(

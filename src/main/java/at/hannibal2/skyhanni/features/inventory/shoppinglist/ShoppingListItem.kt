@@ -2,6 +2,7 @@ package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.currentlyOpenRecipe
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
+import at.hannibal2.skyhanni.utils.CollectionUtils.add
 import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventoryAndSacks
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
@@ -23,6 +24,7 @@ class ShoppingListItem(
     val topLevelCategory: ShoppingListCategory,
     val topLevelItem: ShoppingListItem? = null,
     var recipe: PrimitiveRecipe? = null,
+    val disabledDownBreakable: Boolean = false,
 ) {
     var hidden = false
     var pinned = false // TODO: implement this
@@ -44,7 +46,12 @@ class ShoppingListItem(
     private val subItems = mutableListOf<ShoppingListItem>()
 
     init {
-        getPossibleRecipes()
+        if (!disabledDownBreakable) {
+            loadPossibleRecipes()
+        }
+
+        // TODO: add the counterpart to this
+        ShoppingList.ItemsOverall.add(this)
     }
 
     /*
@@ -124,7 +131,7 @@ class ShoppingListItem(
         return recipes.any { recipe -> recipe.ingredients.any { it.internalName == internalName } }
     }
 
-    fun getPossibleRecipes() {
+    fun loadPossibleRecipes() {
         possibleRecipes = NeuItems.getRecipes(internalName).filter { it.isCraftingRecipe() }.filter { recipe ->
             !recipe.isRecursing() && !recipe.isRecursingCompacting()
         }
@@ -206,6 +213,7 @@ class ShoppingListItem(
     }
 
     fun getCurrentAmount(): Int {
+        // TODO: also get the amount in the storage (as an option)
         return internalName.getAmountInInventoryAndSacks()
     }
 
@@ -289,6 +297,14 @@ class ShoppingListItem(
             }
 
             string += "${internalName.itemName} §f${getCurrentAmount()}/${totalAmount.displayAmount()}"
+
+            if (ShoppingList.ItemsOverall.get(internalName) > totalAmount) {
+                string += " (${ShoppingList.ItemsOverall.get(internalName).displayAmount()} in total)"
+            }
+
+            if (hasItems()) {
+                string += " §a✓"
+            }
 
             if (hidden) {
                 string = "§8${string.removeColor()}"
