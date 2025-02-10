@@ -31,6 +31,8 @@ import at.hannibal2.skyhanni.utils.renderables.Renderable
 import com.google.gson.annotations.Expose
 import net.minecraft.entity.player.InventoryPlayer
 import net.minecraft.item.ItemStack
+import kotlin.collections.component1
+import kotlin.collections.set
 
 @SkyHanniModule
 object ShoppingList {
@@ -39,38 +41,34 @@ object ShoppingList {
     private val categories = mutableListOf<ShoppingListCategory>()
     private val items = ShoppingListCategory("Items")
 
-    // TODO: add a kind of summary over all items needed in recipes, nope, in the item we add a text (xyz overall)
     object ItemsOverall {
-        private val allItems: MutableMap<NeuInternalName, Double> = mutableMapOf()
+        private val allItems: MutableMap<NeuInternalName, Pair<Double, Int>> = mutableMapOf()
 
-        fun add(item: ShoppingListItem) {
-            println("Adding ${item.internalName.itemName} x${item.totalAmount} to overall")
-            add(item.internalName, item.totalAmount)
+        fun update() {
+            allItems.clear()
+            for (category in categories + items) {
+                for (item in category.items) {
+                    item.getItemsOverall().forEach { (name, pair: Pair<Double, Int>) ->
+                        if (allItems.containsKey(name)) {
+                            allItems[name]?.let { it1 ->
+                                allItems[name] = Pair(it1.first + pair.first, it1.second + pair.second)
+                            }
+                        } else {
+                            allItems[name] = pair
+                        }
+                    }
+                }
+            }
+            print()
         }
 
-        fun add(itemName: NeuInternalName, amount: Double) {
-            allItems[itemName] = allItems.getOrDefault(itemName, 0.0) + amount
-        }
-
-        fun remove(itemName: NeuInternalName, amount: Double) {
-            if (itemName !in allItems) return
-
-            val prevAmount = allItems[itemName] ?: return
-
-            if (prevAmount <= amount) {
-                allItems.remove(itemName)
-            } else {
-                allItems[itemName] = prevAmount - amount
+        fun print() {
+            for ((item, pair) in allItems) {
+                println("Item: $item, Amount: ${pair.first}, in items: ${pair.second}")
             }
         }
 
-        fun get(itemName: NeuInternalName): Double {
-            return allItems.getOrDefault(itemName, 0.0)
-        }
-
-        fun clear() {
-            allItems.clear()
-        }
+        fun get(item: NeuInternalName) = allItems[item]
     }
 
     // TODO: somehow also make it searchable?
@@ -172,7 +170,7 @@ object ShoppingList {
         categories.clear()
         items.clear()
 
-        ItemsOverall.clear()
+        update()
 
         createDisplay()
     }
@@ -217,6 +215,8 @@ object ShoppingList {
     // other functions etc.
     fun update() {
         if (!isEnabled()) return
+
+        ItemsOverall.update()
 
         createDisplay()
     }

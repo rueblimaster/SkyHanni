@@ -2,7 +2,6 @@ package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.currentlyOpenRecipe
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
-import at.hannibal2.skyhanni.utils.CollectionUtils.add
 import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventoryAndSacks
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
@@ -24,7 +23,6 @@ class ShoppingListItem(
     val topLevelCategory: ShoppingListCategory,
     val topLevelItem: ShoppingListItem? = null,
     var recipe: PrimitiveRecipe? = null,
-    val disabledDownBreakable: Boolean = false,
 ) {
     var hidden = false
     var pinned = false // TODO: implement this
@@ -46,12 +44,7 @@ class ShoppingListItem(
     private val subItems = mutableListOf<ShoppingListItem>()
 
     init {
-        if (!disabledDownBreakable) {
-            loadPossibleRecipes()
-        }
-
-        // TODO: add the counterpart to this
-        ShoppingList.ItemsOverall.add(this)
+        loadPossibleRecipes()
     }
 
     /*
@@ -221,6 +214,22 @@ class ShoppingListItem(
         return totalAmount <= getCurrentAmount()
     }
 
+    fun getItemsOverall(): Map<NeuInternalName, Pair<Double, Int>> {
+        return buildMap {
+            this[internalName] = Pair(totalAmount, 1)
+
+            subItems.forEach {
+                it.getItemsOverall().forEach { (name, pair: Pair<Double, Int>) ->
+                    if (this.containsKey(name)) {
+                        this[name]?.let { it1 -> this[name] = Pair(it1.first + pair.first, it1.second + pair.second) }
+                    } else {
+                        this[name] = pair
+                    }
+                }
+            }
+        }
+    }
+
     fun unhideCategory() {
         topLevelCategory.hidden = false
     }
@@ -298,8 +307,10 @@ class ShoppingListItem(
 
             string += "${internalName.itemName} §f${getCurrentAmount()}/${totalAmount.displayAmount()}"
 
-            if (ShoppingList.ItemsOverall.get(internalName) > totalAmount) {
-                string += " (${ShoppingList.ItemsOverall.get(internalName).displayAmount()} in total)"
+            ShoppingList.ItemsOverall.get(internalName)?.let {
+                if (it.second > 1) {
+                    string += " (${it.first.displayAmount()} in total over ${it.second} items)"
+                }
             }
 
             if (hasItems()) {

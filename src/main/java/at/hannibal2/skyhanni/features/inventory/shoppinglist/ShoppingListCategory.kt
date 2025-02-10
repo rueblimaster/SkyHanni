@@ -43,7 +43,7 @@ class ShoppingListCategory(
         val item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
 
         if (item == null) {
-            items.add(ShoppingListItem(itemName, amount, this, disabledDownBreakable = disabledDownBreakable))
+            items.add(ShoppingListItem(itemName, amount, this))
         } else {
             item.changeAmountBy(amount)
         }
