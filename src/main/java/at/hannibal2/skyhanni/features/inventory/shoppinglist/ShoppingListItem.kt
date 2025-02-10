@@ -13,20 +13,19 @@ import at.hannibal2.skyhanni.utils.PrimitiveIngredient
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.renderables.Renderable
-import com.google.gson.annotations.Expose
 import net.minecraft.init.Blocks
 import net.minecraft.item.ItemStack
 
 @Suppress("TooManyFunctions")
 class ShoppingListItem(
-    @Expose val internalName: NeuInternalName,
+    val internalName: NeuInternalName,
     var amount: Double = 1.0,
     val topLevelCategory: ShoppingListCategory,
     val topLevelItem: ShoppingListItem? = null,
     var recipe: PrimitiveRecipe? = null,
 ) {
     var hidden = false
-    var pinned = false // TODO: implement this
+    var pinned = false
 
     val totalAmount: Double
         get() = amount * (topLevelItem?.totalAmount ?: 1.0)

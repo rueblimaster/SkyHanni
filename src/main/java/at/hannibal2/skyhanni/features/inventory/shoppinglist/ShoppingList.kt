@@ -4,6 +4,7 @@ import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
+import at.hannibal2.skyhanni.data.ProfileStorageData
 import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.InventoryCloseEvent
@@ -28,20 +29,17 @@ import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.RecipeType
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.renderables.Renderable
-import com.google.gson.annotations.Expose
 import net.minecraft.entity.player.InventoryPlayer
 import net.minecraft.item.ItemStack
-import kotlin.collections.component1
-import kotlin.collections.set
 
 @SkyHanniModule
 object ShoppingList {
     private val config get() = SkyHanniMod.feature.inventory.shoppingList
 
-    @Expose
     private val categories = mutableListOf<ShoppingListCategory>()
-    @Expose
     private val items = ShoppingListCategory("Items")
+
+    private val storage: Pair<List<Map<String, Any?>>, Map<String, Any?>>? get() = ProfileStorageData.profileSpecific?.shoppingList
 
     object ItemsOverall {
         private val allItems: MutableMap<NeuInternalName, Pair<Double, Int>> = mutableMapOf()
@@ -198,6 +196,19 @@ object ShoppingList {
         }
     }
 
+    fun saveToStorage() {
+        ProfileStorageData.profileSpecific?.shoppingList = Pair(categories.map { it.toEasyStorable() }, items.toEasyStorable())
+    }
+
+    fun loadFromStorage() {
+        storage?.let { (categories, items) ->
+            this.categories.clear()
+            this.categories.addAll(categories.map { ShoppingListCategory.fromEasyStorable(it) })
+            this.items.clear()
+            this.items.addAll(ShoppingListCategory.fromEasyStorable(items))
+        }
+    }
+
     // all display related functions
     fun createDisplay() {
 //         println("Creating display")
@@ -228,6 +239,8 @@ object ShoppingList {
         ItemsOverall.update()
 
         createDisplay()
+
+        saveToStorage()
     }
 
     fun test() {

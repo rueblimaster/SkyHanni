@@ -776,4 +776,7 @@ class ProfileSpecificStorage {
 
     @Expose
     var enchantedClockBoosts: MutableMap<EnchantedClockHelper.SimpleBoostType, EnchantedClockHelper.Status> = enumMapOf()
+
+    @Expose
+    var shoppingList: Pair<List<Map<String, Any?>>, Map<String, Any?>> = Pair(listOf(), mapOf())
 }
