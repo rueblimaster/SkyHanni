@@ -38,7 +38,9 @@ import kotlin.collections.set
 object ShoppingList {
     private val config get() = SkyHanniMod.feature.inventory.shoppingList
 
+    @Expose
     private val categories = mutableListOf<ShoppingListCategory>()
+    @Expose
     private val items = ShoppingListCategory("Items")
 
     object ItemsOverall {
@@ -59,7 +61,7 @@ object ShoppingList {
                     }
                 }
             }
-            print()
+//             print()
         }
 
         fun print() {
@@ -206,7 +208,14 @@ object ShoppingList {
         display = buildList {
             addString("§l" + "Shopping List")
             categories.forEach {
-                addAll(it.getRenderables(1))
+                if (it.pinned) {
+                    addAll(it.getRenderables(1))
+                }
+            }
+            categories.forEach {
+                if (!it.pinned) {
+                    addAll(it.getRenderables(1))
+                }
             }
             addAll(items.getRenderables(0, showThis = false))
         }
@@ -226,8 +235,8 @@ object ShoppingList {
 
         clear()
 
-        add("enchanted carrot".toInternalName(), 49.0)
         add("aspect of the end".toInternalName(), 1.0, "Weapons")
+        add("enchanted carrot".toInternalName(), 49.0, "Visitors")
         add("diamond".toInternalName(), 1.0)
 
         createDisplay()

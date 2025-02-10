@@ -6,17 +6,23 @@ import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.renderables.Renderable
+import com.google.gson.annotations.Expose
 import net.minecraft.item.ItemStack
 
 class ShoppingListCategory(
+    @Expose
     val name: String,
+    @Expose
     val color: LorenzColor = LorenzColor.GOLD,
+    @Expose
     val icon: ItemStack? = null,
-    val disabledDownBreakable: Boolean = false,
 ) {
+    @Expose
     val items = mutableListOf<ShoppingListItem>()
+    @Expose
     var hidden = false
-    var pinned = false // TODO: implement this
+    @Expose
+    var pinned = false
 
     /*
     what do we want to be able to do from the display widget:
@@ -88,6 +94,11 @@ class ShoppingListCategory(
         return false
     }
 
+    fun togglePin() {
+        pinned = !pinned
+        ShoppingList.update()
+    }
+
     fun toggleHide() {
         hidden = !hidden
         items.forEach {
@@ -108,7 +119,7 @@ class ShoppingListCategory(
 
     fun onCtrlRightClick() {
         println("category: ctrl right click")
-        pinned = !pinned
+        togglePin()
     }
 
     fun getRenderables(indent: Int, showThis: Boolean = true): List<Renderable> {
@@ -116,14 +127,25 @@ class ShoppingListCategory(
 
         if (!hidden || ShoppingList.isInventoryOpen()) {
             if (showThis) {
+                var string = ""
+                val tooltip = mutableListOf<String>()
+
+                if (pinned) {
+                    string += "§e*"
+                    tooltip.add("§ePinned")
+                }
+
+                string += if (!hidden) color.getChatColor() else "§8"
+                string += "§n$name"
+
+                tooltip.add("§7Right click to remove")
+                tooltip.add("§7Shift + right click to ${if (hidden) "un" else ""}hide")
+                tooltip.add("§7Ctrl + right click to ${if (pinned) "un" else ""}pin")
+
                 renderables.add(
                     Renderable.multiClickAndHover(
-                        "${if (!hidden) color.getChatColor() else "§8"}§n" + name,
-                        listOf(
-                            "§7Right click to remove",
-                            "§7Shift + right click to hide/unhide",
-                            "§7Ctrl + right click to pin/unpin",
-                        ),
+                        string,
+                        tooltip,
                         false,
                         mapOf<Int, () -> Unit>(
                             0 to { },
@@ -142,7 +164,14 @@ class ShoppingListCategory(
             }
 
             items.forEach { item ->
-                renderables.addAll(item.getRenderables("  ".repeat(indent)))
+                if (item.pinned) {
+                    renderables.addAll(item.getRenderables("  ".repeat(indent)))
+                }
+            }
+            items.forEach { item ->
+                if (!item.pinned) {
+                    renderables.addAll(item.getRenderables("  ".repeat(indent)))
+                }
             }
         }
         return renderables

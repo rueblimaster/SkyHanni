@@ -13,12 +13,13 @@ import at.hannibal2.skyhanni.utils.PrimitiveIngredient
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.renderables.Renderable
+import com.google.gson.annotations.Expose
 import net.minecraft.init.Blocks
 import net.minecraft.item.ItemStack
 
 @Suppress("TooManyFunctions")
 class ShoppingListItem(
-    val internalName: NeuInternalName,
+    @Expose val internalName: NeuInternalName,
     var amount: Double = 1.0,
     val topLevelCategory: ShoppingListCategory,
     val topLevelItem: ShoppingListItem? = null,
@@ -214,6 +215,14 @@ class ShoppingListItem(
         return totalAmount <= getCurrentAmount()
     }
 
+    fun hasAllSubItems(): Boolean {
+        return if (subItems.isEmpty()) {
+            hasItems()
+        } else {
+            subItems.all { it.hasAllSubItems() }
+        }
+    }
+
     fun getItemsOverall(): Map<NeuInternalName, Pair<Double, Int>> {
         return buildMap {
             this[internalName] = Pair(totalAmount, 1)
@@ -230,6 +239,11 @@ class ShoppingListItem(
         }
     }
 
+    fun togglePin() {
+        pinned = !pinned
+        ShoppingList.update()
+    }
+
     fun unhideCategory() {
         topLevelCategory.hidden = false
     }
@@ -242,7 +256,9 @@ class ShoppingListItem(
                 it.toggleHide(true, forceSetTo ?: hidden)
             }
         }
-        unhideCategory()
+        if (!hidden) {
+            unhideCategory()
+        }
         if (forceSetTo == null) {
             ShoppingList.update()
         }
@@ -276,6 +292,7 @@ class ShoppingListItem(
 
     fun onCtrlRightClick() {
         println("ctrl right click")
+        togglePin()
     }
 
     fun onCtrlShiftRightClick() {
@@ -301,6 +318,13 @@ class ShoppingListItem(
 //             println("Adding §e${internalName.itemNameWithoutColor} x$amount to renderables")
 
             var string = "§8$indent"
+            val tooltip = mutableListOf<String>()
+
+            if (pinned) {
+                string += "§e*"
+                tooltip.add("§ePinned")
+            }
+
             if (topLevelItem != null) {
                 string += "§7${amount.displayAmount()}x "
             }
@@ -315,15 +339,23 @@ class ShoppingListItem(
 
             if (hasItems()) {
                 string += " §a✓"
+            } else if (hasAllSubItems()) {
+                string += " §e✓"
             }
 
             if (hidden) {
                 string = "§8${string.removeColor()}"
             }
 
+            tooltip.add("§7left click to break down recipe")
+            tooltip.add("§7right click to change amount")
+            tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide")
+            tooltip.add("§7ctrl + right click to ${if (pinned) "un" else ""}pin")
+            tooltip.add("§7middle click to copy to clipboard")
+
             renderables.add(
                 Renderable.multiClickAndHover(
-                    string, listOf("test1", "test2"),
+                    string, tooltip,
                     false,
                     mapOf<Int, () -> Unit>(
                         0 to {
@@ -363,6 +395,7 @@ class ShoppingListItem(
 //                 },
 //             )
 
+        // TODO: implement pinning here
         for (i in 0 until subItems.size) {
             val isLastItem = i == subItems.size - 1
             var newContinuedIndent = continuedIndent ?: indent
