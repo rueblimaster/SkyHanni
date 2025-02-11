@@ -4,6 +4,7 @@ import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
+import at.hannibal2.skyhanni.config.storage.ProfileSpecificStorage
 import at.hannibal2.skyhanni.data.ProfileStorageData
 import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
@@ -36,10 +37,10 @@ import net.minecraft.item.ItemStack
 object ShoppingList {
     private val config get() = SkyHanniMod.feature.inventory.shoppingList
 
-    private val categories = mutableListOf<ShoppingListCategory>()
-    private val items = ShoppingListCategory("Items")
+    private val storage: ProfileSpecificStorage.ShoppingListStorage? get() = ProfileStorageData.profileSpecific?.shoppingList
 
-    private val storage: Pair<List<Map<String, Any?>>, Map<String, Any?>>? get() = ProfileStorageData.profileSpecific?.shoppingList
+    private val categories = storage?.categories ?: mutableListOf()
+    private val items = storage?.items ?: ShoppingListCategory("Items")
 
     object ItemsOverall {
         private val allItems: MutableMap<NeuInternalName, Pair<Double, Int>> = mutableMapOf()
@@ -196,19 +197,6 @@ object ShoppingList {
         }
     }
 
-    fun saveToStorage() {
-        ProfileStorageData.profileSpecific?.shoppingList = Pair(categories.map { it.toEasyStorable() }, items.toEasyStorable())
-    }
-
-    fun loadFromStorage() {
-        storage?.let { (categories, items) ->
-            this.categories.clear()
-            this.categories.addAll(categories.map { ShoppingListCategory.fromEasyStorable(it) })
-            this.items.clear()
-            this.items.addAll(ShoppingListCategory.fromEasyStorable(items))
-        }
-    }
-
     // all display related functions
     fun createDisplay() {
 //         println("Creating display")
@@ -239,12 +227,14 @@ object ShoppingList {
         ItemsOverall.update()
 
         createDisplay()
-
-        saveToStorage()
     }
 
     fun test() {
         ChatUtils.chat("test triggered")
+
+        println("storage: ${ProfileStorageData.profileSpecific?.shoppingList}")
+        println("categories: ${ProfileStorageData.profileSpecific?.shoppingList?.categories}")
+        println("items: ${ProfileStorageData.profileSpecific?.shoppingList?.items}")
 
         clear()
 

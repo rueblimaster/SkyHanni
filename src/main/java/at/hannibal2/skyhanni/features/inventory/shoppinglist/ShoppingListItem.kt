@@ -1,6 +1,5 @@
 package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
-import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.currentlyOpenRecipe
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
 import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventoryAndSacks
@@ -9,22 +8,29 @@ import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
-import at.hannibal2.skyhanni.utils.PrimitiveIngredient
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.renderables.Renderable
+import com.google.gson.annotations.Expose
 import net.minecraft.init.Blocks
 import net.minecraft.item.ItemStack
 
 @Suppress("TooManyFunctions")
 class ShoppingListItem(
+    @Expose
     val internalName: NeuInternalName,
+    @Expose
     var amount: Double = 1.0,
+    @Expose
     val topLevelCategory: ShoppingListCategory,
+    @Expose
     val topLevelItem: ShoppingListItem? = null,
-    var recipe: PrimitiveRecipe? = null,
+//     @Expose
+//     var recipe: PrimitiveRecipe? = null,
 ) {
+    @Expose
     var hidden = false
+    @Expose
     var pinned = false
 
     val totalAmount: Double
@@ -41,6 +47,7 @@ class ShoppingListItem(
             return subItems.isEmpty() && possibleRecipes.isNotEmpty()
         }
 
+    @Expose
     private val subItems = mutableListOf<ShoppingListItem>()
 
     init {
@@ -93,16 +100,16 @@ class ShoppingListItem(
     fun breakDownIntoSubitems() {
         println("Breaking down $internalName into subitems")
 
-        if (recipe != null) {
-            println("Recipe already found")
-        } else {
-            decideRecipe()
-        }
+//         if (recipe != null) {
+//             println("Recipe already found")
+//         } else {
+//             decideRecipe()
+//         }
 
-        if (recipe == null) {
-            println("No recipe found for $internalName")
-            return
-        }
+//         if (recipe == null) {
+//             println("No recipe found for $internalName")
+//             return
+//         }
         subItems.clear()
 
         addRecipe()
@@ -155,14 +162,14 @@ class ShoppingListItem(
 
             viewRecipe(internalName.asString())
         } else {
-            recipe = possibleRecipes[0]
+//             recipe = possibleRecipes[0]
         }
     }
 
     fun onItemClick(clickedItem: ItemStack): Boolean {
         if (currentlyDecidingRecipe && clickedItem == displayItem) {
             println("Clicked on display item for $internalName")
-            recipe = currentlyOpenRecipe
+//             recipe = currentlyOpenRecipe
             currentlyDecidingRecipe = false
             displayItem = null
             resetDisplayItem()
@@ -180,21 +187,21 @@ class ShoppingListItem(
 
     fun addRecipe() {
 //         println("adding recipe for $internalName: $recipe")
-        val usedRecipe: PrimitiveRecipe = recipe?.copy() ?: return
-
-        for (ingredient: PrimitiveIngredient in usedRecipe.ingredients) {
-            // TODO: why is .count a double, is there the possibility for half an item or what???
-//             println("add item: ${ingredient.internalName} amount: ${ingredient.count.toInt()}")
-            val item = subItems.firstOrNull { it.internalName == ingredient.internalName } as ShoppingListItem?
-
-            val ingredientAmount = ingredient.count / (usedRecipe.output?.count ?: 1.0)
-
-            if (item == null) {
-                subItems.add(ShoppingListItem(ingredient.internalName, ingredientAmount, topLevelCategory, this))
-            } else {
-                item.changeAmountBy(ingredientAmount)
-            }
-        }
+//         val usedRecipe: PrimitiveRecipe = recipe?.copy() ?: return
+//
+//         for (ingredient: PrimitiveIngredient in usedRecipe.ingredients) {
+//             // TODO: why is .count a double, is there the possibility for half an item or what???
+// //             println("add item: ${ingredient.internalName} amount: ${ingredient.count.toInt()}")
+//             val item = subItems.firstOrNull { it.internalName == ingredient.internalName } as ShoppingListItem?
+//
+//             val ingredientAmount = ingredient.count / (usedRecipe.output?.count ?: 1.0)
+//
+//             if (item == null) {
+//                 subItems.add(ShoppingListItem(ingredient.internalName, ingredientAmount, topLevelCategory, this))
+//             } else {
+//                 item.changeAmountBy(ingredientAmount)
+//             }
+//         }
     }
 
     fun changeAmountBy(amount: Double) {
