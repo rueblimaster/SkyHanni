@@ -599,6 +599,9 @@ class ProfileSpecificStorage {
         var currentSlot: Int? = null
     }
 
+    @Expose
+    var shoppingList: Pair<List<Map<String, Any?>>, Map<String, Any?>> = Pair(listOf(), mapOf())
+
     // - mining
     @Expose
     var mining: MiningConfig = MiningConfig()
