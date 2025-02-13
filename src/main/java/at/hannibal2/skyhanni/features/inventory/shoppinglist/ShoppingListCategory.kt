@@ -10,16 +10,16 @@ import com.google.gson.annotations.Expose
 import net.minecraft.item.ItemStack
 
 class ShoppingListCategory(
-    @Expose
-    val name: String,
-    @Expose
-    val color: LorenzColor = LorenzColor.GOLD,
+    @Expose val name: String,
+    @Expose val color: LorenzColor = LorenzColor.GOLD,
 //     val icon: ItemStack? = null,
 ) {
     @Expose
     val items = mutableListOf<ShoppingListItem>()
+
     @Expose
     var hidden = false
+
     @Expose
     var pinned = false
 
@@ -33,10 +33,10 @@ class ShoppingListCategory(
         - name
         - optional icon?
         - total cost
-    */
+     */
 
     override fun toString(): String {
-        return name
+        return name + " (" + items.size + " items)"
     }
 
     fun add(itemName: NeuInternalName, amount: Double = 1.0) {

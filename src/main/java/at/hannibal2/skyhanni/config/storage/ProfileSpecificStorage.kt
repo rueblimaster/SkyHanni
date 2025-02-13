@@ -605,10 +605,13 @@ class ProfileSpecificStorage {
 
     class ShoppingListStorage {
         @Expose
-        val categories: MutableList<ShoppingListCategory> = mutableListOf()
+        var categories: MutableList<ShoppingListCategory> = mutableListOf()
 
         @Expose
-        val items: ShoppingListCategory = ShoppingListCategory("Items")
+        var items: ShoppingListCategory = ShoppingListCategory("Items")
+
+        @Expose
+        var test: String = ""
     }
 
     // - mining

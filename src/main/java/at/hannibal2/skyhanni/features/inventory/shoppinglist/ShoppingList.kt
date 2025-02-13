@@ -39,8 +39,10 @@ object ShoppingList {
 
     private val storage: ProfileSpecificStorage.ShoppingListStorage? get() = ProfileStorageData.profileSpecific?.shoppingList
 
-    private val categories = storage?.categories ?: mutableListOf()
-    private val items = storage?.items ?: ShoppingListCategory("Items")
+    private val categories: MutableList<ShoppingListCategory>
+        get() = storage?.categories ?: mutableListOf()
+    private val items: ShoppingListCategory
+        get() = storage?.items ?: ShoppingListCategory("Items")
 
     object ItemsOverall {
         private val allItems: MutableMap<NeuInternalName, Pair<Double, Int>> = mutableMapOf()
@@ -197,6 +199,12 @@ object ShoppingList {
         }
     }
 
+    fun storeShoppingList() {
+        storage?.categories = categories
+        storage?.items = items
+        storage?.test = "test"
+    }
+
     // all display related functions
     fun createDisplay() {
 //         println("Creating display")
@@ -227,6 +235,8 @@ object ShoppingList {
         ItemsOverall.update()
 
         createDisplay()
+
+        storeShoppingList()
     }
 
     fun test() {
@@ -235,6 +245,8 @@ object ShoppingList {
         println("storage: ${ProfileStorageData.profileSpecific?.shoppingList}")
         println("categories: ${ProfileStorageData.profileSpecific?.shoppingList?.categories}")
         println("items: ${ProfileStorageData.profileSpecific?.shoppingList?.items}")
+        println("test: ${ProfileStorageData.profileSpecific?.shoppingList?.test}")
+        println("test: ${storage?.test}")
 
         clear()
 
@@ -242,7 +254,7 @@ object ShoppingList {
         add("enchanted carrot".toInternalName(), 49.0, "Visitors")
         add("diamond".toInternalName(), 1.0)
 
-        createDisplay()
+        update()
 
         ChatUtils.chat("test done")
     }
