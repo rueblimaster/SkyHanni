@@ -39,15 +39,15 @@ object ShoppingList {
 
     private val storage: ProfileSpecificStorage.ShoppingListStorage? get() = ProfileStorageData.profileSpecific?.shoppingList
 
-    private val categories: MutableList<ShoppingListCategory>
-        get() = storage?.categories ?: mutableListOf()
-    private val items: ShoppingListCategory
-        get() = storage?.items ?: ShoppingListCategory("Items")
+    private val categories: MutableList<ShoppingListCategory>? = storage?.categories
+    private val items: ShoppingListCategory? = storage?.items
 
     object ItemsOverall {
         private val allItems: MutableMap<NeuInternalName, Pair<Double, Int>> = mutableMapOf()
 
         fun update() {
+            if (categories == null || items == null) return
+
             allItems.clear()
             for (category in categories + items) {
                 for (item in category.items) {
@@ -84,6 +84,8 @@ object ShoppingList {
 
     // all the functions for interacting with the shopping list come here
     fun add(itemName: NeuInternalName, amount: Double = 1.0, categoryName: String? = null) {
+        if (categories == null || items == null) return
+
         // TODO: shouldn't happen @Thunderblade73
         if (!isEnabled()) return
         println("Adding ${itemName.itemName} x$amount to $categoryName")
@@ -106,6 +108,7 @@ object ShoppingList {
 
     fun removeCategory(categoryName: String) {
         if (!isEnabled()) return
+        if (categories == null || items == null) return
 
         val category = categories.firstOrNull { it.name == categoryName } ?: return
         categories.remove(category)
@@ -114,6 +117,7 @@ object ShoppingList {
 
     fun removeCategory(category: ShoppingListCategory) {
         if (!isEnabled()) return
+        if (categories == null || items == null) return
 
         categories.remove(category)
         update()
@@ -122,6 +126,7 @@ object ShoppingList {
     // maybe name it removeCommand ???
     fun remove(name: String, amount: Double? = null, categoryName: String? = null) {
         if (!isEnabled()) return
+        if (categories == null || items == null) return
         println("Removing $name x$amount from $categoryName")
 
         var itemName: NeuInternalName? = name.toInternalName()
@@ -170,6 +175,8 @@ object ShoppingList {
     }
 
     fun clear() {
+        if (categories == null || items == null) return
+
         categories.clear()
         items.clear()
 
@@ -181,7 +188,7 @@ object ShoppingList {
     // logic and related functions
     fun isEnabled() = LorenzUtils.inSkyBlock && config.enabled
 
-    fun String.isCategory() = categories.any { it.name == this }
+    fun String.isCategory(): Boolean = categories?.any { it.name == this } == true
 
     fun resetDisplayItem() {
         displayItem = null
@@ -200,13 +207,17 @@ object ShoppingList {
     }
 
     fun storeShoppingList() {
+        if (categories == null || items == null) return
+
         storage?.categories = categories
         storage?.items = items
-        storage?.test = "test"
+        ProfileStorageData.profileSpecific?.shoppingList?.test = "test"
     }
 
     // all display related functions
     fun createDisplay() {
+        if (categories == null || items == null) return
+
 //         println("Creating display")
         if (!isEnabled() || (categories.isEmpty() && items.items.isEmpty())) {
             display = emptyList()
@@ -231,6 +242,14 @@ object ShoppingList {
     // other functions etc.
     fun update() {
         if (!isEnabled()) return
+
+        if (categories == null || items == null) {
+            storage?.categories?.forEach {
+                categories?.add(it)
+            }
+            items?.items?.addAll(storage?.items?.items ?: emptyList())
+        }
+        if (categories == null || items == null) return
 
         ItemsOverall.update()
 
@@ -324,6 +343,7 @@ object ShoppingList {
         if (!isEnabled()) return
         if (event.slotId != 51) return
         if (event.item == null) return
+        if (categories == null || items == null) return
 
         println("Slot click event: ${event.item.displayName}")
         if (event.item.displayName == "§bSelect Recipe") {
@@ -384,7 +404,7 @@ object ShoppingList {
             description = "Remove a category from the shopping list"
             category = CommandCategory.USERS_ACTIVE
             aliases = listOf("shslremovecategory")
-            autoComplete { categories.map { category -> category.name } }
+//             autoComplete { categories.map { category -> category.name } }
             callback { removeCategory(it[0]) }
         }
 //         TODO: add a hide command
