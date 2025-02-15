@@ -7,6 +7,7 @@ import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.NeuInternalName
+import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
@@ -17,21 +18,28 @@ import net.minecraft.item.ItemStack
 
 @Suppress("TooManyFunctions")
 class ShoppingListItem(
-    @Expose
     val internalName: NeuInternalName,
-    @Expose
     var amount: Double = 1.0,
-    @Expose
     val topLevelCategory: ShoppingListCategory,
-    @Expose
     val topLevelItem: ShoppingListItem? = null,
-//     @Expose
-//     var recipe: PrimitiveRecipe? = null,
+    var recipe: PrimitiveRecipe? = null,
 ) {
-    @Expose
     var hidden = false
-    @Expose
     var pinned = false
+
+    constructor(
+        template: ItemTemplate,
+        topLevelCategory: ShoppingListCategory,
+    ) : this(
+        template.internalName.toInternalName(),
+        template.amount,
+        topLevelCategory,
+        null,
+        template.recipe?.toPrimitiveRecipe(),
+    ) {
+        hidden = template.hidden
+        pinned = template.pinned
+    }
 
     val totalAmount: Double
         get() = amount * (topLevelItem?.totalAmount ?: 1.0)
@@ -55,6 +63,7 @@ class ShoppingListItem(
     }
 
     /*
+    TODO: make this all configurable
     what do we want to be able to do from the display widget:
         left click is for doing stuff with it
         - (left click) break down into its subitems

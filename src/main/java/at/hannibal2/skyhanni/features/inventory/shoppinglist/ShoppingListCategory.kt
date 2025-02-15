@@ -6,24 +6,29 @@ import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.renderables.Renderable
-import com.google.gson.annotations.Expose
 import net.minecraft.item.ItemStack
 
 class ShoppingListCategory(
-    @Expose val name: String,
-    @Expose val color: LorenzColor = LorenzColor.GOLD,
+    val name: String,
+    val color: LorenzColor = LorenzColor.GOLD,
 //     val icon: ItemStack? = null,
 ) {
-    @Expose
     val items = mutableListOf<ShoppingListItem>()
 
-    @Expose
     var hidden = false
-
-    @Expose
     var pinned = false
 
+    constructor(template: CategoryTemplate) : this(template.name, LorenzColor.valueOf(template.color)) {
+        hidden = template.hidden
+        pinned = template.pinned
+
+        template.items.forEach {
+            items.add(ShoppingListItem(it, this))
+        }
+    }
+
     /*
+    TODO: make this all configurable
     what do we want to be able to do from the display widget:
         - (right click) remove it
         - (shift + right click) hide/unhide it along with tree

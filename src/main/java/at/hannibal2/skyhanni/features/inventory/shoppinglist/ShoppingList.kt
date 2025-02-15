@@ -6,6 +6,7 @@ import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
 import at.hannibal2.skyhanni.config.storage.ProfileSpecificStorage
 import at.hannibal2.skyhanni.data.ProfileStorageData
+import at.hannibal2.skyhanni.events.ConfigLoadEvent
 import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.InventoryCloseEvent
@@ -39,15 +40,16 @@ object ShoppingList {
 
     private val storage: ProfileSpecificStorage.ShoppingListStorage? get() = ProfileStorageData.profileSpecific?.shoppingList
 
-    private val categories: MutableList<ShoppingListCategory>? get() = storage?.categories
-    private val items: ShoppingListCategory? get() = storage?.items
+    private var isConfigLoaded = false
+    private val categories: MutableList<ShoppingListCategory> = mutableListOf()
+    private var items: ShoppingListCategory = ShoppingListCategory("Items")
 
     object ItemsOverall {
         private val allItems: MutableMap<NeuInternalName, Pair<Double, Int>> = mutableMapOf()
 
         fun update() {
-            val categories = categories ?: return
-            val items = items ?: return
+            if (!isConfigLoaded) return
+            val items = items
 
             allItems.clear()
             for (category in categories + items) {
@@ -85,8 +87,8 @@ object ShoppingList {
 
     // all the functions for interacting with the shopping list come here
     fun add(itemName: NeuInternalName, amount: Double = 1.0, categoryName: String? = null) {
-        val categories = categories ?: return
-        val items = items ?: return
+        if (!isConfigLoaded) return
+        val items = items
 
         // TODO: shouldn't happen @Thunderblade73
         if (!isEnabled()) return
@@ -110,8 +112,7 @@ object ShoppingList {
 
     fun removeCategory(categoryName: String) {
         if (!isEnabled()) return
-        val categories = categories ?: return
-        val items = items ?: return
+        if (!isConfigLoaded) return
 
         val category = categories.firstOrNull { it.name == categoryName } ?: return
         categories.remove(category)
@@ -120,8 +121,7 @@ object ShoppingList {
 
     fun removeCategory(category: ShoppingListCategory) {
         if (!isEnabled()) return
-        val categories = categories ?: return
-        val items = items ?: return
+        if (!isConfigLoaded) return
 
         categories.remove(category)
         update()
@@ -130,8 +130,8 @@ object ShoppingList {
     // maybe name it removeCommand ???
     fun remove(name: String, amount: Double? = null, categoryName: String? = null) {
         if (!isEnabled()) return
-        val categories = categories ?: return
-        val items = items ?: return
+        if (!isConfigLoaded) return
+        val items = items
         println("Removing $name x$amount from $categoryName")
 
         var itemName: NeuInternalName? = name.toInternalName()
@@ -180,21 +180,19 @@ object ShoppingList {
     }
 
     fun clear() {
-        val categories = categories ?: return
-        val items = items ?: return
+        if (!isConfigLoaded) return
+        val items = items
 
         categories.clear()
         items.clear()
 
         update()
-
-        createDisplay()
     }
 
     // logic and related functions
     fun isEnabled() = LorenzUtils.inSkyBlock && config.enabled
 
-    fun String.isCategory(): Boolean = categories?.any { it.name == this } == true
+    fun String.isCategory(): Boolean = categories.any { it.name == this }
 
     fun resetDisplayItem() {
         displayItem = null
@@ -212,19 +210,42 @@ object ShoppingList {
         }
     }
 
-//     fun storeShoppingList() {
-//         val categories = categories ?: return
-//         val items = items ?: return
-//
-//         storage?.categories = categories
-//         storage?.items = items
-//         ProfileStorageData.profileSpecific?.shoppingList?.test = "test"
-//     }
+    fun loadShoppingList(forceOverwriteCurrent: Boolean = false) {
+        if (!forceOverwriteCurrent && (!isConfigLoaded)) return
+        if (storage == null) return // technically not needed I guess
+
+        val storedCategories = storage?.categories ?: return
+        val storedItems = storage?.items ?: return
+
+        categories.clear()
+        for (category in storedCategories) {
+            categories.add(ShoppingListCategory(category))
+        }
+
+        items = ShoppingListCategory(storedItems)
+
+        isConfigLoaded = true
+    }
+
+    fun saveShoppingList() {
+        if (!isConfigLoaded) return
+        val items = items
+
+        val tempCategories = mutableListOf<CategoryTemplate>()
+        for (category in categories) {
+            tempCategories.add(CategoryTemplate(category))
+        }
+
+        ProfileStorageData.profileSpecific?.shoppingList?.categories = tempCategories
+        ProfileStorageData.profileSpecific?.shoppingList?.items = CategoryTemplate(items)
+
+        ProfileStorageData.profileSpecific?.shoppingList?.test = "test"
+    }
 
     // all display related functions
     fun createDisplay() {
-        val categories = categories ?: return
-        val items = items ?: return
+        if (!isConfigLoaded) return
+        val items = items
 
 //         println("Creating display")
         if (!isEnabled() || (categories.isEmpty() && items.items.isEmpty())) {
@@ -234,6 +255,7 @@ object ShoppingList {
         display = buildList {
             addString("§l" + "Shopping List")
             categories.forEach {
+                // TODO: replace pinning with moving to the top
                 if (it.pinned) {
                     addAll(it.getRenderables(1))
                 }
@@ -250,23 +272,13 @@ object ShoppingList {
     // other functions etc.
     fun update() {
         if (!isEnabled()) return
-
-//         if (categories == null || items == null) {
-//             storage?.categories?.forEach {
-//                 categories?.add(it)
-//             }
-//             items?.items?.addAll(storage?.items?.items ?: emptyList())
-//         }
-//         if (categories == null || items == null) return
-
-        val categories = categories ?: return
-        val items = items ?: return
+        if (!isConfigLoaded) return
 
         ItemsOverall.update()
 
         createDisplay()
 
-//         storeShoppingList()
+        saveShoppingList()
     }
 
     fun test() {
@@ -275,8 +287,13 @@ object ShoppingList {
         println("storage: ${ProfileStorageData.profileSpecific?.shoppingList}")
         println("categories: ${ProfileStorageData.profileSpecific?.shoppingList?.categories}")
         println("items: ${ProfileStorageData.profileSpecific?.shoppingList?.items}")
-        println("test: ${ProfileStorageData.profileSpecific?.shoppingList?.test}")
-        println("test: ${storage?.test}")
+//         println("test: ${ProfileStorageData.profileSpecific?.shoppingList?.test}")
+//         println("test: ${storage?.test}")
+//         storage?.test = "test"
+//         println("test: ${ProfileStorageData.profileSpecific?.shoppingList?.test}")
+        println("is config loaded: $isConfigLoaded")
+        println("categories: $categories")
+        println("items: $items")
 
         clear()
 
@@ -355,8 +372,8 @@ object ShoppingList {
         if (event.slotId != 51) return
         if (event.item == null) return
 
-        val categories = categories ?: return
-        val items = items ?: return
+        if (!isConfigLoaded) return
+        val items = items
 
         println("Slot click event: ${event.item.displayName}")
         if (event.item.displayName == "§bSelect Recipe") {
@@ -368,6 +385,12 @@ object ShoppingList {
                 }
             }
         }
+    }
+
+    @HandleEvent
+    fun onConfigLoad(event: ConfigLoadEvent) {
+        loadShoppingList()
+        update()
     }
 
     @HandleEvent(onlyOnSkyblock = true)

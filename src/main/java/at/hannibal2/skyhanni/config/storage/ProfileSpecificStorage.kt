@@ -35,7 +35,7 @@ import at.hannibal2.skyhanni.features.garden.pests.VinylType
 import at.hannibal2.skyhanni.features.garden.visitor.VisitorReward
 import at.hannibal2.skyhanni.features.inventory.chocolatefactory.ChocolateFactoryStrayTracker
 import at.hannibal2.skyhanni.features.inventory.experimentationtable.ExperimentsProfitTracker
-import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingListCategory
+import at.hannibal2.skyhanni.features.inventory.shoppinglist.CategoryTemplate
 import at.hannibal2.skyhanni.features.inventory.wardrobe.WardrobeApi.WardrobeData
 import at.hannibal2.skyhanni.features.mining.MineshaftPityDisplay.PityData
 import at.hannibal2.skyhanni.features.mining.crystalhollows.CrystalNucleusTracker
@@ -605,10 +605,10 @@ class ProfileSpecificStorage {
 
     class ShoppingListStorage {
         @Expose
-        var categories: MutableList<ShoppingListCategory> = mutableListOf()
+        var categories: MutableList<CategoryTemplate> = mutableListOf()
 
         @Expose
-        var items: ShoppingListCategory = ShoppingListCategory("Items")
+        var items: CategoryTemplate = CategoryTemplate("Items")
 
         @Expose
         var test: String = ""
