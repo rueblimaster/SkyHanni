@@ -70,7 +70,6 @@ class ShoppingListItem(
         get() = totalAmount - getCurrentAmount()
 
     var possibleRecipes: List<PrimitiveRecipe> = emptyList()
-    var currentlyDecidingRecipe = false // TODO: remove this as displayItem already tells if we are currently deciding a recipe
     var displayItem: ItemStack? = null
     val downBreakable: Boolean
         get() {
@@ -181,8 +180,6 @@ class ShoppingListItem(
 
             println(possibleRecipes[0].ingredients)
 
-            currentlyDecidingRecipe = true
-
             val lore = buildList {
                 add("§8(From SkyHanni)")
                 add("")
@@ -200,10 +197,9 @@ class ShoppingListItem(
     }
 
     fun onItemClick(clickedItem: ItemStack): Boolean {
-        if (currentlyDecidingRecipe && clickedItem == displayItem) {
+        if (displayItem != null && clickedItem == displayItem) {
             println("Clicked on display item for $internalName")
             recipe = currentlyOpenRecipe
-            currentlyDecidingRecipe = false
             displayItem = null
             resetDisplayItem()
             breakDownIntoSubitems()
