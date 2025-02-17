@@ -34,6 +34,10 @@ object HypixelCommands {
         send("recipe $itemName")
     }
 
+    fun craft() {
+        send("craft")
+    }
+
     fun npcOption(npc: String, answer: String) {
         send("selectnpcoption $npc $answer")
     }

@@ -1,5 +1,7 @@
 package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
+import at.hannibal2.skyhanni.api.GetFromSackApi
+import at.hannibal2.skyhanni.api.ItemBuyApi.buy
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.currentlyOpenRecipe
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
 import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
@@ -7,13 +9,16 @@ import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventoryAndSacks
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.KeyboardManager
+import at.hannibal2.skyhanni.utils.LorenzUtils
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
+import at.hannibal2.skyhanni.utils.NeuItems.isVanillaItem
 import at.hannibal2.skyhanni.utils.PrimitiveIngredient
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.renderables.Renderable
-import com.google.gson.annotations.Expose
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.inventory.GuiEditSign
 import net.minecraft.init.Blocks
 import net.minecraft.item.ItemStack
 
@@ -64,7 +69,7 @@ class ShoppingListItem(
     // TODO: add a way to offset the amount of an item counted in the inventory etc.
 
     val totalAmount: Double
-        get() = amount * (topLevelItem?.totalAmount ?: 1.0)
+        get() = amount * (topLevelItem?.remainingAmount ?: 1.0)
 
     val remainingAmount: Double
         get() = totalAmount - getCurrentAmount()
@@ -76,20 +81,27 @@ class ShoppingListItem(
             return subItems.isEmpty() && possibleRecipes.isNotEmpty()
         }
 
-    @Expose
     val subItems = mutableListOf<ShoppingListItem>()
 
     init {
         loadPossibleRecipes()
     }
 
+    val clickLayout: MutableMap<String, () -> Unit> = mutableMapOf(
+        "right" to { onNormalRightClick() },
+        "shift + right" to { toggleHide() },
+        "ctrl + shift + right" to { toggleHide(true) },
+        "ctrl + right" to { moveThisToTop() },
+        "middle" to { copyToClipboard() },
+    )
+
     /*
     TODO: make this all configurable
     what do we want to be able to do from the display widget:
         left click is for doing stuff with it
-        - (left click) break down into its subitems
-        - (shift + left click) get from ah/bz  (switch ah/bz and break down as a setting) also only (click) if no recipe
+        - (left click) get from ah/bz  (switch ah/bz and break down as a setting) also only (click) if no recipe
         - open recipe to craft it
+        - (shift + left click) break down into its subitems
         right click is for doing stuff with the item itself
         - (right click) change the amount (but if nothing is entered remove if I can discriminate between cancel and remove)
         - remove completely (if it isn't a subitem of another item)
@@ -114,7 +126,7 @@ class ShoppingListItem(
 
         - icon (if plausible)
 
-     what may we want to see of the subitems additionally:
+     what may we want to see of subitems additionally:
         - the amount per craft (on hover)
         - the price for the amount per craft (on hover)
      */
@@ -273,6 +285,33 @@ class ShoppingListItem(
         }
     }
 
+    fun buyItem() {
+        println("Buying item: $internalName")
+        if (Minecraft.getMinecraft().currentScreen is GuiEditSign) {
+            LorenzUtils.setTextIntoSign("$remainingAmount")
+        } else {
+            internalName.buy(remainingAmount.toInt())
+        }
+    }
+
+    fun openCraftingRecipe() {
+        println("Opening crafting recipe: $internalName")
+        if (Minecraft.getMinecraft().currentScreen is GuiEditSign) {
+            LorenzUtils.setTextIntoSign("$remainingAmount")
+        } else {
+            if (!internalName.isVanillaItem()) {
+                return
+            }
+
+            viewRecipe(internalName.asString())
+        }
+    }
+
+    fun fetchItemFromAvailableStorage() {
+        println("Fetching item from available storage: $internalName ${remainingAmount.toInt()}")
+        GetFromSackApi.getFromSack(internalName, remainingAmount.toInt())
+    }
+
     fun moveItemToTop(item: ShoppingListItem) {
         subItems.remove(item)
         subItems.add(0, item)
@@ -304,40 +343,14 @@ class ShoppingListItem(
         }
     }
 
+    // TODO: implement
     fun copyToClipboard() {
         println("copying $internalName to clipboard")
     }
 
-    fun onNormalLeftClick() {
-        println("left click")
-        breakDownIntoSubitems()
-    }
-
-    fun onShiftLeftClick() {
-        println("shift left click")
-    }
-
-    fun onCtrlLeftClick() {
-        println("ctrl left click")
-    }
-
+    // TODO: implement
     fun onNormalRightClick() {
         println("right click")
-    }
-
-    fun onShiftRightClick() {
-        println("shift right click")
-        toggleHide()
-    }
-
-    fun onCtrlRightClick() {
-        println("ctrl right click")
-        moveThisToTop()
-    }
-
-    fun onCtrlShiftRightClick() {
-        println("ctrl shift right click")
-        toggleHide(true)
     }
 
     fun Double.displayAmount(): String {
@@ -374,15 +387,35 @@ class ShoppingListItem(
 
             if (hasItems()) {
                 string += " §a✓"
+                clickLayout["left"] = { fetchItemFromAvailableStorage() }
+                tooltip.add("§7left click to fetch from storage")
+                clickLayout["shift + left"] = { breakDownIntoSubitems() }
+                tooltip.add("§7shift + left click to break down recipe")
             } else if (hasAllSubItems()) {
                 string += " §e✓"
+                clickLayout["left"] = { openCraftingRecipe() }
+                tooltip.add("§7left click to open crafting recipe")
+                clickLayout["shift + left"] = { breakDownIntoSubitems() }
+                tooltip.add("§7shift + left click to break down recipe")
+            } else {
+                if (downBreakable) {
+                    clickLayout["left"] = { breakDownIntoSubitems() }
+                    tooltip.add("§7left click to break down recipe")
+                    clickLayout["shift + left"] = { buyItem() }
+                    tooltip.add("§7shift + left click to buy")
+                } else {
+                    clickLayout["left"] = { buyItem() }
+                    tooltip.add("§7left click to buy")
+                    clickLayout["shift + left"] = { breakDownIntoSubitems() }
+                    tooltip.add("§7shift + left click to break down recipe")
+                }
             }
 
             if (hidden) {
                 string = "§8${string.removeColor()}"
             }
 
-            tooltip.add("§7left click to break down recipe")
+            // TODO: make the left click tooltips be generated from the clickLayout
             tooltip.add("§7right click to change amount")
             tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide")
             tooltip.add("§7ctrl + right click to move to top")
@@ -393,27 +426,32 @@ class ShoppingListItem(
                     string, tooltip,
                     false,
                     mapOf<Int, () -> Unit>(
-                        0 to {
-                            if (KeyboardManager.isModifierKeyDown()) {
-                                onCtrlLeftClick()
-                            } else if (KeyboardManager.isShiftKeyDown()) {
-                                onShiftLeftClick()
-                            } else {
-                                onNormalLeftClick()
-                            }
-                        },
-                        1 to {
+                        0 to { // left click
                             if (KeyboardManager.isModifierKeyDown() && KeyboardManager.isShiftKeyDown()) {
-                                onCtrlShiftRightClick()
+                                clickLayout["ctrl + shift + left"]?.invoke() ?: clickLayout["ctrl + left"]?.invoke()
+                                ?: clickLayout["shift + left"]?.invoke() ?: clickLayout["left"]?.invoke()
                             } else if (KeyboardManager.isModifierKeyDown()) {
-                                onCtrlRightClick()
+                                clickLayout["ctrl + left"]?.invoke() ?: clickLayout["left"]?.invoke()
                             } else if (KeyboardManager.isShiftKeyDown()) {
-                                onShiftRightClick()
+                                clickLayout["shift + left"]?.invoke() ?: clickLayout["left"]?.invoke()
                             } else {
-                                onNormalRightClick()
+                                clickLayout["left"]?.invoke()
                             }
                         },
-                        2 to { copyToClipboard() },
+                        1 to { // right click
+                            if (KeyboardManager.isModifierKeyDown() && KeyboardManager.isShiftKeyDown()) {
+                                clickLayout["ctrl + shift + right"]?.invoke()
+                            } else if (KeyboardManager.isModifierKeyDown()) {
+                                clickLayout["ctrl + right"]?.invoke()
+                            } else if (KeyboardManager.isShiftKeyDown()) {
+                                clickLayout["shift + right"]?.invoke()
+                            } else {
+                                clickLayout["right"]?.invoke()
+                            }
+                        },
+                        2 to { // middle click
+                            copyToClipboard()
+                        },
                     ),
                 ),
             )
