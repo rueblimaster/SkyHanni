@@ -9,8 +9,6 @@ class CategoryTemplate {
     val color: Char
     @Expose
     val hidden: Boolean
-    @Expose
-    val pinned: Boolean
 
     @Expose
     val items: List<ItemTemplate>
@@ -19,7 +17,6 @@ class CategoryTemplate {
         this.name = sourceCategory.name
         this.color = sourceCategory.color.chatColorCode
         this.hidden = sourceCategory.hidden
-        this.pinned = sourceCategory.pinned
 
         this.items = sourceCategory.items.map { ItemTemplate(it) }
     }
@@ -28,7 +25,6 @@ class CategoryTemplate {
         this.name = name
         this.color = '6'
         this.hidden = false
-        this.pinned = false
         this.items = emptyList()
     }
 

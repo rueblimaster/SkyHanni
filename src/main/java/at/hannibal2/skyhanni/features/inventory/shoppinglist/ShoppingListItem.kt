@@ -26,20 +26,39 @@ class ShoppingListItem(
     var recipe: PrimitiveRecipe? = null,
 ) {
     var hidden = false
-    var pinned = false
 
     constructor(
         template: ItemTemplate,
         topLevelCategory: ShoppingListCategory,
+        topLevelItem: ShoppingListItem? = null,
     ) : this(
         NeuInternalName.fromItemNameOrInternalName(template.internalName),
         template.amount,
         topLevelCategory,
-        null,
+        topLevelItem,
         template.recipe?.toPrimitiveRecipe(),
     ) {
+        println("Creating item from template: $internalName")
         hidden = template.hidden
-        pinned = template.pinned
+
+        println("Subitems: ${template.subItems}")
+        template.subItems.forEach {
+            subItems.add(ShoppingListItem(it, topLevelCategory, this))
+        }
+
+        println("Subitems: $subItems, getting amounts")
+        val ingredients: MutableMap<NeuInternalName, Double> = mutableMapOf()
+        recipe?.ingredients?.forEach {
+            ingredients[it.internalName] = it.count / (recipe?.output?.count ?: 1.0)
+        }
+
+        println("Setting amounts")
+        subItems.forEach {
+            if (it.internalName in ingredients && ingredients[it.internalName] != null) {
+                it.amount = ingredients[it.internalName]!!
+            }
+        }
+        println("Done")
     }
 
     // TODO: add a way to offset the amount of an item counted in the inventory etc.
@@ -59,7 +78,7 @@ class ShoppingListItem(
         }
 
     @Expose
-    private val subItems = mutableListOf<ShoppingListItem>()
+    val subItems = mutableListOf<ShoppingListItem>()
 
     init {
         loadPossibleRecipes()
@@ -144,6 +163,8 @@ class ShoppingListItem(
     }
 
     fun loadPossibleRecipes() {
+        if (recipe != null) return
+
         possibleRecipes = NeuItems.getRecipes(internalName).filter { it.isCraftingRecipe() }.filter { recipe ->
             !recipe.isRecursing() && !recipe.isRecursingCompacting()
         }
@@ -185,7 +206,6 @@ class ShoppingListItem(
             currentlyDecidingRecipe = false
             displayItem = null
             resetDisplayItem()
-            // TODO: close the inventory
             breakDownIntoSubitems()
             return true
         }
@@ -257,9 +277,15 @@ class ShoppingListItem(
         }
     }
 
-    fun togglePin() {
-        pinned = !pinned
+    fun moveItemToTop(item: ShoppingListItem) {
+        subItems.remove(item)
+        subItems.add(0, item)
         ShoppingList.update()
+    }
+
+    fun moveThisToTop() {
+        println("moving $internalName to top")
+        topLevelItem?.moveItemToTop(this) ?: topLevelCategory.moveItemToTop(this)
     }
 
     fun unhideCategory() {
@@ -310,7 +336,7 @@ class ShoppingListItem(
 
     fun onCtrlRightClick() {
         println("ctrl right click")
-        togglePin()
+        moveThisToTop()
     }
 
     fun onCtrlShiftRightClick() {
@@ -338,11 +364,6 @@ class ShoppingListItem(
             var string = "§8$indent"
             val tooltip = mutableListOf<String>()
 
-            if (pinned) {
-                string += "§e*"
-                tooltip.add("§ePinned")
-            }
-
             if (topLevelItem != null) {
                 string += "§7${amount.displayAmount()}x "
             }
@@ -368,7 +389,7 @@ class ShoppingListItem(
             tooltip.add("§7left click to break down recipe")
             tooltip.add("§7right click to change amount")
             tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide")
-            tooltip.add("§7ctrl + right click to ${if (pinned) "un" else ""}pin")
+            tooltip.add("§7ctrl + right click to move to top")
             tooltip.add("§7middle click to copy to clipboard")
 
             renderables.add(

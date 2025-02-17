@@ -251,6 +251,16 @@ object ShoppingList {
         ProfileStorageData.profileSpecific?.shoppingList?.test = "test"
     }
 
+    fun moveCategoryToTop(category: ShoppingListCategory) {
+        if (!isEnabled()) return
+        if (!isConfigLoaded) return
+
+        categories.remove(category)
+        categories.add(0, category)
+
+        update()
+    }
+
     // all display related functions
     fun createDisplay() {
         if (!isConfigLoaded) return
@@ -264,15 +274,7 @@ object ShoppingList {
         display = buildList {
             addString("§l" + "Shopping List")
             categories.forEach {
-                // TODO: replace pinning with moving to the top
-                if (it.pinned) {
-                    addAll(it.getRenderables(1))
-                }
-            }
-            categories.forEach {
-                if (!it.pinned) {
-                    addAll(it.getRenderables(1))
-                }
+                addAll(it.getRenderables(1))
             }
             addAll(items.getRenderables(0, showThis = false))
         }

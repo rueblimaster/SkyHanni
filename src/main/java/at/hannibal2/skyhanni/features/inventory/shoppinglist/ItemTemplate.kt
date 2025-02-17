@@ -9,18 +9,20 @@ class ItemTemplate {
     val amount: Double
     @Expose
     val hidden: Boolean
-    @Expose
-    val pinned: Boolean
 
     @Expose
     val recipe: RecipeTemplate?
+
+    @Expose
+    val subItems: List<ItemTemplate>
 
     constructor(sourceItem: ShoppingListItem) {
         this.internalName = sourceItem.internalName.asString()
         this.amount = sourceItem.amount
         this.hidden = sourceItem.hidden
-        this.pinned = sourceItem.pinned
 
         this.recipe = sourceItem.recipe?.let { RecipeTemplate(it) }
+
+        this.subItems = sourceItem.subItems.map { ItemTemplate(it) }
     }
 }

@@ -17,11 +17,9 @@ class ShoppingListCategory(
     val items = mutableListOf<ShoppingListItem>()
 
     var hidden = false
-    var pinned = false
 
     constructor(template: CategoryTemplate) : this(template.name, template.color.toLorenzColor()!!) {
         hidden = template.hidden
-        pinned = template.pinned
 
         template.items.forEach {
             items.add(ShoppingListItem(it, this))
@@ -99,17 +97,22 @@ class ShoppingListCategory(
         return false
     }
 
-    fun togglePin() {
-        pinned = !pinned
-        ShoppingList.update()
-    }
-
     fun toggleHide() {
         hidden = !hidden
         items.forEach {
             it.toggleHide(true, hidden)
         }
         ShoppingList.update()
+    }
+
+    fun moveItemToTop(item: ShoppingListItem) {
+        items.remove(item)
+        items.add(0, item)
+        ShoppingList.update()
+    }
+
+    fun moveThisToTop() {
+        ShoppingList.moveCategoryToTop(this)
     }
 
     fun onNormalRightClick() {
@@ -124,7 +127,7 @@ class ShoppingListCategory(
 
     fun onCtrlRightClick() {
         println("category: ctrl right click")
-        togglePin()
+        moveThisToTop()
     }
 
     fun getRenderables(indent: Int, showThis: Boolean = true): List<Renderable> {
@@ -135,17 +138,12 @@ class ShoppingListCategory(
                 var string = ""
                 val tooltip = mutableListOf<String>()
 
-                if (pinned) {
-                    string += "§e*"
-                    tooltip.add("§ePinned")
-                }
-
                 string += if (!hidden) color.getChatColor() else "§8"
                 string += "§n$name"
 
                 tooltip.add("§7Right click to remove")
                 tooltip.add("§7Shift + right click to ${if (hidden) "un" else ""}hide")
-                tooltip.add("§7Ctrl + right click to ${if (pinned) "un" else ""}pin")
+                tooltip.add("§7Ctrl + right click to move to top")
 
                 renderables.add(
                     Renderable.multiClickAndHover(
@@ -169,14 +167,7 @@ class ShoppingListCategory(
             }
 
             items.forEach { item ->
-                if (item.pinned) {
-                    renderables.addAll(item.getRenderables("  ".repeat(indent)))
-                }
-            }
-            items.forEach { item ->
-                if (!item.pinned) {
-                    renderables.addAll(item.getRenderables("  ".repeat(indent)))
-                }
+                renderables.addAll(item.getRenderables("  ".repeat(indent)))
             }
         }
         return renderables
