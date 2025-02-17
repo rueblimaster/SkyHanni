@@ -6,7 +6,7 @@ class CategoryTemplate {
     @Expose
     val name: String
     @Expose
-    val color: String
+    val color: Char
     @Expose
     val hidden: Boolean
     @Expose
@@ -17,7 +17,7 @@ class CategoryTemplate {
 
     constructor(sourceCategory: ShoppingListCategory) {
         this.name = sourceCategory.name
-        this.color = sourceCategory.color.toString()
+        this.color = sourceCategory.color.chatColorCode
         this.hidden = sourceCategory.hidden
         this.pinned = sourceCategory.pinned
 
@@ -26,9 +26,13 @@ class CategoryTemplate {
 
     constructor(name: String) {
         this.name = name
-        this.color = "GOLD"
+        this.color = '6'
         this.hidden = false
         this.pinned = false
         this.items = emptyList()
+    }
+
+    override fun toString(): String {
+        return "$name (${items.size} items)"
     }
 }

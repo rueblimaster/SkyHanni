@@ -211,7 +211,9 @@ object ShoppingList {
     }
 
     fun loadShoppingList(forceOverwriteCurrent: Boolean = false) {
-        if (!forceOverwriteCurrent && (!isConfigLoaded)) return
+//         println("loading shopping list $storage $forceOverwriteCurrent $isConfigLoaded ${(!forceOverwriteCurrent) && isConfigLoaded}")
+        if (isConfigLoaded && !forceOverwriteCurrent) return
+//         println("loading shopping list $storage")
         if (storage == null) return // technically not needed I guess
 
         val storedCategories = storage?.categories ?: return
@@ -224,10 +226,15 @@ object ShoppingList {
 
         items = ShoppingListCategory(storedItems)
 
+//         println("Loaded shopping list")
+//         println("Categories: $categories")
+//         println("Items: $items")
+
         isConfigLoaded = true
     }
 
     fun saveShoppingList() {
+//         println("saving shopping list $storage $isConfigLoaded")
         if (!isConfigLoaded) return
         val items = items
 
@@ -238,6 +245,8 @@ object ShoppingList {
 
         ProfileStorageData.profileSpecific?.shoppingList?.categories = tempCategories
         ProfileStorageData.profileSpecific?.shoppingList?.items = CategoryTemplate(items)
+
+//         println("Saved shopping list $tempCategories $items")
 
         ProfileStorageData.profileSpecific?.shoppingList?.test = "test"
     }

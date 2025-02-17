@@ -7,7 +7,6 @@ import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.NeuInternalName
-import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
@@ -31,7 +30,7 @@ class ShoppingListItem(
         template: ItemTemplate,
         topLevelCategory: ShoppingListCategory,
     ) : this(
-        template.internalName.toInternalName(),
+        NeuInternalName.fromItemNameOrInternalName(template.internalName),
         template.amount,
         topLevelCategory,
         null,
@@ -40,6 +39,8 @@ class ShoppingListItem(
         hidden = template.hidden
         pinned = template.pinned
     }
+
+    // TODO: add a way to offset the amount of an item counted in the inventory etc.
 
     val totalAmount: Double
         get() = amount * (topLevelItem?.totalAmount ?: 1.0)

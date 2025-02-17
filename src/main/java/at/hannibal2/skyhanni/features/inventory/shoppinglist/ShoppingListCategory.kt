@@ -4,6 +4,7 @@ import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.LorenzColor
+import at.hannibal2.skyhanni.utils.LorenzColor.Companion.toLorenzColor
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import net.minecraft.item.ItemStack
@@ -18,7 +19,7 @@ class ShoppingListCategory(
     var hidden = false
     var pinned = false
 
-    constructor(template: CategoryTemplate) : this(template.name, LorenzColor.valueOf(template.color)) {
+    constructor(template: CategoryTemplate) : this(template.name, template.color.toLorenzColor()!!) {
         hidden = template.hidden
         pinned = template.pinned
 

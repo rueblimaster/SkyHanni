@@ -16,7 +16,7 @@ class ItemTemplate {
     val recipe: RecipeTemplate?
 
     constructor(sourceItem: ShoppingListItem) {
-        this.internalName = sourceItem.internalName.toString()
+        this.internalName = sourceItem.internalName.asString()
         this.amount = sourceItem.amount
         this.hidden = sourceItem.hidden
         this.pinned = sourceItem.pinned
