@@ -96,7 +96,7 @@ class ShoppingListItem(
         - remove completely (if it isn't a subitem of another item)
         - (shift + right click) hide/unhide
         - (ctrl + shift + right click) hide/unhide all whole tree
-        - (ctrl + right click) pin/unpin
+        - (ctrl + right click) move to top
 
         - (middle click) copy to clipboard
 

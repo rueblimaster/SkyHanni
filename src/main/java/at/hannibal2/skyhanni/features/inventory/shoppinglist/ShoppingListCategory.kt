@@ -31,7 +31,7 @@ class ShoppingListCategory(
     what do we want to be able to do from the display widget:
         - (right click) remove it
         - (shift + right click) hide/unhide it along with tree
-        - (ctrl + right click) pin/unpin it
+        - (ctrl + right click) move to top
 
     what may we want to see:
         - name
