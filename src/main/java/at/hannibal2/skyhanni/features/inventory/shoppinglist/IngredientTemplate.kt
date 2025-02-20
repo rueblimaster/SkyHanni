@@ -15,5 +15,10 @@ class IngredientTemplate {
         this.amount = sourceIngredient.count
     }
 
+//     constructor(internalName: String, amount: Double) {
+//         this.internalName = internalName
+//         this.amount = amount
+//     }
+
     fun toPrimitiveIngredient() = PrimitiveIngredient(internalName.toInternalName(), amount)
 }
