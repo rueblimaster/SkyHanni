@@ -34,6 +34,7 @@ object HypixelCommands {
         send("recipe $itemName")
     }
 
+    // opens the crafting table
     fun craft() {
         send("craft")
     }

@@ -5,6 +5,7 @@ import at.hannibal2.skyhanni.api.ItemBuyApi.buy
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.currentlyOpenRecipe
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
 import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
+import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventory
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventoryAndSacks
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
@@ -72,7 +73,7 @@ class ShoppingListItem(
         get() = amount * (topLevelItem?.remainingAmount ?: 1.0)
 
     val remainingAmount: Double
-        get() = totalAmount - getCurrentAmount()
+        get() = if (getCurrentAmount() > totalAmount) 0.0 else totalAmount - getCurrentAmount()
 
     var possibleRecipes: List<PrimitiveRecipe> = emptyList()
     var displayItem: ItemStack? = null
@@ -103,6 +104,7 @@ class ShoppingListItem(
         - open recipe to craft it
         - (shift + left click) break down into its subitems
         right click is for doing stuff with the item itself
+        TODO: implement change amount
         - (right click) change the amount (but if nothing is entered remove if I can discriminate between cancel and remove)
         - remove completely (if it isn't a subitem of another item)
         - (shift + right click) hide/unhide
@@ -257,6 +259,10 @@ class ShoppingListItem(
         return internalName.getAmountInInventoryAndSacks()
     }
 
+    fun getMissingAmountInInventory(): Double {
+        return totalAmount - internalName.getAmountInInventory()
+    }
+
     fun hasItems(): Boolean {
         return totalAmount <= getCurrentAmount()
     }
@@ -285,31 +291,59 @@ class ShoppingListItem(
         }
     }
 
-    fun buyItem() {
-        println("Buying item: $internalName")
+    fun checkIfInSignAndInsertAmount(): Boolean {
+        println("checking for in sign")
         if (Minecraft.getMinecraft().currentScreen is GuiEditSign) {
-            LorenzUtils.setTextIntoSign("$remainingAmount")
+            LorenzUtils.setTextIntoSign("${remainingAmount.toInt()}")
+            return true
         } else {
-            internalName.buy(remainingAmount.toInt())
+            return false
         }
+    }
+
+    fun buyItem() {
+        println(
+            "Buying item: $internalName ${totalAmount.toInt()}, " + "getting ${remainingAmount.toInt()}",
+        )
+        if (checkIfInSignAndInsertAmount()) return
+        if (remainingAmount <= 0) return
+
+        internalName.buy(remainingAmount.toInt())
     }
 
     fun openCraftingRecipe() {
         println("Opening crafting recipe: $internalName")
-        if (Minecraft.getMinecraft().currentScreen is GuiEditSign) {
-            LorenzUtils.setTextIntoSign("$remainingAmount")
-        } else {
-            if (!internalName.isVanillaItem()) {
-                return
+        if (checkIfInSignAndInsertAmount()) return
+        // if (remainingAmount <= 0) return // this shouldn't happen anyways
+
+        if (internalName.isVanillaItem()) {
+            println("Vanilla item, can't open recipe, getting all required items instead")
+            subItems.forEach {
+                it.fetchItemFromAvailableStorage()
             }
 
+        } else {
             viewRecipe(internalName.asString())
+            // TODO: hide the display item while doing this
         }
     }
 
     fun fetchItemFromAvailableStorage() {
-        println("Fetching item from available storage: $internalName ${remainingAmount.toInt()}")
-        GetFromSackApi.getFromSack(internalName, remainingAmount.toInt())
+        println(
+            "Fetching item from available storage: $internalName ${totalAmount.toInt()}, " + "getting ${getMissingAmountInInventory().toInt()}",
+        )
+        if (checkIfInSignAndInsertAmount()) return
+        println("is valid amount")
+        if (getMissingAmountInInventory() <= 0) return
+        println("Getting from storage")
+
+        GetFromSackApi.getFromSack(internalName, getMissingAmountInInventory().toInt())
+    }
+
+    fun removeItem() {
+        println("Removing item: $internalName")
+        if (topLevelItem != null) return
+        topLevelCategory.remove(internalName)
     }
 
     fun moveItemToTop(item: ShoppingListItem) {
@@ -385,6 +419,7 @@ class ShoppingListItem(
                 }
             }
 
+            // left click
             if (hasItems()) {
                 string += " §a✓"
                 clickLayout["left"] = { fetchItemFromAvailableStorage() }
@@ -411,14 +446,30 @@ class ShoppingListItem(
                 }
             }
 
+            // right click
+            if (topLevelItem == null) {
+                clickLayout["right"] = { removeItem() }
+                tooltip.add("§7right click to remove")
+                clickLayout["shift + right"] = { toggleHide() }
+                tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide")
+                clickLayout["ctrl + shift + right"] = { toggleHide(true) }
+                tooltip.add("§7ctrl + shift + right click to ${if (hidden) "un" else ""}hide tree")
+            } else {
+                clickLayout["right"] = { toggleHide() }
+                tooltip.add("§7right click to ${if (hidden) "un" else ""}hide")
+                clickLayout["shift + right"] = { toggleHide(true) }
+                tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide tree")
+                clickLayout["ctrl + shift + right"] = { toggleHide(true) }
+            }
+
             if (hidden) {
                 string = "§8${string.removeColor()}"
             }
 
             // TODO: make the left click tooltips be generated from the clickLayout
-            tooltip.add("§7right click to change amount")
-            tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide")
+            clickLayout["ctrl + right"] = { moveThisToTop() }
             tooltip.add("§7ctrl + right click to move to top")
+            clickLayout["middle"] = { copyToClipboard() }
             tooltip.add("§7middle click to copy to clipboard")
 
             renderables.add(

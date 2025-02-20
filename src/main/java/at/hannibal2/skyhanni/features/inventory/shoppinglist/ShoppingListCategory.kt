@@ -6,6 +6,7 @@ import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.LorenzColor.Companion.toLorenzColor
 import at.hannibal2.skyhanni.utils.NeuInternalName
+import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import net.minecraft.item.ItemStack
 
@@ -45,18 +46,30 @@ class ShoppingListCategory(
         return name + " (" + items.size + " items)"
     }
 
-    fun add(itemName: NeuInternalName, amount: Double = 1.0) {
+    fun add(itemName: NeuInternalName, amount: Double = 1.0, recipe: PrimitiveRecipe? = null) {
         if (!itemName.isKnownItem()) {
             ChatUtils.userError("Item ${itemName.itemName} not found")
             return
         }
 
-        val item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
+        var item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
 
         if (item == null) {
-            items.add(ShoppingListItem(itemName, amount, this))
+            items.add(ShoppingListItem(itemName, amount, this, recipe = recipe))
+            var item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
+            if (recipe != null && item != null) {
+                item.breakDownIntoSubitems()
+            }
+
         } else {
             item.changeAmountBy(amount)
+            if (item.amount <= 0.0) {
+                items.remove(item)
+                item = null
+            } else if (recipe != null) {
+                item.recipe = recipe
+                item.breakDownIntoSubitems()
+            }
         }
     }
 

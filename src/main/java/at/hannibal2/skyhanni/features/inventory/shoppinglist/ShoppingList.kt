@@ -11,7 +11,6 @@ import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.InventoryCloseEvent
 import at.hannibal2.skyhanni.events.InventoryFullyOpenedEvent
-import at.hannibal2.skyhanni.events.IslandChangeEvent
 import at.hannibal2.skyhanni.events.OwnInventoryItemUpdateEvent
 import at.hannibal2.skyhanni.events.SackDataUpdateEvent
 import at.hannibal2.skyhanni.events.entity.ItemAddInInventoryEvent
@@ -338,10 +337,10 @@ object ShoppingList {
 
         clear()
 
-        add("aspect of the end".toInternalName(), 1.0, "Weapons")
+        add("aspect of the end".toInternalName(), 2.0, "Weapons")
         addCategory("Visitors", saveInStorage = false)
         add("enchanted carrot".toInternalName(), 49.0, "Visitors")
-        add("diamond".toInternalName(), 1.0)
+        add("diamond".toInternalName(), 136.0)
 
         update()
 
@@ -404,7 +403,7 @@ object ShoppingList {
 
     @HandleEvent(onlyOnSkyblock = true)
     fun replaceItem(event: ReplaceItemEvent) {
-        if (!isEnabled()) return
+        if (!isEnabled() || currentlyOpenRecipe == null) return
         if (event.inventory !is InventoryPlayer && event.slot == 51) {
             displayItem?.let { event.replace(it) }
         }
@@ -417,9 +416,14 @@ object ShoppingList {
         if (event.item == null) return
 
         if (!isConfigLoaded) return
-        val items = items
+
+        if (currentlyOpenRecipe == null) {
+            println("Currently open recipe is null")
+            return
+        }
 
         println("Slot click event: ${event.item.displayName}")
+
         if (event.item.displayName == "§bSelect Recipe") {
             event.cancel()
             for (category in categories + items) {
@@ -430,10 +434,17 @@ object ShoppingList {
             }
         } else if (event.item.displayName == "§bAdd Recipe to shopping list") {
             event.cancel()
+            if (currentlyOpenRecipe!!.output == null) {
+                println("output is null")
+                return
+            }
+
             if (event.clickedButton == 2) {
                 println("adding only item")
+                items.add(currentlyOpenRecipe!!.output!!.internalName, 1.0)
             } else {
                 println("adding recipe")
+                items.add(currentlyOpenRecipe!!.output!!.internalName, 1.0, recipe = currentlyOpenRecipe)
             }
 
         }
