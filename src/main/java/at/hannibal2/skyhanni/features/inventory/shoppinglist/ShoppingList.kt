@@ -11,6 +11,7 @@ import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.InventoryCloseEvent
 import at.hannibal2.skyhanni.events.InventoryFullyOpenedEvent
+import at.hannibal2.skyhanni.events.IslandChangeEvent
 import at.hannibal2.skyhanni.events.OwnInventoryItemUpdateEvent
 import at.hannibal2.skyhanni.events.SackDataUpdateEvent
 import at.hannibal2.skyhanni.events.entity.ItemAddInInventoryEvent
@@ -120,9 +121,9 @@ object ShoppingList {
         if (categories.any { it.name == categoryName }) return
 
         if (color == null) {
-            categories.add(ShoppingListCategory(categoryName, saveInStorage=saveInStorage))
+            categories.add(ShoppingListCategory(categoryName, saveInStorage = saveInStorage))
         } else {
-            categories.add(ShoppingListCategory(categoryName, color=color, saveInStorage=saveInStorage))
+            categories.add(ShoppingListCategory(categoryName, color = color, saveInStorage = saveInStorage))
         }
 
         update()
@@ -214,6 +215,17 @@ object ShoppingList {
 
     fun resetDisplayItem() {
         displayItem = null
+    }
+
+    fun createDisplayItem() {
+        if (currentlyOpenRecipe == null) return
+        if (displayItem != null && displayItem?.displayName == "§bSelect Recipe") return
+
+        var lore = mutableListOf<String>()
+        lore.add("§7Left click to add the recipe to the shopping list")
+        lore.add("§7Right click to only add the result to the shopping list")
+
+        displayItem = ItemStack(Blocks.diamond_block).setLore(lore).setStackDisplayName("§bAdd Recipe to shopping list")
     }
 
     fun isInventoryOpen() = inventoryOpen
@@ -327,6 +339,7 @@ object ShoppingList {
         clear()
 
         add("aspect of the end".toInternalName(), 1.0, "Weapons")
+        addCategory("Visitors", saveInStorage = false)
         add("enchanted carrot".toInternalName(), 49.0, "Visitors")
         add("diamond".toInternalName(), 1.0)
 
@@ -359,7 +372,7 @@ object ShoppingList {
         update()
     }
 
-    @HandleEvent(onlyOnSkyblock = true)
+    @HandleEvent
     fun onWorldChange(event: WorldChangeEvent) {
         recheckInInventory()
         update()
@@ -382,6 +395,8 @@ object ShoppingList {
 
         println("Relevant items: $ingredients")
         currentlyOpenRecipe = PrimitiveRecipe(ingredients, setOf(result ?: return), RecipeType.CRAFTING)
+
+        createDisplayItem()
 
         recheckInInventory()
         update()
@@ -413,6 +428,14 @@ object ShoppingList {
                     return
                 }
             }
+        } else if (event.item.displayName == "§bAdd Recipe to shopping list") {
+            event.cancel()
+            if (event.clickedButton == 2) {
+                println("adding only item")
+            } else {
+                println("adding recipe")
+            }
+
         }
     }
 
