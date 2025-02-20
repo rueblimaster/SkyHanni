@@ -12,7 +12,9 @@ import net.minecraft.item.ItemStack
 class ShoppingListCategory(
     val name: String,
     val color: LorenzColor = LorenzColor.GOLD,
-//     val icon: ItemStack? = null,
+//     val icon: ItemStack? = null, // TODO: implement icons
+    val saveInStorage: Boolean = true,
+    // TODO: implement only in area somehow
 ) {
     val items = mutableListOf<ShoppingListItem>()
 

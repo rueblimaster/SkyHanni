@@ -613,9 +613,6 @@ class ProfileSpecificStorage {
 
         @Expose
         var items: CategoryTemplate = CategoryTemplate("Items")
-
-        @Expose
-        var test: String = ""
     }
 
     // - mining

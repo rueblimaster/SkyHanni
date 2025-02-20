@@ -22,6 +22,8 @@ import at.hannibal2.skyhanni.utils.CollectionUtils.addString
 import at.hannibal2.skyhanni.utils.InventoryUtils.closeInventory
 import at.hannibal2.skyhanni.utils.InventoryUtils.inAnyInventory
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
+import at.hannibal2.skyhanni.utils.ItemUtils.setLore
+import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.LorenzUtils
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
@@ -32,6 +34,7 @@ import at.hannibal2.skyhanni.utils.RecipeType
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import net.minecraft.entity.player.InventoryPlayer
+import net.minecraft.init.Blocks
 import net.minecraft.item.ItemStack
 
 @SkyHanniModule
@@ -108,6 +111,21 @@ object ShoppingList {
         category.add(itemName, amount)
 
         createDisplay()
+    }
+
+    fun addCategory(categoryName: String, color: LorenzColor? = null, saveInStorage: Boolean = true) {
+        if (!isEnabled()) return
+        if (!isConfigLoaded) return
+
+        if (categories.any { it.name == categoryName }) return
+
+        if (color == null) {
+            categories.add(ShoppingListCategory(categoryName, saveInStorage=saveInStorage))
+        } else {
+            categories.add(ShoppingListCategory(categoryName, color=color, saveInStorage=saveInStorage))
+        }
+
+        update()
     }
 
     fun removeCategory(categoryName: String) {
@@ -240,15 +258,15 @@ object ShoppingList {
 
         val tempCategories = mutableListOf<CategoryTemplate>()
         for (category in categories) {
-            tempCategories.add(CategoryTemplate(category))
+            if (category.saveInStorage) {
+                tempCategories.add(CategoryTemplate(category))
+            }
         }
 
         ProfileStorageData.profileSpecific?.shoppingList?.categories = tempCategories
         ProfileStorageData.profileSpecific?.shoppingList?.items = CategoryTemplate(items)
 
 //         println("Saved shopping list $tempCategories $items")
-
-        ProfileStorageData.profileSpecific?.shoppingList?.test = "test"
     }
 
     fun moveCategoryToTop(category: ShoppingListCategory) {
