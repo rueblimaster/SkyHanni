@@ -21,6 +21,7 @@ import at.hannibal2.skyhanni.utils.GuiRenderUtils
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.isKeyClicked
+import at.hannibal2.skyhanni.utils.KeyboardManager.isKeyHeld
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.LorenzLogger
 import at.hannibal2.skyhanni.utils.NeuItems
@@ -30,6 +31,7 @@ import at.hannibal2.skyhanni.utils.RenderUtils.HorizontalAlignment
 import at.hannibal2.skyhanni.utils.RenderUtils.VerticalAlignment
 import at.hannibal2.skyhanni.utils.compat.getTooltipCompat
 import at.hannibal2.skyhanni.utils.guide.GuideGUI
+import at.hannibal2.skyhanni.utils.renderables.Renderable.Companion.clickableAndScrollable
 import at.hannibal2.skyhanni.utils.renderables.Renderable.Companion.shouldAllowLink
 import at.hannibal2.skyhanni.utils.renderables.RenderableUtils.renderXAligned
 import at.hannibal2.skyhanni.utils.renderables.RenderableUtils.renderXYAligned
@@ -157,6 +159,33 @@ interface Renderable {
             onHover: () -> Unit = {},
         ) = clickable(string(text), onAnyClick, bypassChecks, condition, tips, onHover)
 
+        fun clickableWithModifiers(
+            text: String,
+            onAnyClick: Map<ClickTypeWithModifiers, () -> Unit>,
+            bypassChecks: Boolean = false,
+            condition: () -> Boolean = { true },
+            tips: List<Any>? = null,
+            onHover: () -> Unit = {},
+        ) = clickableWithModifiers(string(text), onAnyClick, bypassChecks, condition, tips, onHover)
+
+        fun clickableWithModifiers(
+            render: Renderable,
+            onAnyClick: Map<ClickTypeWithModifiers, () -> Unit>,
+            bypassChecks: Boolean = false,
+            condition: () -> Boolean = { true },
+            tips: List<Any>? = null,
+            onHover: () -> Unit = {},
+        ) = multiClickableWithModifiers(
+            tips?.let {
+                hoverTips(render, it, bypassChecks = bypassChecks, onHover = onHover)
+            } ?: onHover.takeIf { it != {} }?.let {
+                hoverable(render, render, bypassChecks = bypassChecks, onHover = onHover)
+            } ?: render,
+            onAnyClick,
+            bypassChecks,
+            condition,
+        )
+
         fun clickable(
             render: Renderable,
             /**
@@ -217,6 +246,60 @@ interface Renderable {
             }
         }
 
+        class ClickTypeWithModifiers(
+            val clickType: Int,
+            val modifiers: List<Int> = emptyList(),
+        )
+
+        private fun multiClickableWithModifiers(
+            render: Renderable,
+            onAnyClick: Map<ClickTypeWithModifiers, () -> Unit>,
+            bypassChecks: Boolean = false,
+            condition: () -> Boolean = { true },
+            nonStandardClick: () -> Unit = {},
+        ): Renderable {
+            val onAnyClick = onAnyClick.toSortedMap { o1: ClickTypeWithModifiers, o2: ClickTypeWithModifiers ->
+                o2.modifiers.size.compareTo(o1.modifiers.size)
+            }
+
+            val allRelevantKeys: List<Int> = onAnyClick.keys.flatMap { it.modifiers + it.clickType }
+
+            return object : Renderable {
+                override val width = render.width
+                override val height = render.height
+                override val horizontalAlign = render.horizontalAlign
+                override val verticalAlign = render.verticalAlign
+
+                override fun render(posX: Int, posY: Int) {
+                    if (isHovered(posX, posY) && condition() && shouldAllowLink(true, bypassChecks)) {
+                        handleClickChecks()
+                    }
+                    render.render(posX, posY)
+                }
+
+                private fun handleClickChecks() {
+                    var processed = false
+
+                    val allPressedKeys = allRelevantKeys.associateWith { it.isKeyHeld() }
+
+                    for ((key, onKeyClicked) in onAnyClick) {
+
+
+                        println("key: ${key.clickType} modifiers: ${key.modifiers}")
+                        println("clicked: ${key.clickType.isKeyClicked()} held: ${key.modifiers.all { it.isKeyHeld() }}")
+                        if (allPressedKeys[key.clickType] == true && (key.modifiers.isEmpty() || key.modifiers.all { allPressedKeys[it] == true })) {
+                            println("clicked")
+                            onKeyClicked()
+                            processed = true
+                            break
+                        }
+                    }
+                    if (!processed) nonStandardClick()
+                }
+            }
+        }
+
+
         fun clickableAndScrollable(
             render: Renderable,
             onAnyClick: Map<Int, () -> Unit>,
@@ -239,7 +322,7 @@ interface Renderable {
                         else -> {}
                     }
                     pureScrollInput.dispose()
-                }
+                },
             )
         }
 

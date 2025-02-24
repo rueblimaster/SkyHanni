@@ -3,6 +3,8 @@ package at.hannibal2.skyhanni.features.inventory.shoppinglist
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.KeyboardManager
+import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
+import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.LorenzColor.Companion.toLorenzColor
 import at.hannibal2.skyhanni.utils.NeuInternalName
@@ -161,13 +163,12 @@ class ShoppingListCategory(
                 tooltip.add("§7Ctrl + right click to move to top")
 
                 renderables.add(
-                    Renderable.multiClickAndHover(
-                        string,
-                        tooltip,
-                        false,
-                        mapOf<Int, () -> Unit>(
-                            0 to { },
-                            1 to {
+                    Renderable.clickable(
+                        text = string,
+                        tips = tooltip,
+                        onAnyClick = mapOf<Int, () -> Unit>(
+                            LEFT_MOUSE to { },
+                            RIGHT_MOUSE to {
                                 if (KeyboardManager.isModifierKeyDown()) {
                                     onCtrlRightClick()
                                 } else if (KeyboardManager.isShiftKeyDown()) {

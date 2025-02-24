@@ -9,7 +9,8 @@ import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventory
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventoryAndSacks
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
-import at.hannibal2.skyhanni.utils.KeyboardManager
+import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
+import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
 import at.hannibal2.skyhanni.utils.LorenzUtils
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
@@ -18,10 +19,12 @@ import at.hannibal2.skyhanni.utils.PrimitiveIngredient
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.renderables.Renderable
+import at.hannibal2.skyhanni.utils.renderables.Renderable.Companion.ClickTypeWithModifiers
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.inventory.GuiEditSign
 import net.minecraft.init.Blocks
 import net.minecraft.item.ItemStack
+import org.lwjgl.input.Keyboard
 
 @Suppress("TooManyFunctions")
 class ShoppingListItem(
@@ -88,12 +91,7 @@ class ShoppingListItem(
         loadPossibleRecipes()
     }
 
-    val clickLayout: MutableMap<String, () -> Unit> = mutableMapOf(
-        "right" to { onNormalRightClick() },
-        "shift + right" to { toggleHide() },
-        "ctrl + shift + right" to { toggleHide(true) },
-        "ctrl + right" to { moveThisToTop() },
-        "middle" to { copyToClipboard() },
+    val clickLayout: MutableMap<ClickTypeWithModifiers, () -> Unit> = mutableMapOf(
     )
 
     /*
@@ -422,44 +420,44 @@ class ShoppingListItem(
             // left click
             if (hasItems()) {
                 string += " §a✓"
-                clickLayout["left"] = { fetchItemFromAvailableStorage() }
+                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { fetchItemFromAvailableStorage() }
                 tooltip.add("§7left click to fetch from storage")
-                clickLayout["shift + left"] = { breakDownIntoSubitems() }
+                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, listOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
                 tooltip.add("§7shift + left click to break down recipe")
             } else if (hasAllSubItems()) {
                 string += " §e✓"
-                clickLayout["left"] = { openCraftingRecipe() }
+                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { openCraftingRecipe() }
                 tooltip.add("§7left click to open crafting recipe")
-                clickLayout["shift + left"] = { breakDownIntoSubitems() }
+                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, listOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
                 tooltip.add("§7shift + left click to break down recipe")
             } else {
                 if (downBreakable) {
-                    clickLayout["left"] = { breakDownIntoSubitems() }
+                    clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { breakDownIntoSubitems() }
                     tooltip.add("§7left click to break down recipe")
-                    clickLayout["shift + left"] = { buyItem() }
+                    clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, listOf(Keyboard.KEY_LSHIFT))] = { buyItem() }
                     tooltip.add("§7shift + left click to buy")
                 } else {
-                    clickLayout["left"] = { buyItem() }
+                    clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { buyItem() }
                     tooltip.add("§7left click to buy")
-                    clickLayout["shift + left"] = { breakDownIntoSubitems() }
+                    clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, listOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
                     tooltip.add("§7shift + left click to break down recipe")
                 }
             }
 
             // right click
             if (topLevelItem == null) {
-                clickLayout["right"] = { removeItem() }
+                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE)] = { removeItem() }
                 tooltip.add("§7right click to remove")
-                clickLayout["shift + right"] = { toggleHide() }
+                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, listOf(Keyboard.KEY_LSHIFT))] = { toggleHide() }
                 tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide")
-                clickLayout["ctrl + shift + right"] = { toggleHide(true) }
+                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, listOf(Keyboard.KEY_LCONTROL, Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
                 tooltip.add("§7ctrl + shift + right click to ${if (hidden) "un" else ""}hide tree")
             } else {
-                clickLayout["right"] = { toggleHide() }
+                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE)] = { toggleHide() }
                 tooltip.add("§7right click to ${if (hidden) "un" else ""}hide")
-                clickLayout["shift + right"] = { toggleHide(true) }
+                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, listOf(Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
                 tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide tree")
-                clickLayout["ctrl + shift + right"] = { toggleHide(true) }
+                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, listOf(Keyboard.KEY_LCONTROL, Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
             }
 
             if (hidden) {
@@ -467,43 +465,46 @@ class ShoppingListItem(
             }
 
             // TODO: make the left click tooltips be generated from the clickLayout
-            clickLayout["ctrl + right"] = { moveThisToTop() }
+            clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, listOf(Keyboard.KEY_LCONTROL))] = { moveThisToTop() }
             tooltip.add("§7ctrl + right click to move to top")
-            clickLayout["middle"] = { copyToClipboard() }
-            tooltip.add("§7middle click to copy to clipboard")
+//             clickLayout["middle"] = { copyToClipboard() }  // TODO: implement middle click
+//             tooltip.add("§7middle click to copy to clipboard")
+
+            val clickLayout: Map<ClickTypeWithModifiers, () -> Unit> = clickLayout.toMap()
 
             renderables.add(
-                Renderable.multiClickAndHover(
-                    string, tooltip,
-                    false,
-                    mapOf<Int, () -> Unit>(
-                        0 to { // left click
-                            if (KeyboardManager.isModifierKeyDown() && KeyboardManager.isShiftKeyDown()) {
-                                clickLayout["ctrl + shift + left"]?.invoke() ?: clickLayout["ctrl + left"]?.invoke()
-                                ?: clickLayout["shift + left"]?.invoke() ?: clickLayout["left"]?.invoke()
-                            } else if (KeyboardManager.isModifierKeyDown()) {
-                                clickLayout["ctrl + left"]?.invoke() ?: clickLayout["left"]?.invoke()
-                            } else if (KeyboardManager.isShiftKeyDown()) {
-                                clickLayout["shift + left"]?.invoke() ?: clickLayout["left"]?.invoke()
-                            } else {
-                                clickLayout["left"]?.invoke()
-                            }
-                        },
-                        1 to { // right click
-                            if (KeyboardManager.isModifierKeyDown() && KeyboardManager.isShiftKeyDown()) {
-                                clickLayout["ctrl + shift + right"]?.invoke()
-                            } else if (KeyboardManager.isModifierKeyDown()) {
-                                clickLayout["ctrl + right"]?.invoke()
-                            } else if (KeyboardManager.isShiftKeyDown()) {
-                                clickLayout["shift + right"]?.invoke()
-                            } else {
-                                clickLayout["right"]?.invoke()
-                            }
-                        },
-                        2 to { // middle click
-                            copyToClipboard()
-                        },
-                    ),
+                Renderable.clickableWithModifiers(
+                    text = string,
+                    tips = tooltip,
+                    onAnyClick = clickLayout,
+//                     onAnyClick = mapOf<ClickTypeWithModifiers, () -> Unit>(
+//                         LEFT_MOUSE to {
+//                             if (KeyboardManager.isModifierKeyDown() && KeyboardManager.isShiftKeyDown()) {
+//                                 clickLayout["ctrl + shift + left"]?.invoke() ?: clickLayout["ctrl + left"]?.invoke()
+//                                 ?: clickLayout["shift + left"]?.invoke() ?: clickLayout["left"]?.invoke()
+//                             } else if (KeyboardManager.isModifierKeyDown()) {
+//                                 clickLayout["ctrl + left"]?.invoke() ?: clickLayout["left"]?.invoke()
+//                             } else if (KeyboardManager.isShiftKeyDown()) {
+//                                 clickLayout["shift + left"]?.invoke() ?: clickLayout["left"]?.invoke()
+//                             } else {
+//                                 clickLayout["left"]?.invoke()
+//                             }
+//                         },
+//                         RIGHT_MOUSE to {
+//                             if (KeyboardManager.isModifierKeyDown() && KeyboardManager.isShiftKeyDown()) {
+//                                 clickLayout["ctrl + shift + right"]?.invoke()
+//                             } else if (KeyboardManager.isModifierKeyDown()) {
+//                                 clickLayout["ctrl + right"]?.invoke()
+//                             } else if (KeyboardManager.isShiftKeyDown()) {
+//                                 clickLayout["shift + right"]?.invoke()
+//                             } else {
+//                                 clickLayout["right"]?.invoke()
+//                             }
+//                         },
+//                         2 to { // middle click  // TODO: implement middle click
+//                             clickLayout["middle"]?.invoke()
+//                         },
+//                     ),
                 ),
             )
         }

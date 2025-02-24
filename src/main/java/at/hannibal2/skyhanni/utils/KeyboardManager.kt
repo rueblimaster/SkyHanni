@@ -25,6 +25,7 @@ object KeyboardManager {
 
     const val LEFT_MOUSE = -100
     const val RIGHT_MOUSE = -99
+    // TODO: add middle mouse button
 
     private var lastClickedMouseButton = -1
 
