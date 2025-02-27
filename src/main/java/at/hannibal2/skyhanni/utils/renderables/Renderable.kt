@@ -248,7 +248,7 @@ interface Renderable {
 
         class ClickTypeWithModifiers(
             val clickType: Int,
-            val modifiers: List<Int> = emptyList(),
+            val modifiers: List<Int> = emptyList(), // TODO: change from list to set
         )
 
         private fun multiClickableWithModifiers(
@@ -261,6 +261,11 @@ interface Renderable {
             val onAnyClick = onAnyClick.toSortedMap { o1: ClickTypeWithModifiers, o2: ClickTypeWithModifiers ->
                 o2.modifiers.size.compareTo(o1.modifiers.size)
             }
+
+            // TODO: I think this here doesn't work as intended FIX THIS NEXT!!
+            val orderedOnAnyClick: Map<Int, Map<ClickTypeWithModifiers, () -> Unit>> = onAnyClick.entries
+                .groupBy { it.key.clickType }
+                .mapValues { it.value.associate { it.key to it.value } }
 
             val allRelevantKeys: List<Int> = onAnyClick.keys.flatMap { it.modifiers + it.clickType }
 
@@ -282,15 +287,23 @@ interface Renderable {
 
                     val allPressedKeys = allRelevantKeys.associateWith { it.isKeyHeld() }
 
-                    for ((key, onKeyClicked) in onAnyClick) {
+                    for ((clickType, value) in orderedOnAnyClick) {
+                        if (allPressedKeys[clickType] != true) continue
+                        print("clickType: $clickType")
 
-
-                        println("key: ${key.clickType} modifiers: ${key.modifiers}")
-                        println("clicked: ${key.clickType.isKeyClicked()} held: ${key.modifiers.all { it.isKeyHeld() }}")
-                        if (allPressedKeys[key.clickType] == true && (key.modifiers.isEmpty() || key.modifiers.all { allPressedKeys[it] == true })) {
-                            println("clicked")
-                            onKeyClicked()
-                            processed = true
+                        for ((key, onKeyClicked) in value) {
+//                             if (allPressedKeys[key.clickType] == true) {
+                            if (key.modifiers.isEmpty() || key.modifiers.all { allPressedKeys[it] == true }) {
+                                println("key: ${key.clickType} modifiers: ${key.modifiers}")
+                                println("clicked: ${key.clickType.isKeyClicked()} held: ${key.modifiers.all { it.isKeyHeld() }}")
+                                println("modifiers")
+                                onKeyClicked()
+                                processed = true
+                                break
+                            }
+//                             }
+                        }
+                        if (processed) {
                             break
                         }
                     }
