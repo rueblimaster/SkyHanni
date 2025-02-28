@@ -4,6 +4,7 @@ import at.hannibal2.skyhanni.api.GetFromSackApi
 import at.hannibal2.skyhanni.api.ItemBuyApi.buy
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.currentlyOpenRecipe
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
+import at.hannibal2.skyhanni.utils.HypixelCommands.craft
 import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventory
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventoryAndSacks
@@ -318,6 +319,7 @@ class ShoppingListItem(
             println("Vanilla item, can't open recipe, getting all required items instead")
             subItems.forEach {
                 it.fetchItemFromAvailableStorage()
+                craft()
             }
 
         } else {
@@ -393,6 +395,12 @@ class ShoppingListItem(
         }
     }
 
+    fun printClickLayout() {
+        clickLayout.forEach { (key, value) ->
+            println("$key")
+        }
+    }
+
     fun getRenderables(indent: String, continuedIndent: String? = null): List<Renderable> {
         val renderables = mutableListOf<Renderable>()
         if (!hidden || ShoppingList.isInventoryOpen()) {
@@ -464,19 +472,21 @@ class ShoppingListItem(
                 string = "§8${string.removeColor()}"
             }
 
+            clickLayout.toMap()
+
             // TODO: make the left click tooltips be generated from the clickLayout
             clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, listOf(Keyboard.KEY_LCONTROL))] = { moveThisToTop() }
             tooltip.add("§7ctrl + right click to move to top")
 //             clickLayout["middle"] = { copyToClipboard() }  // TODO: implement middle click
 //             tooltip.add("§7middle click to copy to clipboard")
 
-            val clickLayout: Map<ClickTypeWithModifiers, () -> Unit> = clickLayout.toMap()
+            clickLayout.toMap()
 
             renderables.add(
                 Renderable.clickableWithModifiers(
                     text = string,
                     tips = tooltip,
-                    onAnyClick = clickLayout,
+                    onAnyClick = clickLayout.toMap(),
 //                     onAnyClick = mapOf<ClickTypeWithModifiers, () -> Unit>(
 //                         LEFT_MOUSE to {
 //                             if (KeyboardManager.isModifierKeyDown() && KeyboardManager.isShiftKeyDown()) {

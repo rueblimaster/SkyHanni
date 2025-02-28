@@ -2,6 +2,7 @@ package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
+import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
@@ -50,7 +51,7 @@ class ShoppingListCategory(
 
     fun add(itemName: NeuInternalName, amount: Double = 1.0, recipe: PrimitiveRecipe? = null) {
         if (!itemName.isKnownItem()) {
-            ChatUtils.userError("Item ${itemName.itemName} not found")
+            ChatUtils.userError("Item ${itemName.itemNameWithoutColor} not found")
             return
         }
 
@@ -77,14 +78,14 @@ class ShoppingListCategory(
 
     fun remove(itemName: NeuInternalName, amount: Double? = null) {
         if (!itemName.isKnownItem()) {
-            ChatUtils.userError("Item ${itemName.itemName} not found")
+            ChatUtils.userError("Item ${itemName.itemNameWithoutColor} not found")
             return
         }
 
         val item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
 
         if (item == null) {
-            ChatUtils.userError("Item ${itemName.itemName} not found in category $name")
+            ChatUtils.userError("Item ${itemName.itemNameWithoutColor} not found in category $name")
         } else {
             if (amount == null) {
                 items.remove(item)

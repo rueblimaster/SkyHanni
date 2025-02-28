@@ -246,10 +246,30 @@ interface Renderable {
             }
         }
 
-        class ClickTypeWithModifiers(
+        data class ClickTypeWithModifiers(
             val clickType: Int,
             val modifiers: List<Int> = emptyList(), // TODO: change from list to set
-        )
+        ) {
+            override fun toString(): String {
+                return "ClickTypeWithModifiers(clickType=$clickType, modifiers=$modifiers)"
+            }
+
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (javaClass != other?.javaClass) return false
+
+                other as ClickTypeWithModifiers
+
+                if (clickType != other.clickType) return false
+                if (modifiers != other.modifiers) return false
+
+                return true
+            }
+
+            override fun hashCode(): Int {
+                return 31 * clickType.hashCode() + modifiers.hashCode()
+            }
+        }
 
         private fun multiClickableWithModifiers(
             render: Renderable,
@@ -258,16 +278,39 @@ interface Renderable {
             condition: () -> Boolean = { true },
             nonStandardClick: () -> Unit = {},
         ): Renderable {
+//             onAnyClick.entries.forEach { (key, _) ->
+//                 println("$key")
+//             }
+
             val onAnyClick = onAnyClick.toSortedMap { o1: ClickTypeWithModifiers, o2: ClickTypeWithModifiers ->
-                o2.modifiers.size.compareTo(o1.modifiers.size)
+                val modifierSizeComparison = o2.modifiers.sum().compareTo(o1.modifiers.sum())
+                if (modifierSizeComparison != 0) {
+                    modifierSizeComparison
+                } else {
+                    o1.clickType.compareTo(o2.clickType)  // This ensures that ClickType is also considered
+                }
             }
 
-            // TODO: I think this here doesn't work as intended FIX THIS NEXT!!
+//             onAnyClick.entries.forEach { (key, _) ->
+//                 println("$key")
+//             }
+
             val orderedOnAnyClick: Map<Int, Map<ClickTypeWithModifiers, () -> Unit>> = onAnyClick.entries
                 .groupBy { it.key.clickType }
                 .mapValues { it.value.associate { it.key to it.value } }
 
-            val allRelevantKeys: List<Int> = onAnyClick.keys.flatMap { it.modifiers + it.clickType }
+//             for ((clickType, value) in onAnyClick) {
+//                 println("$clickType")
+//             }
+
+//             for ((clickType, value) in orderedOnAnyClick) {
+//                 println("clickType: $clickType")
+//                 for ((key, onKeyClicked) in value) {
+//                     println("$key")
+//                 }
+//             }
+
+            val allRelevantModifiers: List<Int> = onAnyClick.keys.flatMap { it.modifiers }
 
             return object : Renderable {
                 override val width = render.width
@@ -285,18 +328,18 @@ interface Renderable {
                 private fun handleClickChecks() {
                     var processed = false
 
-                    val allPressedKeys = allRelevantKeys.associateWith { it.isKeyHeld() }
+                    val allPressedKeys = allRelevantModifiers.associateWith { it.isKeyHeld() }
 
                     for ((clickType, value) in orderedOnAnyClick) {
-                        if (allPressedKeys[clickType] != true) continue
-                        print("clickType: $clickType")
+                        if (clickType.isKeyClicked() != true) continue
+//                         print("clickType pressed: $clickType")
 
                         for ((key, onKeyClicked) in value) {
 //                             if (allPressedKeys[key.clickType] == true) {
                             if (key.modifiers.isEmpty() || key.modifiers.all { allPressedKeys[it] == true }) {
-                                println("key: ${key.clickType} modifiers: ${key.modifiers}")
-                                println("clicked: ${key.clickType.isKeyClicked()} held: ${key.modifiers.all { it.isKeyHeld() }}")
-                                println("modifiers")
+//                                 println("key: ${key.clickType} modifiers: ${key.modifiers}")
+//                                 println("clicked: ${key.clickType.isKeyClicked()} held: ${key.modifiers.all { it.isKeyHeld() }}")
+//                                 println("modifiers")
                                 onKeyClicked()
                                 processed = true
                                 break
