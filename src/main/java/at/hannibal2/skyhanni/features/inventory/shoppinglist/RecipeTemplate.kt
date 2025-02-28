@@ -7,9 +7,10 @@ import com.google.gson.annotations.Expose
 class RecipeTemplate {
     @Expose
     val ingredients = mutableListOf<IngredientTemplate>()
+
     @Expose
     val result: IngredientTemplate?
-    
+
     constructor(sourceRecipe: PrimitiveRecipe) {
         for (ingredient in sourceRecipe.ingredients) {
             ingredients.add(IngredientTemplate(ingredient))

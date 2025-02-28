@@ -287,7 +287,7 @@ interface Renderable {
                 if (modifierSizeComparison != 0) {
                     modifierSizeComparison
                 } else {
-                    o1.clickType.compareTo(o2.clickType)  // This ensures that ClickType is also considered
+                    o1.clickType.compareTo(o2.clickType) // This ensures that ClickType is also considered
                 }
             }
 

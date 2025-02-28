@@ -92,8 +92,7 @@ class ShoppingListItem(
         loadPossibleRecipes()
     }
 
-    val clickLayout: MutableMap<ClickTypeWithModifiers, () -> Unit> = mutableMapOf(
-    )
+    val clickLayout: MutableMap<ClickTypeWithModifiers, () -> Unit> = mutableMapOf()
 
     /*
     TODO: make this all configurable
@@ -330,7 +329,8 @@ class ShoppingListItem(
 
     fun fetchItemFromAvailableStorage() {
         println(
-            "Fetching item from available storage: $internalName ${totalAmount.toInt()}, " + "getting ${getMissingAmountInInventory().toInt()}",
+            "Fetching item from available storage: $internalName ${totalAmount.toInt()}, " +
+                +"getting ${getMissingAmountInInventory().toInt()}",
         )
         if (checkIfInSignAndInsertAmount()) return
         println("is valid amount")
