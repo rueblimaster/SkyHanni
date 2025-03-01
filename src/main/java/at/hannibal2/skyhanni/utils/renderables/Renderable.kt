@@ -1469,7 +1469,7 @@ interface Renderable {
                 val range = if (list.size == 1) {
                     0..0
                 } else {
-
+                    val list = list
                     val nStart = scroll.asInt()
 
                     val endReduce1 = if (showScrollableTipsInList && !scroll.atMinimum()) scrollUpTip.height else 0
@@ -1479,12 +1479,17 @@ interface Renderable {
 
                     val sequence = list.asSequence().withIndex()
                     val folded = sequence.runningIndexedFold(0) { past, value -> past + (yOffsets[value] ?: 0) }
-                    val pair = folded.firstTwiceOf({ it.value >= nStart }, { it.value >= nEnd })
+                    val pair = folded.firstTwiceOf({ it.value >= nStart }, { it.value >= nEnd || it.index == list.lastIndex })
+                    val firstElement = pair.first ?: return // Never null
+                    val lastElement = pair.second ?: return // Never null
 
-                    val subEnd = if ((pair.second?.value?.minus(pair.first?.value ?: 0) ?: 0) <= nEnd - nStart) 0 else 1
+                    val spaceLeft = nEnd - nStart - if (lastElement.index == list.lastIndex && lastElement.value < nEnd) 1 else 0
 
-                    val start = pair.first?.index ?: 0
-                    val end = pair.second?.index?.minus(subEnd) ?: list.size
+                    val subEnd = if ((lastElement.value - firstElement.value) < spaceLeft) 0 else 1
+
+                    val start = firstElement.index
+
+                    val end = (lastElement.takeIf { it.value >= nEnd }?.index ?: list.size).minus(subEnd)
 
                     start until end
                 }
