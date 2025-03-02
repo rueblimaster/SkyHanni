@@ -23,7 +23,7 @@ class ShoppingListCategory(
 
     var hidden = false
 
-    constructor(template: CategoryTemplate) : this(template.name, template.color.toLorenzColor()?: LorenzColor.GOLD) {
+    constructor(template: CategoryTemplate) : this(template.name, template.color.toLorenzColor() ?: LorenzColor.GOLD) {
         hidden = template.hidden
 
         template.items.forEach {

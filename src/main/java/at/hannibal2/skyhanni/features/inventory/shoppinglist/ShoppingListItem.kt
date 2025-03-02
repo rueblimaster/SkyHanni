@@ -65,7 +65,7 @@ class ShoppingListItem(
         println("Setting amounts")
         subItems.forEach {
             if (it.internalName in ingredients && ingredients[it.internalName] != null) {
-                it.amount = ingredients[it.internalName]!!
+                it.amount = ingredients[it.internalName] ?: 1.0
             }
         }
         println("Done")
