@@ -23,7 +23,7 @@ class ShoppingListCategory(
 
     var hidden = false
 
-    constructor(template: CategoryTemplate) : this(template.name, template.color.toLorenzColor()!!) {
+    constructor(template: CategoryTemplate) : this(template.name, template.color.toLorenzColor()?: LorenzColor.GOLD) {
         hidden = template.hidden
 
         template.items.forEach {
@@ -41,7 +41,7 @@ class ShoppingListCategory(
     what may we want to see:
         - name
         - optional icon?
-        - total cost
+        - TODO later: total cost
      */
 
     override fun toString(): String {
@@ -58,7 +58,7 @@ class ShoppingListCategory(
 
         if (item == null) {
             items.add(ShoppingListItem(itemName, amount, this, recipe = recipe))
-            var item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
+            item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
             if (recipe != null && item != null) {
                 item.breakDownIntoSubitems()
             }
