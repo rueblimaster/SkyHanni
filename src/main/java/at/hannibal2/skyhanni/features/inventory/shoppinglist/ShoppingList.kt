@@ -220,7 +220,7 @@ object ShoppingList {
         if (currentlyOpenRecipe == null) return
         if (displayItem != null && displayItem?.displayName == "§bSelect Recipe") return
 
-        var lore = mutableListOf<String>()
+        val lore = mutableListOf<String>()
         lore.add("§7Left click to add the recipe to the shopping list")
         lore.add("§7Right click to only add the result to the shopping list")
 
@@ -417,6 +417,8 @@ object ShoppingList {
 
         if (!isConfigLoaded) return
 
+        val currentlyOpenRecipe = currentlyOpenRecipe
+
         if (currentlyOpenRecipe == null) {
             println("Currently open recipe is null")
             return
@@ -434,17 +436,19 @@ object ShoppingList {
             }
         } else if (event.item.displayName == "§bAdd Recipe to shopping list") {
             event.cancel()
-            if (currentlyOpenRecipe!!.output == null) {
+            val output = currentlyOpenRecipe.output
+
+            if (output == null) {
                 println("output is null")
                 return
             }
 
             if (event.clickedButton == 2) {
                 println("adding only item")
-                items.add(currentlyOpenRecipe!!.output!!.internalName, 1.0)
+                items.add(output.internalName, 1.0)
             } else {
                 println("adding recipe")
-                items.add(currentlyOpenRecipe!!.output!!.internalName, 1.0, recipe = currentlyOpenRecipe)
+                items.add(output.internalName, 1.0, recipe = currentlyOpenRecipe)
             }
 
         }
