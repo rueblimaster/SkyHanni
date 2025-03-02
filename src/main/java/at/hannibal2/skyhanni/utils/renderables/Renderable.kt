@@ -264,7 +264,7 @@ interface Renderable {
             nonStandardClick: () -> Unit = {},
         ): Renderable {
 
-            val onAnyClick = onAnyClick.toSortedMap { o1: ClickTypeWithModifiers, o2: ClickTypeWithModifiers ->
+            val sortedOnAnyClick = onAnyClick.toSortedMap { o1: ClickTypeWithModifiers, o2: ClickTypeWithModifiers ->
                 val modifierSizeComparison = o2.modifiers.sum().compareTo(o1.modifiers.sum())
                 if (modifierSizeComparison != 0) {
                     modifierSizeComparison
@@ -277,9 +277,9 @@ interface Renderable {
 //                 println("$key")
 //             }
 
-            val orderedOnAnyClick: Map<Int, Map<ClickTypeWithModifiers, () -> Unit>> = onAnyClick.entries
-                .groupBy { it.key.clickType }
-                .mapValues { it.value.associate { it.key to it.value } }
+            val orderedOnAnyClick: Map<Int, Map<ClickTypeWithModifiers, () -> Unit>> = sortedOnAnyClick.entries
+                .groupBy { entry -> entry.key.clickType }
+                .mapValues { entry -> entry.value.associate { it.key to it.value } }
 
 //             for ((clickType, value) in onAnyClick) {
 //                 println("$clickType")
@@ -292,7 +292,7 @@ interface Renderable {
 //                 }
 //             }
 
-            val allRelevantModifiers: List<Int> = onAnyClick.keys.flatMap { it.modifiers }
+            val allRelevantModifiers: List<Int> = sortedOnAnyClick.keys.flatMap { it.modifiers }
 
             return object : Renderable {
                 override val width = render.width
