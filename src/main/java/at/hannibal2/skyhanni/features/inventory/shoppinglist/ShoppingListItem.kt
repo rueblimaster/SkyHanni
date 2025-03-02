@@ -330,7 +330,7 @@ class ShoppingListItem(
     fun fetchItemFromAvailableStorage() {
         println(
             "Fetching item from available storage: $internalName ${totalAmount.toInt()}, " +
-                +"getting ${getMissingAmountInInventory().toInt()}",
+                "getting ${getMissingAmountInInventory().toInt()}",
         )
         if (checkIfInSignAndInsertAmount()) return
         println("is valid amount")
