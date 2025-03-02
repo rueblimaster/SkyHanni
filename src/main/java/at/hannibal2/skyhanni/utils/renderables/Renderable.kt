@@ -20,6 +20,7 @@ import at.hannibal2.skyhanni.utils.ColorUtils.darker
 import at.hannibal2.skyhanni.utils.GuiRenderUtils
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
+import at.hannibal2.skyhanni.utils.KeyboardManager.getKeyName
 import at.hannibal2.skyhanni.utils.KeyboardManager.isKeyClicked
 import at.hannibal2.skyhanni.utils.KeyboardManager.isKeyHeld
 import at.hannibal2.skyhanni.utils.LorenzColor
@@ -248,26 +249,10 @@ interface Renderable {
 
         data class ClickTypeWithModifiers(
             val clickType: Int,
-            val modifiers: List<Int> = emptyList(), // TODO: change from list to set
+            val modifiers: Set<Int> = emptySet(),
         ) {
             override fun toString(): String {
-                return "ClickTypeWithModifiers(clickType=$clickType, modifiers=$modifiers)"
-            }
-
-            override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (javaClass != other?.javaClass) return false
-
-                other as ClickTypeWithModifiers
-
-                if (clickType != other.clickType) return false
-                if (modifiers != other.modifiers) return false
-
-                return true
-            }
-
-            override fun hashCode(): Int {
-                return 31 * clickType.hashCode() + modifiers.hashCode()
+                return "ClickTypeWithModifiers(clickType=${getKeyName(clickType)}, modifiers=${modifiers.map { getKeyName(it) }})"
             }
         }
 
@@ -278,9 +263,6 @@ interface Renderable {
             condition: () -> Boolean = { true },
             nonStandardClick: () -> Unit = {},
         ): Renderable {
-//             onAnyClick.entries.forEach { (key, _) ->
-//                 println("$key")
-//             }
 
             val onAnyClick = onAnyClick.toSortedMap { o1: ClickTypeWithModifiers, o2: ClickTypeWithModifiers ->
                 val modifierSizeComparison = o2.modifiers.sum().compareTo(o1.modifiers.sum())

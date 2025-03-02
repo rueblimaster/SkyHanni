@@ -430,24 +430,24 @@ class ShoppingListItem(
                 string += " §a✓"
                 clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { fetchItemFromAvailableStorage() }
                 tooltip.add("§7left click to fetch from storage")
-                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, listOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
+                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
                 tooltip.add("§7shift + left click to break down recipe")
             } else if (hasAllSubItems()) {
                 string += " §e✓"
                 clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { openCraftingRecipe() }
                 tooltip.add("§7left click to open crafting recipe")
-                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, listOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
+                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
                 tooltip.add("§7shift + left click to break down recipe")
             } else {
                 if (downBreakable) {
                     clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { breakDownIntoSubitems() }
                     tooltip.add("§7left click to break down recipe")
-                    clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, listOf(Keyboard.KEY_LSHIFT))] = { buyItem() }
+                    clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { buyItem() }
                     tooltip.add("§7shift + left click to buy")
                 } else {
                     clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { buyItem() }
                     tooltip.add("§7left click to buy")
-                    clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, listOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
+                    clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
                     tooltip.add("§7shift + left click to break down recipe")
                 }
             }
@@ -456,16 +456,16 @@ class ShoppingListItem(
             if (topLevelItem == null) {
                 clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE)] = { removeItem() }
                 tooltip.add("§7right click to remove")
-                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, listOf(Keyboard.KEY_LSHIFT))] = { toggleHide() }
+                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { toggleHide() }
                 tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide")
-                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, listOf(Keyboard.KEY_LCONTROL, Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
+                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL, Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
                 tooltip.add("§7ctrl + shift + right click to ${if (hidden) "un" else ""}hide tree")
             } else {
                 clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE)] = { toggleHide() }
                 tooltip.add("§7right click to ${if (hidden) "un" else ""}hide")
-                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, listOf(Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
+                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
                 tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide tree")
-                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, listOf(Keyboard.KEY_LCONTROL, Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
+                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL, Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
             }
 
             if (hidden) {
@@ -475,7 +475,7 @@ class ShoppingListItem(
             clickLayout.toMap()
 
             // TODO: make the left click tooltips be generated from the clickLayout
-            clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, listOf(Keyboard.KEY_LCONTROL))] = { moveThisToTop() }
+            clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL))] = { moveThisToTop() }
             tooltip.add("§7ctrl + right click to move to top")
 //             clickLayout["middle"] = { copyToClipboard() }  // TODO: implement middle click
 //             tooltip.add("§7middle click to copy to clipboard")
