@@ -71,7 +71,7 @@ class ShoppingListItem(
         println("Done")
     }
 
-    // TODO: add a way to offset the amount of an item counted in the inventory etc.
+    // TODO soon (probably): add a way to offset the amount of an item counted in the inventory etc.
 
     val totalAmount: Double
         get() = amount * (topLevelItem?.remainingAmount ?: 1.0)
@@ -95,14 +95,15 @@ class ShoppingListItem(
     val clickLayout: MutableMap<ClickTypeWithModifiers, () -> Unit> = mutableMapOf()
 
     /*
-    TODO: make this all configurable
+    TODO later: make this all configurable
     what do we want to be able to do from the display widget:
         left click is for doing stuff with it
         - (left click) get from ah/bz  (switch ah/bz and break down as a setting) also only (click) if no recipe
         - open recipe to craft it
         - (shift + left click) break down into its subitems
         right click is for doing stuff with the item itself
-        TODO: implement change amount
+        TODO later (maybe): implement change amount by right clicking, as can also be done with the command,
+          but could maybe also be done by pressing arrow keys
         - (right click) change the amount (but if nothing is entered remove if I can discriminate between cancel and remove)
         - remove completely (if it isn't a subitem of another item)
         - (shift + right click) hide/unhide
@@ -194,9 +195,9 @@ class ShoppingListItem(
 
             val lore = buildList {
                 add("§8(From SkyHanni)")
-                add("")
+//                 add("")
 
-                // TODO: add stuff
+                // TODO (maybe): add stuff
             }
 
             displayItem = ItemStack(Blocks.diamond_block).setLore(lore).setStackDisplayName("§bSelect Recipe")
@@ -230,7 +231,7 @@ class ShoppingListItem(
         val usedRecipe: PrimitiveRecipe = recipe?.copy() ?: return
 //
         for (ingredient: PrimitiveIngredient in usedRecipe.ingredients) {
-            // TODO: why is .count a double, is there the possibility for half an item or what???
+            // TODO question: why is .count a double, is there the possibility for half an item or what???
 //             println("add item: ${ingredient.internalName} amount: ${ingredient.count.toInt()}")
             val item = subItems.firstOrNull { it.internalName == ingredient.internalName } as ShoppingListItem?
 
@@ -253,7 +254,7 @@ class ShoppingListItem(
     }
 
     fun getCurrentAmount(): Int {
-        // TODO: also get the amount in the storage (as an option)
+        // TODO later: also get the amount in the storage (as an option), as it's relevant for supercraft
         return internalName.getAmountInInventoryAndSacks()
     }
 
@@ -323,7 +324,7 @@ class ShoppingListItem(
 
         } else {
             viewRecipe(internalName.asString())
-            // TODO: hide the display item while doing this
+            // TODO soon (maybe): hide the display item while doing this
         }
     }
 
@@ -377,14 +378,9 @@ class ShoppingListItem(
         }
     }
 
-    // TODO: implement
+    // TODO later: implement
     fun copyToClipboard() {
         println("copying $internalName to clipboard")
-    }
-
-    // TODO: implement
-    fun onNormalRightClick() {
-        println("right click")
     }
 
     fun Double.displayAmount(): String {
@@ -474,10 +470,10 @@ class ShoppingListItem(
 
             clickLayout.toMap()
 
-            // TODO: make the left click tooltips be generated from the clickLayout
+            // TODO (maybe): make the tooltips be generated from the clickLayout
             clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL))] = { moveThisToTop() }
             tooltip.add("§7ctrl + right click to move to top")
-//             clickLayout["middle"] = { copyToClipboard() }  // TODO: implement middle click
+//             clickLayout["middle"] = { copyToClipboard() }  // TODO later: implement middle click
 //             tooltip.add("§7middle click to copy to clipboard")
 
             clickLayout.toMap()
@@ -487,34 +483,6 @@ class ShoppingListItem(
                     text = string,
                     tips = tooltip,
                     onAnyClick = clickLayout.toMap(),
-//                     onAnyClick = mapOf<ClickTypeWithModifiers, () -> Unit>(
-//                         LEFT_MOUSE to {
-//                             if (KeyboardManager.isModifierKeyDown() && KeyboardManager.isShiftKeyDown()) {
-//                                 clickLayout["ctrl + shift + left"]?.invoke() ?: clickLayout["ctrl + left"]?.invoke()
-//                                 ?: clickLayout["shift + left"]?.invoke() ?: clickLayout["left"]?.invoke()
-//                             } else if (KeyboardManager.isModifierKeyDown()) {
-//                                 clickLayout["ctrl + left"]?.invoke() ?: clickLayout["left"]?.invoke()
-//                             } else if (KeyboardManager.isShiftKeyDown()) {
-//                                 clickLayout["shift + left"]?.invoke() ?: clickLayout["left"]?.invoke()
-//                             } else {
-//                                 clickLayout["left"]?.invoke()
-//                             }
-//                         },
-//                         RIGHT_MOUSE to {
-//                             if (KeyboardManager.isModifierKeyDown() && KeyboardManager.isShiftKeyDown()) {
-//                                 clickLayout["ctrl + shift + right"]?.invoke()
-//                             } else if (KeyboardManager.isModifierKeyDown()) {
-//                                 clickLayout["ctrl + right"]?.invoke()
-//                             } else if (KeyboardManager.isShiftKeyDown()) {
-//                                 clickLayout["shift + right"]?.invoke()
-//                             } else {
-//                                 clickLayout["right"]?.invoke()
-//                             }
-//                         },
-//                         2 to { // middle click  // TODO: implement middle click
-//                             clickLayout["middle"]?.invoke()
-//                         },
-//                     ),
                 ),
             )
         }

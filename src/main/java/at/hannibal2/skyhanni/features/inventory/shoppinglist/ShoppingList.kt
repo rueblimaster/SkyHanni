@@ -80,7 +80,7 @@ object ShoppingList {
         fun get(item: NeuInternalName) = allItems[item]
     }
 
-    // TODO: somehow also make it searchable?
+    // TODO soon: somehow also make it searchable?
     private var display = listOf<Renderable>()
 
     private var inventoryOpen = false
@@ -506,8 +506,9 @@ object ShoppingList {
 //             autoComplete { categories.map { category -> category.name } }
             callback { removeCategory(it[0]) }
         }
-//         TODO: add a hide command
-//         TODO: implement set
+//         TODO (maybe): add a hide command
+
+//         TODO : implement set
 //         event.register("shshoppinglistset") {
 //             description = "Set the amount of an item in the shopping list"
 //             category = CommandCategory.USERS_ACTIVE

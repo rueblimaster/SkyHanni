@@ -1,7 +1,6 @@
 package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
 import at.hannibal2.skyhanni.utils.ChatUtils
-import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
@@ -16,9 +15,9 @@ import net.minecraft.item.ItemStack
 class ShoppingListCategory(
     val name: String,
     val color: LorenzColor = LorenzColor.GOLD,
-//     val icon: ItemStack? = null, // TODO: implement icons
+//     val icon: ItemStack? = null, // TODO later maybe?: implement icons
     val saveInStorage: Boolean = true,
-    // TODO: implement only in area somehow
+    // TODO soon: implement only in area somehow
 ) {
     val items = mutableListOf<ShoppingListItem>()
 
@@ -33,7 +32,7 @@ class ShoppingListCategory(
     }
 
     /*
-    TODO: make this all configurable
+    TODO later: make this all configurable
     what do we want to be able to do from the display widget:
         - (right click) remove it
         - (shift + right click) hide/unhide it along with tree
