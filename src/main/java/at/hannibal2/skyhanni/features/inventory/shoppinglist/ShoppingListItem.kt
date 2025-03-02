@@ -4,11 +4,13 @@ import at.hannibal2.skyhanni.api.GetFromSackApi
 import at.hannibal2.skyhanni.api.ItemBuyApi.buy
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.currentlyOpenRecipe
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
+import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.HypixelCommands.craft
 import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventory
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventoryAndSacks
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
+import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
@@ -48,27 +50,22 @@ class ShoppingListItem(
         topLevelItem,
         template.recipe?.toPrimitiveRecipe(),
     ) {
-        println("Creating item from template: $internalName")
         hidden = template.hidden
 
-        println("Subitems: ${template.subItems}")
         template.subItems.forEach {
             subItems.add(ShoppingListItem(it, topLevelCategory, this))
         }
 
-        println("Subitems: $subItems, getting amounts")
         val ingredients: MutableMap<NeuInternalName, Double> = mutableMapOf()
         recipe?.ingredients?.forEach {
             ingredients[it.internalName] = it.count / (recipe?.output?.count ?: 1.0)
         }
 
-        println("Setting amounts")
         subItems.forEach {
             if (it.internalName in ingredients && ingredients[it.internalName] != null) {
                 it.amount = ingredients[it.internalName] ?: 1.0
             }
         }
-        println("Done")
     }
 
     // TODO soon (probably): add a way to offset the amount of an item counted in the inventory etc.
@@ -141,18 +138,14 @@ class ShoppingListItem(
     }
 
     fun breakDownIntoSubitems() {
-        println("Breaking down $internalName into subitems")
-
-        if (recipe != null) {
-            println("Recipe already found")
-        } else {
-            decideRecipe()
-        }
 
         if (recipe == null) {
-            println("No recipe found for $internalName")
-            return
+            val success = decideRecipe()
+            if (success == false) {
+                return
+            }
         }
+
         subItems.clear()
 
         addRecipe()
@@ -182,16 +175,14 @@ class ShoppingListItem(
         }
     }
 
-    fun decideRecipe() {
+    fun decideRecipe(): Boolean {
         if (possibleRecipes.isEmpty() != false) {
-            println("No recipes found for ${internalName.itemName}")
-            return
+            ChatUtils.chat("No recipes found for ${internalName.itemNameWithoutColor}")
+            return false
         }
 
         if (possibleRecipes.size > 1) {
-            println("Multiple recipes found for ${internalName.itemName}")
-
-            println(possibleRecipes[0].ingredients)
+            ChatUtils.chat("Multiple recipes found for ${internalName.itemNameWithoutColor}\n§7Select one")
 
             val lore = buildList {
                 add("§8(From SkyHanni)")
@@ -207,11 +198,12 @@ class ShoppingListItem(
         } else {
             recipe = possibleRecipes[0]
         }
+        return true
     }
 
     fun onItemClick(clickedItem: ItemStack): Boolean {
         if (displayItem != null && clickedItem == displayItem) {
-            println("Clicked on display item for $internalName")
+//             println("Clicked on display item for $internalName")
             recipe = currentlyOpenRecipe
             displayItem = null
             resetDisplayItem()
@@ -227,12 +219,10 @@ class ShoppingListItem(
     }
 
     fun addRecipe() {
-        println("adding recipe for $internalName: $recipe")
         val usedRecipe: PrimitiveRecipe = recipe?.copy() ?: return
-//
+
         for (ingredient: PrimitiveIngredient in usedRecipe.ingredients) {
             // TODO question: why is .count a double, is there the possibility for half an item or what???
-//             println("add item: ${ingredient.internalName} amount: ${ingredient.count.toInt()}")
             val item = subItems.firstOrNull { it.internalName == ingredient.internalName } as ShoppingListItem?
 
             val ingredientAmount = ingredient.count / (usedRecipe.output?.count ?: 1.0)
@@ -291,8 +281,9 @@ class ShoppingListItem(
     }
 
     fun checkIfInSignAndInsertAmount(): Boolean {
-        println("checking for in sign")
+//         println("checking for in sign")
         if (Minecraft.getMinecraft().currentScreen is GuiEditSign) {
+            ChatUtils.chat("Detected sign gui, pasting number into sign instead")
             LorenzUtils.setTextIntoSign("${remainingAmount.toInt()}")
             return true
         } else {
@@ -301,9 +292,7 @@ class ShoppingListItem(
     }
 
     fun buyItem() {
-        println(
-            "Buying item: $internalName ${totalAmount.toInt()}, " + "getting ${remainingAmount.toInt()}",
-        )
+//         println("Buying item: $internalName ${totalAmount.toInt()}, getting ${remainingAmount.toInt()}")
         if (checkIfInSignAndInsertAmount()) return
         if (remainingAmount <= 0) return
 
@@ -311,12 +300,12 @@ class ShoppingListItem(
     }
 
     fun openCraftingRecipe() {
-        println("Opening crafting recipe: $internalName")
+//         println("Opening crafting recipe: $internalName")
         if (checkIfInSignAndInsertAmount()) return
         // if (remainingAmount <= 0) return // this shouldn't happen anyways
 
         if (internalName.isVanillaItem()) {
-            println("Vanilla item, can't open recipe, getting all required items instead")
+            ChatUtils.chat("Vanilla item, can't open recipe, opening the crafting table and getting all required items instead")
             subItems.forEach {
                 it.fetchItemFromAvailableStorage()
                 craft()
@@ -329,20 +318,18 @@ class ShoppingListItem(
     }
 
     fun fetchItemFromAvailableStorage() {
-        println(
-            "Fetching item from available storage: $internalName ${totalAmount.toInt()}, " +
-                "getting ${getMissingAmountInInventory().toInt()}",
-        )
+//         println(
+//             "Fetching item from available storage: $internalName ${totalAmount.toInt()}, " +
+//                 "getting ${getMissingAmountInInventory().toInt()}",
+//         )
         if (checkIfInSignAndInsertAmount()) return
-        println("is valid amount")
         if (getMissingAmountInInventory() <= 0) return
-        println("Getting from storage")
 
         GetFromSackApi.getFromSack(internalName, getMissingAmountInInventory().toInt())
     }
 
     fun removeItem() {
-        println("Removing item: $internalName")
+//         println("Removing item: $internalName")
         if (topLevelItem != null) return
         topLevelCategory.remove(internalName)
     }
@@ -354,7 +341,7 @@ class ShoppingListItem(
     }
 
     fun moveThisToTop() {
-        println("moving $internalName to top")
+//         println("moving $internalName to top")
         topLevelItem?.moveItemToTop(this) ?: topLevelCategory.moveItemToTop(this)
     }
 
@@ -363,7 +350,7 @@ class ShoppingListItem(
     }
 
     fun toggleHide(hideTree: Boolean = false, forceSetTo: Boolean? = null) {
-        println("toggling hide for $internalName, hideTree: $hideTree")
+//         println("toggling hide for $internalName, hideTree: $hideTree")
         hidden = forceSetTo ?: !hidden
         if (hideTree) {
             subItems.forEach {
@@ -388,12 +375,6 @@ class ShoppingListItem(
             this.toInt().toString()
         } else {
             this.toString()
-        }
-    }
-
-    fun printClickLayout() {
-        clickLayout.forEach { (key, value) ->
-            println("$key")
         }
     }
 

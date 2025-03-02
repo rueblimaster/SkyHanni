@@ -68,13 +68,18 @@ object ShoppingList {
                     }
                 }
             }
-//             print()
+//             print(this)
         }
 
-        fun print() {
+        override fun toString(): String {
+            var result = "ItemsOverall("
+
             for ((item, pair) in allItems) {
-                println("Item: $item, Amount: ${pair.first}, in items: ${pair.second}")
+                result += ("\nItem: $item, Amount: ${pair.first}, in items: ${pair.second}")
             }
+
+            result += "\n)"
+            return result
         }
 
         fun get(item: NeuInternalName) = allItems[item]
@@ -95,7 +100,7 @@ object ShoppingList {
 
         // TODO: shouldn't happen @Thunderblade73
         if (!isEnabled()) return
-        println("Adding ${itemName.itemName} x$amount to $categoryName")
+//         println("Adding ${itemName.itemName} x$amount to $categoryName")
 
         val category: ShoppingListCategory
         if (categoryName != null) {
@@ -150,7 +155,7 @@ object ShoppingList {
         if (!isEnabled()) return
         if (!isConfigLoaded) return
         val items = items
-        println("Removing $name x$amount from $categoryName")
+//         println("Removing $name x$amount from $categoryName")
 
         var itemName: NeuInternalName? = name.toInternalName()
         if (itemName == null || !itemName.isKnownItem()) {
@@ -235,14 +240,11 @@ object ShoppingList {
         if (inventoryOpen != currentlyOpen) {
             inventoryOpen = currentlyOpen
             update()
-//             println("Inventory open: $inventoryOpen")
         }
     }
 
     fun loadShoppingList(forceOverwriteCurrent: Boolean = false) {
-//         println("loading shopping list $storage $forceOverwriteCurrent $isConfigLoaded ${(!forceOverwriteCurrent) && isConfigLoaded}")
         if (isConfigLoaded && !forceOverwriteCurrent) return
-//         println("loading shopping list $storage")
         if (storage == null) return // technically not needed I guess
 
         val storedCategories = storage?.categories ?: return
@@ -255,15 +257,10 @@ object ShoppingList {
 
         items = ShoppingListCategory(storedItems)
 
-//         println("Loaded shopping list")
-//         println("Categories: $categories")
-//         println("Items: $items")
-
         isConfigLoaded = true
     }
 
     fun saveShoppingList() {
-//         println("saving shopping list $storage $isConfigLoaded")
         if (!isConfigLoaded) return
         val items = items
 
@@ -276,8 +273,6 @@ object ShoppingList {
 
         ProfileStorageData.profileSpecific?.shoppingList?.categories = tempCategories
         ProfileStorageData.profileSpecific?.shoppingList?.items = CategoryTemplate(items)
-
-//         println("Saved shopping list $tempCategories $items")
     }
 
     fun moveCategoryToTop(category: ShoppingListCategory) {
@@ -295,7 +290,6 @@ object ShoppingList {
         if (!isConfigLoaded) return
         val items = items
 
-//         println("Creating display")
         if (!isEnabled() || (categories.isEmpty() && items.items.isEmpty())) {
             display = emptyList()
             return
@@ -324,13 +318,6 @@ object ShoppingList {
     fun test() {
         ChatUtils.chat("test triggered")
 
-        println("storage: ${ProfileStorageData.profileSpecific?.shoppingList}")
-        println("categories: ${ProfileStorageData.profileSpecific?.shoppingList?.categories}")
-        println("items: ${ProfileStorageData.profileSpecific?.shoppingList?.items}")
-//         println("test: ${ProfileStorageData.profileSpecific?.shoppingList?.test}")
-//         println("test: ${storage?.test}")
-//         storage?.test = "test"
-//         println("test: ${ProfileStorageData.profileSpecific?.shoppingList?.test}")
         println("is config loaded: $isConfigLoaded")
         println("categories: $categories")
         println("items: $items")
@@ -392,7 +379,6 @@ object ShoppingList {
 
         val result = event.inventoryItems[25]?.toPrimitiveStackOrNull()?.toPrimitiveIngredient()
 
-        println("Relevant items: $ingredients")
         currentlyOpenRecipe = PrimitiveRecipe(ingredients, setOf(result ?: return), RecipeType.CRAFTING)
 
         createDisplayItem()
@@ -420,11 +406,10 @@ object ShoppingList {
         val currentlyOpenRecipe = currentlyOpenRecipe
 
         if (currentlyOpenRecipe == null) {
-            println("Currently open recipe is null")
             return
         }
 
-        println("Slot click event: ${event.item.displayName}")
+//         println("Slot click event: ${event.item.displayName}")
 
         if (event.item.displayName == "§bSelect Recipe") {
             event.cancel()
@@ -439,15 +424,13 @@ object ShoppingList {
             val output = currentlyOpenRecipe.output
 
             if (output == null) {
-                println("output is null")
+                ChatUtils.chat("Invalid Recipe with no output")
                 return
             }
 
             if (event.clickedButton == 2) {
-                println("adding only item")
                 items.add(output.internalName, 1.0)
             } else {
-                println("adding recipe")
                 items.add(output.internalName, 1.0, recipe = currentlyOpenRecipe)
             }
 
