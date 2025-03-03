@@ -56,6 +56,10 @@ class ShoppingListCategory(
         return name + " (" + items.size + " items)"
     }
 
+    fun isEmpty(): Boolean {
+        return items.isEmpty()
+    }
+
     fun add(itemName: NeuInternalName, amount: Double = 1.0, recipe: PrimitiveRecipe? = null) {
         if (!itemName.isKnownItem()) {
             ChatUtils.userError("Item ${itemName.itemNameWithoutColor} not found")
