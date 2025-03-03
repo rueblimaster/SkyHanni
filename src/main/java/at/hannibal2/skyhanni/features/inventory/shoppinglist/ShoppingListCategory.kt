@@ -2,7 +2,6 @@ package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
-import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
 import at.hannibal2.skyhanni.utils.LorenzColor
@@ -10,7 +9,9 @@ import at.hannibal2.skyhanni.utils.LorenzColor.Companion.toLorenzColor
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.renderables.Renderable
+import at.hannibal2.skyhanni.utils.renderables.Renderable.Companion.ClickTypeWithModifiers
 import net.minecraft.item.ItemStack
+import org.lwjgl.input.Keyboard
 
 class ShoppingListCategory(
     val name: String,
@@ -30,6 +31,13 @@ class ShoppingListCategory(
             items.add(ShoppingListItem(it, this))
         }
     }
+
+    val clickLayout: MutableMap<ClickTypeWithModifiers, () -> Unit> = mutableMapOf(
+        ClickTypeWithModifiers(LEFT_MOUSE) to { },
+        ClickTypeWithModifiers(RIGHT_MOUSE) to { ShoppingList.removeCategory(this) },
+        ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LSHIFT)) to { toggleHide() },
+        ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL)) to { moveThisToTop() },
+    )
 
     /*
     TODO later: make this all configurable
@@ -132,21 +140,6 @@ class ShoppingListCategory(
         ShoppingList.moveCategoryToTop(this)
     }
 
-    fun onNormalRightClick() {
-        println("category: right click")
-        ShoppingList.removeCategory(this)
-    }
-
-    fun onShiftRightClick() {
-        println("category: shift right click")
-        toggleHide()
-    }
-
-    fun onCtrlRightClick() {
-        println("category: ctrl right click")
-        moveThisToTop()
-    }
-
     fun getRenderables(indent: Int, showThis: Boolean = true): List<Renderable> {
         val renderables = mutableListOf<Renderable>()
 
@@ -163,21 +156,10 @@ class ShoppingListCategory(
                 tooltip.add("§7Ctrl + right click to move to top")
 
                 renderables.add(
-                    Renderable.clickable(
+                    Renderable.clickableWithModifiers(
                         text = string,
                         tips = tooltip,
-                        onAnyClick = mapOf<Int, () -> Unit>(
-                            LEFT_MOUSE to { },
-                            RIGHT_MOUSE to {
-                                if (KeyboardManager.isModifierKeyDown()) {
-                                    onCtrlRightClick()
-                                } else if (KeyboardManager.isShiftKeyDown()) {
-                                    onShiftRightClick()
-                                } else {
-                                    onNormalRightClick()
-                                }
-                            },
-                        ),
+                        onAnyClick = clickLayout.toMap()
                     ),
                 )
             }
