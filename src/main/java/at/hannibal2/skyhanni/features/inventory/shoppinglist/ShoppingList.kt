@@ -7,6 +7,7 @@ import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
 import at.hannibal2.skyhanni.config.storage.ProfileSpecificStorage
 import at.hannibal2.skyhanni.data.ProfileStorageData
 import at.hannibal2.skyhanni.events.ConfigLoadEvent
+import at.hannibal2.skyhanni.events.DebugDataCollectEvent
 import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.InventoryCloseEvent
@@ -22,6 +23,7 @@ import at.hannibal2.skyhanni.utils.CollectionUtils.addString
 import at.hannibal2.skyhanni.utils.InventoryUtils.closeInventory
 import at.hannibal2.skyhanni.utils.InventoryUtils.inAnyInventory
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
+import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.LorenzUtils
@@ -69,6 +71,10 @@ object ShoppingList {
                 }
             }
 //             print(this)
+        }
+
+        fun getItems(): MutableMap<NeuInternalName, Pair<Double, Int>> {
+            return allItems
         }
 
         override fun toString(): String {
@@ -290,7 +296,7 @@ object ShoppingList {
         if (!isConfigLoaded) return
         val items = items
 
-        if (!isEnabled() || (categories.isEmpty() && items.items.isEmpty())) {
+        if (!isEnabled() || (categories.isEmpty() && items.isEmpty())) {
             display = emptyList()
             return
         }
@@ -462,6 +468,47 @@ object ShoppingList {
         config.position.renderRenderables(display, posLabel = "Shopping List")
     }
 
+    @HandleEvent
+    fun onDebugDataCollect(event: DebugDataCollectEvent) {
+        event.title("Shopping List")
+        if (!isEnabled()) {
+            event.addIrrelevant("Shopping List is disabled")
+            return
+        }
+
+        if (!isConfigLoaded) {
+            event.addIrrelevant("Shopping List is not loaded")
+            return
+        }
+
+        if (categories.isEmpty() && items.isEmpty()) {
+            event.addIrrelevant("Shopping List is empty")
+            return
+        }
+
+        event.addData {
+            categories.forEach {
+                add("§${it.color.chatColorCode}${it.name}")
+                it.items.forEach { item ->
+                    add("  $item")
+                }
+            }
+
+            add("")
+
+            items.items.forEach { item ->
+                add(item.toString())
+            }
+
+            add("")
+
+            add("ItemsOverall:")
+            for ((item, pair) in ItemsOverall.getItems()) {
+                add("  Item: ${item.itemNameWithoutColor}, Amount: ${pair.first}, in items: ${pair.second}")
+            }
+        }
+    }
+
     // this event should be last
     // TODO: better argument handling
     @HandleEvent()
@@ -475,7 +522,7 @@ object ShoppingList {
         event.register("shshoppinglistadd") {
             description = "Add an item to the shopping list"
             category = CommandCategory.USERS_ACTIVE
-            aliases = listOf("shsladd")
+            aliases = listOf("shsladd", "shsla")
             autoComplete { listOf("Carrot", "Potato", "Wheat") }
             callback { add(it[0].toInternalName(), it.getOrNull(1)?.toDoubleOrNull() ?: 1.0, it.getOrNull(2)) }
         }
@@ -483,14 +530,13 @@ object ShoppingList {
             description = "Remove an item from the shopping list"
             category = CommandCategory.USERS_ACTIVE
             aliases = listOf("shslremove")
-            autoComplete { listOf("Carrot", "Potato", "Wheat") }
+//             autoComplete { listOf("Carrot", "Potato", "Wheat") }
             callback { remove(it[0], it.getOrNull(1)?.toDoubleOrNull(), it.getOrNull(2)) }
         }
         event.register("shshoppinglistremovecategory") {
             description = "Remove a category from the shopping list"
             category = CommandCategory.USERS_ACTIVE
             aliases = listOf("shslremovecategory")
-//             autoComplete { categories.map { category -> category.name } }
             callback { removeCategory(it[0]) }
         }
 //         TODO (maybe): add a hide command
