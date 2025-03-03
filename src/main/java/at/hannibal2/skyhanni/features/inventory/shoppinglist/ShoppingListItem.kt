@@ -222,7 +222,6 @@ class ShoppingListItem(
         val usedRecipe: PrimitiveRecipe = recipe?.copy() ?: return
 
         for (ingredient: PrimitiveIngredient in usedRecipe.ingredients) {
-            // TODO question: why is .count a double, is there the possibility for half an item or what???
             val item = subItems.firstOrNull { it.internalName == ingredient.internalName } as ShoppingListItem?
 
             val ingredientAmount = ingredient.count / (usedRecipe.output?.count ?: 1.0)
