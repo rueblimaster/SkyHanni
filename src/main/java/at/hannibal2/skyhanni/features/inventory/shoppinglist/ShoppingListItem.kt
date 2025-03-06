@@ -321,6 +321,7 @@ class ShoppingListItem(
     fun removeItem() {
         if (topLevelItem != null) return
         topLevelCategory.remove(internalName)
+        ShoppingList.update()
     }
 
     fun moveItemToTop(item: ShoppingListItem) {
@@ -389,7 +390,7 @@ class ShoppingListItem(
                 colorActive = LorenzColor.GRAY,
                 colorInactive = LorenzColor.GRAY,
                 clickType = "",
-            )
+            ).first()
 
             if (hasItems()) {
                 string += " §a✓"
@@ -408,10 +409,10 @@ class ShoppingListItem(
                     clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { breakDownIntoSubitems() }
                     tooltip.add("§7left click to break down recipe")
                     clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { buyItem() }
-                    tooltip.add("§7shift + left click $buyTooltip")
+                    tooltip.add("§7shift + left click$buyTooltip")
                 } else {
                     clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { buyItem() }
-                    tooltip.add("§7left click $buyTooltip")
+                    tooltip.add("§7left click$buyTooltip")
                     clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
                     tooltip.add("§7shift + left click to break down recipe")
                 }
