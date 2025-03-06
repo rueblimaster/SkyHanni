@@ -58,7 +58,7 @@ object ShoppingList {
 
             allItems.clear()
             for (category in categories + items) {
-                
+
                 category.getItemsOverall().forEach { (name, pair: Pair<Double, Int>) ->
                     if (allItems.containsKey(name)) {
                         allItems[name]?.let { entry ->
@@ -153,7 +153,6 @@ object ShoppingList {
         update()
     }
 
-    // maybe name it removeCommand ???
     fun remove(name: String, amount: Double? = null, categoryName: String? = null) {
         if (!isEnabled()) return
         if (!isConfigLoaded) return
