@@ -156,56 +156,65 @@ object ShoppingList {
     fun remove(name: String, amount: Double? = null, categoryName: String? = null) {
         if (!isEnabled()) return
         if (!isConfigLoaded) return
-        val items = items
 
         var itemName: NeuInternalName? = name.toInternalName()
+
         if (itemName == null || !itemName.isKnownItem()) {
-            itemName = null
-            if (!name.isCategory()) {
-                ChatUtils.userError("Item $name not found")
-            } else {
-                removeCategory(name)
-            }
-
+            handleItemNotFound(name)
         } else if (categoryName != null) {
-            if (!categoryName.isCategory()) {
-                ChatUtils.userError("Category $categoryName not found")
-                return
-            } else {
-                val category = categories.firstOrNull { it.name == categoryName } ?: return
-
-                category.remove(itemName, amount)
-            }
-
-        } else if (items.contains(itemName)) {
-            items.remove(itemName, amount)
-
+            removeFromCategory(itemName, categoryName, amount)
         } else {
-            var category: ShoppingListCategory? = null
-            for (cat in categories) {
-                if (cat.contains(itemName)) {
-                    if (category != null) {
-                        ChatUtils.userError(
-                            "Item ${itemName.itemName} found in multiple categories, " + "please specify the category to remove from",
-                        )
-                        return
-                    }
-                    category = cat
+            removeItemFromItemsOrCategories(itemName, amount)
+        }
+
+        update()
+    }
+
+    private fun handleItemNotFound(name: String) {
+        if (name.isCategory()) {
+            removeCategory(name)
+        } else {
+            ChatUtils.userError("Item $name not found")
+        }
+    }
+
+    private fun removeFromCategory(itemName: NeuInternalName, categoryName: String, amount: Double?) {
+        if (!categoryName.isCategory()) {
+            ChatUtils.userError("Category $categoryName not found")
+            return
+        }
+
+        val category = categories.firstOrNull { it.name == categoryName }
+        category?.remove(itemName, amount) ?: ChatUtils.userError("Category $categoryName not found")
+    }
+
+    private fun removeItemFromItemsOrCategories(itemName: NeuInternalName, amount: Double?) {
+        if (items.contains(itemName)) {
+            items.remove(itemName, amount)
+        } else {
+            removeFromMultipleCategories(itemName, amount)
+        }
+    }
+
+    private fun removeFromMultipleCategories(itemName: NeuInternalName, amount: Double?) {
+        var category: ShoppingListCategory? = null
+        for (cat in categories) {
+            if (cat.contains(itemName)) {
+                if (category != null) {
+                    ChatUtils.userError(
+                        "Item ${itemName.itemName} found in multiple categories, please specify the category to remove from",
+                    )
+                    return
                 }
-            }
-            if (category == null) {
-                ChatUtils.userError("Item ${itemName.itemName} not found")
-            } else {
-                category.remove(itemName, amount)
+                category = cat
             }
         }
 
-        createDisplay()
+        category?.remove(itemName, amount) ?: ChatUtils.userError("Item ${itemName.itemName} not found")
     }
 
     fun clear() {
         if (!isConfigLoaded) return
-        val items = items
 
         categories.clear()
         items.clear()
@@ -500,7 +509,7 @@ object ShoppingList {
     }
 
     // this event should be last
-    // TODO: better argument handling
+// TODO: better argument handling
     @HandleEvent()
     fun onCommandRegistration(event: CommandRegistrationEvent) {
         event.register("shshoppinglistclear") {
