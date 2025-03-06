@@ -58,15 +58,14 @@ object ShoppingList {
 
             allItems.clear()
             for (category in categories + items) {
-                for (item in category.items) {
-                    item.getItemsOverall().forEach { (name, pair: Pair<Double, Int>) ->
-                        if (allItems.containsKey(name)) {
-                            allItems[name]?.let { it1 ->
-                                allItems[name] = Pair(it1.first + pair.first, it1.second + pair.second)
-                            }
-                        } else {
-                            allItems[name] = pair
+                
+                category.getItemsOverall().forEach { (name, pair: Pair<Double, Int>) ->
+                    if (allItems.containsKey(name)) {
+                        allItems[name]?.let { entry ->
+                            allItems[name] = Pair(entry.first + pair.first, entry.second + pair.second)
                         }
+                    } else {
+                        allItems[name] = pair
                     }
                 }
             }
@@ -319,7 +318,7 @@ object ShoppingList {
     }
 
     fun test() {
-        ChatUtils.chat("test triggered")
+        println("test triggered")
 
         println("is config loaded: $isConfigLoaded")
         println("categories: $categories")
@@ -327,14 +326,14 @@ object ShoppingList {
 
         clear()
 
-        add("aspect of the end".toInternalName(), 2.0, "Weapons")
+        add("aspect of the end".toInternalName(), 2.0, categoryName = "Weapons")
         addCategory("Visitors", saveInStorage = false)
-        add("enchanted carrot".toInternalName(), 49.0, "Visitors")
+        add("enchanted carrot".toInternalName(), 49.0, categoryName = "Visitors")
         add("diamond".toInternalName(), 136.0)
 
         update()
 
-        ChatUtils.chat("test done")
+        println("test done")
     }
 
     fun InventoryFullyOpenedEvent.isRecipe() = inventoryName.contains("Recipe") && inventorySize == 54
@@ -398,7 +397,7 @@ object ShoppingList {
         }
     }
 
-    @HandleEvent(onlyOnSkyblock = true, priority = HandleEvent.HIGH)
+    @HandleEvent(onlyOnSkyblock = true)
     fun onSlotClick(event: GuiContainerEvent.SlotClickEvent) {
         if (!isEnabled()) return
         if (event.slotId != 51) return

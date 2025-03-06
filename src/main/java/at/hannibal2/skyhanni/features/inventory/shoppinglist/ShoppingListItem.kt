@@ -265,10 +265,10 @@ class ShoppingListItem(
         return buildMap {
             this[internalName] = Pair(totalAmount, 1)
 
-            subItems.forEach {
-                it.getItemsOverall().forEach { (name, pair: Pair<Double, Int>) ->
+            subItems.forEach { item ->
+                item.getItemsOverall().forEach { (name, pair: Pair<Double, Int>) ->
                     if (this.containsKey(name)) {
-                        this[name]?.let { it1 -> this[name] = Pair(it1.first + pair.first, it1.second + pair.second) }
+                        this[name]?.let { entry -> this[name] = Pair(entry.first + pair.first, entry.second + pair.second) }
                     } else {
                         this[name] = pair
                     }

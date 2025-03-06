@@ -12,6 +12,8 @@ import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.Renderable.Companion.ClickTypeWithModifiers
 import net.minecraft.item.ItemStack
 import org.lwjgl.input.Keyboard
+import kotlin.collections.component1
+import kotlin.collections.component2
 
 class ShoppingListCategory(
     val name: String,
@@ -117,6 +119,20 @@ class ShoppingListCategory(
         return items.any { it.internalName == itemName }
     }
 
+    fun getItemsOverall(): Map<NeuInternalName, Pair<Double, Int>> {
+        return buildMap {
+            items.forEach { item ->
+                item.getItemsOverall().forEach { (name, pair: Pair<Double, Int>) ->
+                    if (this.containsKey(name)) {
+                        this[name]?.let { entry -> this[name] = Pair(entry.first + pair.first, entry.second + pair.second) }
+                    } else {
+                        this[name] = pair
+                    }
+                }
+            }
+        }
+    }
+
     fun onItemClicked(clickedItem: ItemStack): Boolean {
         items.forEach {
             if (it.onItemClick(clickedItem)) {
@@ -163,7 +179,7 @@ class ShoppingListCategory(
                     Renderable.clickableWithModifiers(
                         text = string,
                         tips = tooltip,
-                        onAnyClick = clickLayout.toMap()
+                        onAnyClick = clickLayout.toMap(),
                     ),
                 )
             }
