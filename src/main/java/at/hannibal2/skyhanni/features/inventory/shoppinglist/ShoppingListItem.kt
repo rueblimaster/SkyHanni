@@ -2,6 +2,7 @@ package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
 import at.hannibal2.skyhanni.api.GetFromSackApi
 import at.hannibal2.skyhanni.api.ItemBuyApi.buy
+import at.hannibal2.skyhanni.api.ItemBuyApi.createBuyTip
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.currentlyOpenRecipe
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
 import at.hannibal2.skyhanni.utils.ChatUtils
@@ -14,6 +15,7 @@ import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
+import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.LorenzUtils
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
@@ -383,6 +385,12 @@ class ShoppingListItem(
             }
 
             // left click
+            val buyTooltip = internalName.createBuyTip(
+                colorActive = LorenzColor.GRAY,
+                colorInactive = LorenzColor.GRAY,
+                clickType = "",
+            )
+
             if (hasItems()) {
                 string += " §a✓"
                 clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { fetchItemFromAvailableStorage() }
@@ -400,10 +408,10 @@ class ShoppingListItem(
                     clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { breakDownIntoSubitems() }
                     tooltip.add("§7left click to break down recipe")
                     clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { buyItem() }
-                    tooltip.add("§7shift + left click to buy")
+                    tooltip.add("§7shift + left click $buyTooltip")
                 } else {
                     clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { buyItem() }
-                    tooltip.add("§7left click to buy")
+                    tooltip.add("§7left click $buyTooltip")
                     clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
                     tooltip.add("§7shift + left click to break down recipe")
                 }
