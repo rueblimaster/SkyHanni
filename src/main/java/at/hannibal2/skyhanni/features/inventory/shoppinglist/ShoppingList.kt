@@ -157,7 +157,7 @@ object ShoppingList {
         if (!isEnabled()) return
         if (!isConfigLoaded) return
 
-        var itemName: NeuInternalName? = name.toInternalName()
+        val itemName: NeuInternalName? = name.toInternalName()
 
         if (itemName == null || !itemName.isKnownItem()) {
             handleItemNotFound(name)
