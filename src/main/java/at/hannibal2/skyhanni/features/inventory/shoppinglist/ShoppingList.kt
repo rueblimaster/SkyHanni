@@ -120,20 +120,55 @@ object ShoppingList {
         createDisplay()
     }
 
-    fun addCategory(categoryName: String, color: LorenzColor? = null, saveInStorage: Boolean = true) {
+    fun addCategory(
+        categoryName: String,
+        color: LorenzColor? = null,
+        saveInStorage: Boolean = true,
+        displayCondition: () -> Boolean = { true },
+    ) {
         if (!isEnabled()) return
         if (!isConfigLoaded) return
 
         if (categories.any { it.name == categoryName }) return
 
         if (color == null) {
-            categories.add(ShoppingListCategory(categoryName, saveInStorage = saveInStorage))
+            categories.add(ShoppingListCategory(categoryName, saveInStorage = saveInStorage, displayCondition = displayCondition))
         } else {
-            categories.add(ShoppingListCategory(categoryName, color = color, saveInStorage = saveInStorage))
+            categories.add(
+                ShoppingListCategory(
+                    categoryName,
+                    color = color,
+                    saveInStorage = saveInStorage,
+                    displayCondition = displayCondition,
+                ),
+            )
         }
 
         update()
     }
+
+    fun set(itemName: NeuInternalName, amount: Double = 1.0, categoryName: String? = null) {
+        if (!isConfigLoaded) return
+
+        // TODO: shouldn't happen @Thunderblade73
+        if (!isEnabled()) return
+
+        val category: ShoppingListCategory
+        if (categoryName != null) {
+            if (!categoryName.isCategory()) {
+                category = ShoppingListCategory(categoryName)
+                categories.add(category)
+            } else {
+                category = categories.firstOrNull { it.name == categoryName } ?: return
+            }
+        } else {
+            category = items
+        }
+        category.set(itemName, amount)
+
+        createDisplay()
+    }
+
 
     fun removeCategory(categoryName: String) {
         if (!isEnabled()) return
@@ -225,6 +260,8 @@ object ShoppingList {
     fun isEnabled() = LorenzUtils.inSkyBlock && config.enabled
 
     fun String.isCategory(): Boolean = categories.any { it.name == this }
+
+    fun String.getCategory(): ShoppingListCategory? = categories.firstOrNull { it.name == this }
 
     fun resetDisplayItem() {
         displayItem = null

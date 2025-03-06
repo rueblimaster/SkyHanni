@@ -19,7 +19,7 @@ class ShoppingListCategory(
     val name: String,
     val color: LorenzColor = LorenzColor.GOLD,
     val saveInStorage: Boolean = true,
-    // TODO: implement only in area somehow, even better implement it with a function
+    val displayCondition: () -> Boolean = { true }, // TODO: later (maybe): implement only in area somehow
     // TODO later maybe?: implement icons
 ) {
     val items = mutableListOf<ShoppingListItem>()
@@ -89,6 +89,32 @@ class ShoppingListCategory(
         }
     }
 
+    fun set(itemName: NeuInternalName, amount: Double) {
+        if (!itemName.isKnownItem()) {
+            ChatUtils.userError("Item ${itemName.itemNameWithoutColor} not found")
+            return
+        }
+
+        val item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
+
+        if (item == null) {
+            items.add(ShoppingListItem(itemName, amount, this))
+        } else {
+            item.changeAmountTo(amount)
+        }
+    }
+
+    fun remove(item: ShoppingListItem, amount: Double? = null) {
+        if (amount == null) {
+            items.remove(item)
+        } else {
+            item.changeAmountBy(-amount)
+            if (item.amount <= 0.0) {
+                items.remove(item)
+            }
+        }
+    }
+
     fun remove(itemName: NeuInternalName, amount: Double? = null) {
         if (!itemName.isKnownItem()) {
             ChatUtils.userError("Item ${itemName.itemNameWithoutColor} not found")
@@ -100,14 +126,7 @@ class ShoppingListCategory(
         if (item == null) {
             ChatUtils.userError("Item ${itemName.itemNameWithoutColor} not found in category $name")
         } else {
-            if (amount == null) {
-                items.remove(item)
-            } else {
-                item.changeAmountBy(-amount)
-                if (item.amount <= 0.0) {
-                    items.remove(item)
-                }
-            }
+            remove(item, amount)
         }
     }
 
@@ -163,7 +182,7 @@ class ShoppingListCategory(
     fun getRenderables(indent: Int, showThis: Boolean = true): List<Renderable> {
         val renderables = mutableListOf<Renderable>()
 
-        if (!hidden || ShoppingList.isInventoryOpen()) {
+        if ((!hidden || ShoppingList.isInventoryOpen()) && displayCondition()) {
             if (showThis) {
                 var string = ""
                 val tooltip = mutableListOf<String>()
