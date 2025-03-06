@@ -12,6 +12,7 @@ import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.InventoryCloseEvent
 import at.hannibal2.skyhanni.events.InventoryFullyOpenedEvent
+import at.hannibal2.skyhanni.events.IslandChangeEvent
 import at.hannibal2.skyhanni.events.OwnInventoryItemUpdateEvent
 import at.hannibal2.skyhanni.events.SackDataUpdateEvent
 import at.hannibal2.skyhanni.events.entity.ItemAddInInventoryEvent
@@ -54,7 +55,6 @@ object ShoppingList {
 
         fun update() {
             if (!isConfigLoaded) return
-            val items = items
 
             allItems.clear()
             for (category in categories + items) {
@@ -100,7 +100,6 @@ object ShoppingList {
     // all the functions for interacting with the shopping list come here
     fun add(itemName: NeuInternalName, amount: Double = 1.0, categoryName: String? = null) {
         if (!isConfigLoaded) return
-        val items = items
 
         // TODO: shouldn't happen @Thunderblade73
         if (!isEnabled()) return
@@ -272,7 +271,6 @@ object ShoppingList {
 
     fun saveShoppingList() {
         if (!isConfigLoaded) return
-        val items = items
 
         val tempCategories = mutableListOf<CategoryTemplate>()
         for (category in categories) {
@@ -298,7 +296,6 @@ object ShoppingList {
     // all display related functions
     fun createDisplay() {
         if (!isConfigLoaded) return
-        val items = items
 
         if (!isEnabled() || (categories.isEmpty() && items.isEmpty())) {
             display = emptyList()
@@ -310,6 +307,9 @@ object ShoppingList {
                 addAll(it.getRenderables(1))
             }
             addAll(items.getRenderables(0, showThis = false))
+        }
+        if (display.size == 1) {
+            display = emptyList()
         }
     }
 
@@ -370,6 +370,12 @@ object ShoppingList {
 
     @HandleEvent
     fun onWorldChange(event: WorldChangeEvent) {
+        recheckInInventory()
+        update()
+    }
+
+    @HandleEvent
+    fun onIslandChange(event: IslandChangeEvent) {
         recheckInInventory()
         update()
     }
