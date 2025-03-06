@@ -26,6 +26,9 @@ import at.hannibal2.skyhanni.features.garden.GardenApi
 import at.hannibal2.skyhanni.features.garden.farming.GardenCropSpeed.getSpeed
 import at.hannibal2.skyhanni.features.garden.visitor.VisitorApi.blockReason
 import at.hannibal2.skyhanni.features.inventory.bazaar.BazaarApi
+import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList
+import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.getCategory
+import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.isCategory
 import at.hannibal2.skyhanni.mixins.hooks.RenderLivingEntityHelper
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.test.command.ErrorManager
@@ -44,6 +47,7 @@ import at.hannibal2.skyhanni.utils.ItemUtils.getLore
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.ItemUtils.name
+import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.LorenzLogger
 import at.hannibal2.skyhanni.utils.LorenzUtils
 import at.hannibal2.skyhanni.utils.LorenzUtils.isInIsland
@@ -181,7 +185,30 @@ object GardenVisitorFeatures {
         if (!config.shoppingList.display) return@buildList
         val (shoppingList, newVisitors) = prepareDrawingData()
 
-        drawShoppingList(shoppingList)
+        if (!shoppingList.isEmpty()) {
+            if (!"Visitors".isCategory()) {
+                ShoppingList.addCategory(
+                    "Visitors",
+                    color = LorenzColor.DARK_GREEN,
+                    saveInStorage = false,
+                    displayCondition = { showGui() },
+                )
+            }
+
+            val category = "Visitors".getCategory()
+            if (category == null) return@buildList
+
+            for (item in category.items) {
+                if (!shoppingList.containsKey(item.internalName)) {
+                    category.remove(item)
+                }
+            }
+
+            for ((itemName, amount) in shoppingList) {
+                category.set(itemName, amount.toDouble())
+            }
+        }
+
         drawVisitors(newVisitors, shoppingList)
     }
 
