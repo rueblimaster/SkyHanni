@@ -16,9 +16,9 @@ import org.lwjgl.input.Keyboard
 class ShoppingListCategory(
     val name: String,
     val color: LorenzColor = LorenzColor.GOLD,
-//     val icon: ItemStack? = null, // TODO later maybe?: implement icons
     val saveInStorage: Boolean = true,
-    // TODO soon: implement only in area somehow
+    // TODO: implement only in area somehow, even better implement it with a function
+    // TODO later maybe?: implement icons
 ) {
     val items = mutableListOf<ShoppingListItem>()
 

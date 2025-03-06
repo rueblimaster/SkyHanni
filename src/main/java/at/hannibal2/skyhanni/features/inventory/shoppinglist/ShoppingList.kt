@@ -70,7 +70,6 @@ object ShoppingList {
                     }
                 }
             }
-//             print(this)
         }
 
         fun getItems(): MutableMap<NeuInternalName, Pair<Double, Int>> {
@@ -106,7 +105,6 @@ object ShoppingList {
 
         // TODO: shouldn't happen @Thunderblade73
         if (!isEnabled()) return
-//         println("Adding ${itemName.itemName} x$amount to $categoryName")
 
         val category: ShoppingListCategory
         if (categoryName != null) {
@@ -161,7 +159,6 @@ object ShoppingList {
         if (!isEnabled()) return
         if (!isConfigLoaded) return
         val items = items
-//         println("Removing $name x$amount from $categoryName")
 
         var itemName: NeuInternalName? = name.toInternalName()
         if (itemName == null || !itemName.isKnownItem()) {
@@ -415,8 +412,6 @@ object ShoppingList {
             return
         }
 
-//         println("Slot click event: ${event.item.displayName}")
-
         if (event.item.displayName == "§bSelect Recipe") {
             event.cancel()
             for (category in categories + items) {
@@ -452,19 +447,16 @@ object ShoppingList {
     @HandleEvent(onlyOnSkyblock = true)
     fun onRender(event: GuiRenderEvent.GuiOverlayRenderEvent) {
         if (!isEnabled()) return
-//         println("Rendering shopping list, in GuiOverlayRenderEvent")
         config.position.renderRenderables(display, posLabel = "Shopping List")
     }
 
     @HandleEvent(onlyOnSkyblock = true)
     fun onRender(event: GuiRenderEvent.ChestGuiOverlayRenderEvent) {
         if (!isEnabled()) return
-//         println("Rendering shopping list, in ChestGuiOverlayRenderEvent")
         if (!inventoryOpen) {
             inventoryOpen = true
             update()
         }
-//         recheckInInventory()
         config.position.renderRenderables(display, posLabel = "Shopping List")
     }
 
@@ -530,7 +522,6 @@ object ShoppingList {
             description = "Remove an item from the shopping list"
             category = CommandCategory.USERS_ACTIVE
             aliases = listOf("shslremove")
-//             autoComplete { listOf("Carrot", "Potato", "Wheat") }
             callback { remove(it[0], it.getOrNull(1)?.toDoubleOrNull(), it.getOrNull(2)) }
         }
         event.register("shshoppinglistremovecategory") {

@@ -186,7 +186,6 @@ class ShoppingListItem(
 
             val lore = buildList {
                 add("§8(From SkyHanni)")
-//                 add("")
 
                 // TODO (maybe): add stuff
             }
@@ -203,7 +202,6 @@ class ShoppingListItem(
 
     fun onItemClick(clickedItem: ItemStack): Boolean {
         if (displayItem != null && clickedItem == displayItem) {
-//             println("Clicked on display item for $internalName")
             recipe = currentlyOpenRecipe
             displayItem = null
             resetDisplayItem()
@@ -280,7 +278,6 @@ class ShoppingListItem(
     }
 
     fun checkIfInSignAndInsertAmount(): Boolean {
-//         println("checking for in sign")
         if (Minecraft.getMinecraft().currentScreen is GuiEditSign) {
             ChatUtils.chat("Detected sign gui, pasting number into sign instead")
             LorenzUtils.setTextIntoSign("${remainingAmount.toInt()}")
@@ -291,7 +288,6 @@ class ShoppingListItem(
     }
 
     fun buyItem() {
-//         println("Buying item: $internalName ${totalAmount.toInt()}, getting ${remainingAmount.toInt()}")
         if (checkIfInSignAndInsertAmount()) return
         if (remainingAmount <= 0) return
 
@@ -299,9 +295,7 @@ class ShoppingListItem(
     }
 
     fun openCraftingRecipe() {
-//         println("Opening crafting recipe: $internalName")
         if (checkIfInSignAndInsertAmount()) return
-        // if (remainingAmount <= 0) return // this shouldn't happen anyways
 
         if (internalName.isVanillaItem()) {
             ChatUtils.chat("Vanilla item, can't open recipe, opening the crafting table and getting all required items instead")
@@ -312,15 +306,10 @@ class ShoppingListItem(
 
         } else {
             viewRecipe(internalName.asString())
-            // TODO soon (maybe): hide the display item while doing this
         }
     }
 
     fun fetchItemFromAvailableStorage() {
-//         println(
-//             "Fetching item from available storage: $internalName ${totalAmount.toInt()}, " +
-//                 "getting ${getMissingAmountInInventory().toInt()}",
-//         )
         if (checkIfInSignAndInsertAmount()) return
         if (getMissingAmountInInventory() <= 0) return
 
@@ -328,7 +317,6 @@ class ShoppingListItem(
     }
 
     fun removeItem() {
-//         println("Removing item: $internalName")
         if (topLevelItem != null) return
         topLevelCategory.remove(internalName)
     }
@@ -340,7 +328,6 @@ class ShoppingListItem(
     }
 
     fun moveThisToTop() {
-//         println("moving $internalName to top")
         topLevelItem?.moveItemToTop(this) ?: topLevelCategory.moveItemToTop(this)
     }
 
@@ -349,7 +336,6 @@ class ShoppingListItem(
     }
 
     fun toggleHide(hideTree: Boolean = false, forceSetTo: Boolean? = null) {
-//         println("toggling hide for $internalName, hideTree: $hideTree")
         hidden = forceSetTo ?: !hidden
         if (hideTree) {
             subItems.forEach {
@@ -380,11 +366,6 @@ class ShoppingListItem(
     fun getRenderables(indent: String, continuedIndent: String? = null): List<Renderable> {
         val renderables = mutableListOf<Renderable>()
         if (!hidden || ShoppingList.isInventoryOpen()) {
-//             renderables.add(
-//                 Renderable.line {
-
-//             println(internalName.itemName)
-//             println("Adding §e${internalName.itemNameWithoutColor} x$amount to renderables")
 
             var string = "§8$indent"
             val tooltip = mutableListOf<String>()
@@ -466,17 +447,6 @@ class ShoppingListItem(
                 ),
             )
         }
-//             val itemIcon = internalName.getItemStackOrNull()
-//             renderables.add(
-//                 if (itemIcon != null) {
-//                     Renderable.itemStack(itemIcon)
-//                 } else {
-//                     ItemNameResolver.getInternalNameOrNull(internalName.itemName)?.let { Renderable.itemStack(it.getItemStack()) }
-//                         ?: Renderable.string("§c?")
-//                 },
-//             )
-//                 },
-//             )
 
         for (i in 0 until subItems.size) {
             val isLastItem = i == subItems.size - 1

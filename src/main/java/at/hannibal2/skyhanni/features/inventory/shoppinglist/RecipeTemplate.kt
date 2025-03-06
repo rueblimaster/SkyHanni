@@ -20,11 +20,6 @@ class RecipeTemplate {
         this.result = sourceRecipe.output?.let { IngredientTemplate(it) }
     }
 
-//     constructor(ingredients: List<IngredientTemplate>, result: IngredientTemplate?) {
-//         this.ingredients.addAll(ingredients)
-//         this.result = result
-//     }
-
     fun toPrimitiveRecipe(): PrimitiveRecipe? {
         val ingredients = ingredients.map { it.toPrimitiveIngredient() }
         val result = result?.toPrimitiveIngredient()
