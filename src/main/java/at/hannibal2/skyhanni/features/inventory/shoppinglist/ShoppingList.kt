@@ -18,6 +18,7 @@ import at.hannibal2.skyhanni.events.SackDataUpdateEvent
 import at.hannibal2.skyhanni.events.entity.ItemAddInInventoryEvent
 import at.hannibal2.skyhanni.events.minecraft.WorldChangeEvent
 import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
+import at.hannibal2.skyhanni.features.inventory.shoppinglist.CategoryTemplate.Companion.toCategoryTemplate
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.CollectionUtils.addString
@@ -312,12 +313,12 @@ object ShoppingList {
         val tempCategories = mutableListOf<CategoryTemplate>()
         for (category in categories) {
             if (category.saveInStorage) {
-                tempCategories.add(CategoryTemplate(category))
+                tempCategories.add(category.toCategoryTemplate())
             }
         }
 
         ProfileStorageData.profileSpecific?.shoppingList?.categories = tempCategories
-        ProfileStorageData.profileSpecific?.shoppingList?.items = CategoryTemplate(items)
+        ProfileStorageData.profileSpecific?.shoppingList?.items = items.toCategoryTemplate()
     }
 
     fun moveCategoryToTop(category: ShoppingListCategory) {

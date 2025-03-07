@@ -1,34 +1,22 @@
 package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
+import at.hannibal2.skyhanni.features.inventory.shoppinglist.ItemTemplate.Companion.toItemTemplate
 import com.google.gson.annotations.Expose
 
-class CategoryTemplate {
-    @Expose
-    val name: String
-    @Expose
-    val color: Char
-    @Expose
-    val hidden: Boolean
+class CategoryTemplate(
+    @Expose val name: String,
+    @Expose val color: Char = '6',
+    @Expose val hidden: Boolean = false,
+    @Expose val items: List<ItemTemplate> = emptyList(),
+) {
 
-    @Expose
-    val items: List<ItemTemplate>
-
-    constructor(sourceCategory: ShoppingListCategory) {
-        this.name = sourceCategory.name
-        this.color = sourceCategory.color.chatColorCode
-        this.hidden = sourceCategory.hidden
-
-        this.items = sourceCategory.items.map { ItemTemplate(it) }
-    }
-
-    constructor(name: String) {
-        this.name = name
-        this.color = '6'
-        this.hidden = false
-        this.items = emptyList()
+    companion object {
+        fun ShoppingListCategory.toCategoryTemplate(): CategoryTemplate {
+            return CategoryTemplate(name, color.chatColorCode, hidden, items.map { it.toItemTemplate() })
+        }
     }
 
     override fun toString(): String {
-        return "$name (${items.size} items)"
+        return "CategoryTemplate $name (${items.size} items)"
     }
 }

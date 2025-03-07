@@ -1,28 +1,19 @@
 package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
+import at.hannibal2.skyhanni.features.inventory.shoppinglist.RecipeTemplate.Companion.toRecipeTemplate
 import com.google.gson.annotations.Expose
 
-class ItemTemplate {
-    @Expose
-    val internalName: String
-    @Expose
-    val amount: Double
-    @Expose
-    val hidden: Boolean
+class ItemTemplate(
+    @Expose val internalName: String,
+    @Expose val amount: Double,
+    @Expose val hidden: Boolean,
+    @Expose val recipe: RecipeTemplate?,
+    @Expose val subItems: List<ItemTemplate>,
+) {
 
-    @Expose
-    val recipe: RecipeTemplate?
-
-    @Expose
-    val subItems: List<ItemTemplate>
-
-    constructor(sourceItem: ShoppingListItem) {
-        this.internalName = sourceItem.internalName.asString()
-        this.amount = sourceItem.amount
-        this.hidden = sourceItem.hidden
-
-        this.recipe = sourceItem.recipe?.let { RecipeTemplate(it) }
-
-        this.subItems = sourceItem.subItems.map { ItemTemplate(it) }
+    companion object {
+        fun ShoppingListItem.toItemTemplate(): ItemTemplate {
+            return ItemTemplate(internalName.asString(), amount, hidden, recipe?.toRecipeTemplate(), subItems.map { it.toItemTemplate() })
+        }
     }
 }
