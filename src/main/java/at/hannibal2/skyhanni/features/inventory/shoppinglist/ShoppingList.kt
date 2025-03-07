@@ -299,10 +299,10 @@ object ShoppingList {
 
         categories.clear()
         for (category in storedCategories) {
-            categories.add(ShoppingListCategory(category))
+            categories.add(category.toShoppingListCategory())
         }
 
-        items = ShoppingListCategory(storedItems)
+        items = storedItems.toShoppingListCategory()
 
         isConfigLoaded = true
     }

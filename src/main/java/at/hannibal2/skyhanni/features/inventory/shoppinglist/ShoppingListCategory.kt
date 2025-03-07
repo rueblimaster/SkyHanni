@@ -5,15 +5,12 @@ import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
 import at.hannibal2.skyhanni.utils.LorenzColor
-import at.hannibal2.skyhanni.utils.LorenzColor.Companion.toLorenzColor
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.Renderable.Companion.ClickTypeWithModifiers
 import net.minecraft.item.ItemStack
 import org.lwjgl.input.Keyboard
-import kotlin.collections.component1
-import kotlin.collections.component2
 
 class ShoppingListCategory(
     val name: String,
@@ -21,18 +18,9 @@ class ShoppingListCategory(
     val saveInStorage: Boolean = true,
     val displayCondition: () -> Boolean = { true }, // TODO: later (maybe): implement only in area somehow
     // TODO later maybe?: implement icons
+    var hidden: Boolean = false
 ) {
     val items = mutableListOf<ShoppingListItem>()
-
-    var hidden = false
-
-    constructor(template: CategoryTemplate) : this(template.name, template.color.toLorenzColor() ?: LorenzColor.GOLD) {
-        hidden = template.hidden
-
-        template.items.forEach {
-            items.add(ShoppingListItem(it, this))
-        }
-    }
 
     val clickLayout: MutableMap<ClickTypeWithModifiers, () -> Unit> = mutableMapOf(
         ClickTypeWithModifiers(LEFT_MOUSE) to { },

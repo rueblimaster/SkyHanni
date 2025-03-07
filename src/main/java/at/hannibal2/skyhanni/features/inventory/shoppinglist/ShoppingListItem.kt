@@ -40,37 +40,8 @@ class ShoppingListItem(
     val topLevelCategory: ShoppingListCategory,
     val topLevelItem: ShoppingListItem? = null,
     var recipe: PrimitiveRecipe? = null,
+    var hidden: Boolean = false,
 ) {
-    var hidden = false
-
-    constructor(
-        template: ItemTemplate,
-        topLevelCategory: ShoppingListCategory,
-        topLevelItem: ShoppingListItem? = null,
-    ) : this(
-        NeuInternalName.fromItemNameOrInternalName(template.internalName),
-        template.amount,
-        topLevelCategory,
-        topLevelItem,
-        template.recipe?.toPrimitiveRecipe(),
-    ) {
-        hidden = template.hidden
-
-        template.subItems.forEach {
-            subItems.add(ShoppingListItem(it, topLevelCategory, this))
-        }
-
-        val ingredients: MutableMap<NeuInternalName, Double> = mutableMapOf()
-        recipe?.ingredients?.forEach {
-            ingredients[it.internalName] = it.count / (recipe?.output?.count ?: 1.0)
-        }
-
-        subItems.forEach {
-            if (it.internalName in ingredients && ingredients[it.internalName] != null) {
-                it.amount = ingredients[it.internalName] ?: 1.0
-            }
-        }
-    }
 
     // TODO soon (probably): add a way to offset the amount of an item counted in the inventory etc.
 
