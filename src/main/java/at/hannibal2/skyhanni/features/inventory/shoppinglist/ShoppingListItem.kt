@@ -6,6 +6,7 @@ import at.hannibal2.skyhanni.features.inventory.bazaar.BazaarApi.isBazaarItem
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.currentlyOpenRecipe
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
 import at.hannibal2.skyhanni.utils.ChatUtils
+import at.hannibal2.skyhanni.utils.ClipboardUtils
 import at.hannibal2.skyhanni.utils.HypixelCommands.craft
 import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventory
@@ -15,6 +16,7 @@ import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
+import at.hannibal2.skyhanni.utils.KeyboardManager.MIDDLE_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
 import at.hannibal2.skyhanni.utils.LorenzUtils
 import at.hannibal2.skyhanni.utils.NeuInternalName
@@ -90,8 +92,6 @@ class ShoppingListItem(
     init {
         loadPossibleRecipes()
     }
-
-    val clickLayout: MutableMap<ClickTypeWithModifiers, () -> Unit> = mutableMapOf()
 
     /*
     TODO later: make this all configurable
@@ -351,9 +351,40 @@ class ShoppingListItem(
         }
     }
 
-    // TODO later: implement
+    fun getCopyContent(): Pair<String, String> =
+        if (topLevelItem == null) {  // try to copy into clipboard something that can be pasted into /shsladd
+            if (topLevelCategory.name == "Items") {
+                Pair(
+                    "${internalName.asString()} ${amount.displayAmount()}",
+                    "copied command pastable to clipboard",
+                )
+            } else {
+                Pair(
+                    "${internalName.asString()} $amount.displayAmount() ${topLevelCategory.name}",
+                    "copied command pastable to clipboard",
+                )
+            }
+        } else {
+            if (topLevelCategory.name == "Items") {
+                Pair(
+                    "${amount.displayAmount()}x ${internalName.asString()} ${totalAmount.displayAmount()} " +
+                        "(${topLevelItem.internalName.asString()} x${topLevelItem.amount.displayAmount()})",
+                    "copied to clipboard",
+                )
+            } else {
+                Pair(
+                    "${amount.displayAmount()}x ${internalName.asString()} ${totalAmount.displayAmount()} " +
+                        "(${topLevelItem.internalName.asString()} x${topLevelItem.amount.displayAmount()}) ${topLevelCategory.name}",
+                    "copied to clipboard",
+                )
+            }
+        }
+
     fun copyToClipboard() {
-        println("copying $internalName to clipboard")
+        val (copyContent, chatMessage) = getCopyContent()
+
+        ClipboardUtils.copyToClipboard(copyContent)
+        ChatUtils.chat(chatMessage)
     }
 
     fun Double.displayAmount(): String {
@@ -364,99 +395,114 @@ class ShoppingListItem(
         }
     }
 
+    fun getDisplayRepresentation(indent: String): String {
+        var text = "§8$indent"
+
+        if (topLevelItem != null) {
+            text += "§7${amount.displayAmount()}x "
+        }
+
+        text += "${internalName.itemName} §f${getCurrentAmount()}/${totalAmount.displayAmount()}"
+
+        ShoppingList.ItemsOverall.get(internalName)?.let {
+            if (it.second > 1) {
+                text += " (${it.first.displayAmount()} total over ${it.second} items)"
+            }
+        }
+
+        if (hasItems()) {
+            text += " §a✓"
+        } else if (hasAllSubItems()) {
+            text += " §e✓"
+        }
+
+        return text
+    }
+
+    fun getClickLayout(): Pair<Map<ClickTypeWithModifiers, () -> Unit>, List<String>> {
+
+        val clickLayout: MutableMap<ClickTypeWithModifiers, () -> Unit> = mutableMapOf()
+        // TODO (maybe): make the tooltips be generated from the clickLayout
+        val tooltip = mutableListOf<String>()
+
+        // left click
+        val buyTooltip: String? = if (internalName.isBazaarItem()) {
+            " to search in Bazaar!"
+        } else if (internalName.isAuctionHouseItem()) {
+            " to search in Auction House!"
+        } else {
+            null
+        }
+
+        if (hasItems()) {
+            clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { fetchItemFromAvailableStorage() }
+            tooltip.add("§7left click to fetch from storage")
+            clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
+            tooltip.add("§7shift + left click to break down recipe")
+        } else if (hasAllSubItems()) {
+            clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { openCraftingRecipe() }
+            tooltip.add("§7left click to open crafting recipe")
+            clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
+            tooltip.add("§7shift + left click to break down recipe")
+        } else {
+            if (downBreakable || buyTooltip == null) {
+                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { breakDownIntoSubitems() }
+                if (downBreakable) {
+                    tooltip.add("§7left click to break down recipe")
+                }
+                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { buyItem() }
+                if (buyTooltip != null) {
+                    tooltip.add("§7shift + left click$buyTooltip")
+                }
+            } else {
+                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { buyItem() }
+                tooltip.add("§7left click$buyTooltip")
+                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
+                tooltip.add("§7shift + left click to break down recipe")
+            }
+        }
+
+        // right click
+        if (topLevelItem == null) {
+            clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE)] = { removeItem() }
+            tooltip.add("§7right click to remove")
+            clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { toggleHide() }
+            tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide")
+            clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL, Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
+            tooltip.add("§7ctrl + shift + right click to ${if (hidden) "un" else ""}hide tree")
+        } else {
+            clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE)] = { toggleHide() }
+            tooltip.add("§7right click to ${if (hidden) "un" else ""}hide")
+            clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
+            tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide tree")
+            clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL, Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
+        }
+
+        clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL))] = { moveThisToTop() }
+        tooltip.add("§7ctrl + right click to move to top")
+        clickLayout[ClickTypeWithModifiers(MIDDLE_MOUSE)] = { copyToClipboard() }
+        tooltip.add("§7middle click to copy to clipboard")
+
+        return Pair(clickLayout, tooltip)
+    }
+
     fun getRenderables(indent: String, continuedIndent: String? = null): List<Renderable> {
         val renderables = mutableListOf<Renderable>()
         if (!hidden || ShoppingList.isInventoryOpen()) {
 
-            var string = "§8$indent"
-            val tooltip = mutableListOf<String>()
-
-            if (topLevelItem != null) {
-                string += "§7${amount.displayAmount()}x "
-            }
-
-            string += "${internalName.itemName} §f${getCurrentAmount()}/${totalAmount.displayAmount()}"
-
-            ShoppingList.ItemsOverall.get(internalName)?.let {
-                if (it.second > 1) {
-                    string += " (${it.first.displayAmount()} total over ${it.second} items)"
-                }
-            }
-
-            // left click
-            val buyTooltip: String? = if (internalName.isBazaarItem()) {
-                " to search for ${internalName.itemName}§7 in Bazaar!"
-            } else if (internalName.isAuctionHouseItem()) {
-                " to search for ${internalName.itemName}§7 in Auction House!"
-            } else {
-                null
-            }
-
-            if (hasItems()) {
-                string += " §a✓"
-                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { fetchItemFromAvailableStorage() }
-                tooltip.add("§7left click to fetch from storage")
-                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
-                tooltip.add("§7shift + left click to break down recipe")
-            } else if (hasAllSubItems()) {
-                string += " §e✓"
-                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { openCraftingRecipe() }
-                tooltip.add("§7left click to open crafting recipe")
-                clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
-                tooltip.add("§7shift + left click to break down recipe")
-            } else {
-                if (downBreakable || buyTooltip == null) {
-                    clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { breakDownIntoSubitems() }
-                    if (downBreakable) {
-                        tooltip.add("§7left click to break down recipe")
-                    }
-                    clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { buyItem() }
-                    if (buyTooltip != null) {
-                        tooltip.add("§7shift + left click$buyTooltip")
-                    }
-                } else {
-                    clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { buyItem() }
-                    tooltip.add("§7left click$buyTooltip")
-                    clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
-                    tooltip.add("§7shift + left click to break down recipe")
-                }
-            }
-
-            // right click
-            if (topLevelItem == null) {
-                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE)] = { removeItem() }
-                tooltip.add("§7right click to remove")
-                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { toggleHide() }
-                tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide")
-                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL, Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
-                tooltip.add("§7ctrl + shift + right click to ${if (hidden) "un" else ""}hide tree")
-            } else {
-                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE)] = { toggleHide() }
-                tooltip.add("§7right click to ${if (hidden) "un" else ""}hide")
-                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
-                tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide tree")
-                clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL, Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
-            }
+            var text = getDisplayRepresentation(indent)
 
             if (hidden) {
-                string = "§8${string.removeColor()}"
+                text = "§8${text.removeColor()}"
             }
 
-            clickLayout.toMap()
-
-            // TODO (maybe): make the tooltips be generated from the clickLayout
-            clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL))] = { moveThisToTop() }
-            tooltip.add("§7ctrl + right click to move to top")
-//             clickLayout["middle"] = { copyToClipboard() }  // TODO later: implement middle click
-//             tooltip.add("§7middle click to copy to clipboard")
-
-            clickLayout.toMap()
+            val (clickLayout, tooltip) = getClickLayout()
 
             renderables.add(
                 Renderable.clickableWithModifiers(
-                    text = string,
+                    text = text,
                     tips = tooltip,
-                    onAnyClick = clickLayout.toMap(),
+                    onAnyClick = clickLayout,
                 ),
             )
         }
