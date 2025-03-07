@@ -2,7 +2,7 @@ package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
 import at.hannibal2.skyhanni.api.GetFromSackApi
 import at.hannibal2.skyhanni.api.ItemBuyApi.buy
-import at.hannibal2.skyhanni.api.ItemBuyApi.createBuyTip
+import at.hannibal2.skyhanni.features.inventory.bazaar.BazaarApi.isBazaarItem
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.currentlyOpenRecipe
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
 import at.hannibal2.skyhanni.utils.ChatUtils
@@ -10,12 +10,12 @@ import at.hannibal2.skyhanni.utils.HypixelCommands.craft
 import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventory
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventoryAndSacks
+import at.hannibal2.skyhanni.utils.ItemPriceUtils.isAuctionHouseItem
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
-import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.LorenzUtils
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
@@ -101,10 +101,7 @@ class ShoppingListItem(
         - open recipe to craft it
         - (shift + left click) break down into its subitems
         right click is for doing stuff with the item itself
-        TODO later (maybe): implement change amount by right clicking, as can also be done with the command,
-          but could maybe also be done by pressing arrow keys
-        - (right click) change the amount (but if nothing is entered remove if I can discriminate between cancel and remove)
-        - remove completely (if it isn't a subitem of another item)
+        - (right click) remove
         - (shift + right click) hide/unhide
         - (ctrl + shift + right click) hide/unhide all whole tree
         - (ctrl + right click) move to top
@@ -115,6 +112,7 @@ class ShoppingListItem(
         (probably not as it isn't really necessary and a lot of work)
         - move to another category
         - copy to another category
+        - changing amount with arrow keys
 
      what may we want to see of the item:
         - the name with rarity as color
@@ -386,11 +384,13 @@ class ShoppingListItem(
             }
 
             // left click
-            val buyTooltip = internalName.createBuyTip(
-                colorActive = LorenzColor.GRAY,
-                colorInactive = LorenzColor.GRAY,
-                clickType = "",
-            ).first()
+            val buyTooltip: String? = if (internalName.isBazaarItem()) {
+                " to search for ${internalName.itemName}§7 in Bazaar!"
+            } else if (internalName.isAuctionHouseItem()) {
+                " to search for ${internalName.itemName}§7 in Auction House!"
+            } else {
+                null
+            }
 
             if (hasItems()) {
                 string += " §a✓"
@@ -405,11 +405,15 @@ class ShoppingListItem(
                 clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
                 tooltip.add("§7shift + left click to break down recipe")
             } else {
-                if (downBreakable) {
+                if (downBreakable || buyTooltip == null) {
                     clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { breakDownIntoSubitems() }
-                    tooltip.add("§7left click to break down recipe")
+                    if (downBreakable) {
+                        tooltip.add("§7left click to break down recipe")
+                    }
                     clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { buyItem() }
-                    tooltip.add("§7shift + left click$buyTooltip")
+                    if (buyTooltip != null) {
+                        tooltip.add("§7shift + left click$buyTooltip")
+                    }
                 } else {
                     clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { buyItem() }
                     tooltip.add("§7left click$buyTooltip")

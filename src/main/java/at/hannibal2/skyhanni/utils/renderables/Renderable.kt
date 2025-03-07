@@ -273,24 +273,9 @@ interface Renderable {
                 }
             }
 
-//             onAnyClick.entries.forEach { (key, _) ->
-//                 println("$key")
-//             }
-
             val orderedOnAnyClick: Map<Int, Map<ClickTypeWithModifiers, () -> Unit>> = sortedOnAnyClick.entries
                 .groupBy { entry -> entry.key.clickType }
                 .mapValues { entry -> entry.value.associate { it.key to it.value } }
-
-//             for ((clickType, value) in onAnyClick) {
-//                 println("$clickType")
-//             }
-
-//             for ((clickType, value) in orderedOnAnyClick) {
-//                 println("clickType: $clickType")
-//                 for ((key, onKeyClicked) in value) {
-//                     println("$key")
-//                 }
-//             }
 
             val allRelevantModifiers: List<Int> = sortedOnAnyClick.keys.flatMap { it.modifiers }
 
@@ -314,19 +299,13 @@ interface Renderable {
 
                     for ((clickType, value) in orderedOnAnyClick) {
                         if (clickType.isKeyClicked() != true) continue
-//                         print("clickType pressed: $clickType")
 
                         for ((key, onKeyClicked) in value) {
-//                             if (allPressedKeys[key.clickType] == true) {
                             if (key.modifiers.isEmpty() || key.modifiers.all { allPressedKeys[it] == true }) {
-//                                 println("key: ${key.clickType} modifiers: ${key.modifiers}")
-//                                 println("clicked: ${key.clickType.isKeyClicked()} held: ${key.modifiers.all { it.isKeyHeld() }}")
-//                                 println("modifiers")
                                 onKeyClicked()
                                 processed = true
                                 break
                             }
-//                             }
                         }
                         if (processed) {
                             break
