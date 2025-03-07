@@ -352,7 +352,7 @@ class ShoppingListItem(
     }
 
     fun getCopyContent(): Pair<String, String> =
-        if (topLevelItem == null) {  // try to copy into clipboard something that can be pasted into /shsladd
+        if (topLevelItem == null) { // try to copy into clipboard something that can be pasted into /shsladd
             if (topLevelCategory.name == "Items") {
                 Pair(
                     "${internalName.asString()} ${amount.displayAmount()}",
