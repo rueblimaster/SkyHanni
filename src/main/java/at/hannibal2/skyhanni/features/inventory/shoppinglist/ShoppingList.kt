@@ -21,7 +21,7 @@ import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.CategoryTemplate.Companion.toCategoryTemplate
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
-import at.hannibal2.skyhanni.utils.CollectionUtils.addString
+import at.hannibal2.skyhanni.utils.CollectionUtils.addSearchString
 import at.hannibal2.skyhanni.utils.InventoryUtils.closeInventory
 import at.hannibal2.skyhanni.utils.InventoryUtils.inAnyInventory
 import at.hannibal2.skyhanni.utils.ItemUtils.itemName
@@ -36,7 +36,9 @@ import at.hannibal2.skyhanni.utils.PrimitiveItemStack.Companion.toPrimitiveStack
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.RecipeType
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
-import at.hannibal2.skyhanni.utils.renderables.Renderable
+import at.hannibal2.skyhanni.utils.renderables.SearchTextInput
+import at.hannibal2.skyhanni.utils.renderables.Searchable
+import at.hannibal2.skyhanni.utils.renderables.buildSearchBox
 import net.minecraft.entity.player.InventoryPlayer
 import net.minecraft.init.Blocks
 import net.minecraft.item.ItemStack
@@ -91,7 +93,7 @@ object ShoppingList {
     }
 
     // TODO soon: somehow also make it searchable?
-    private var display = listOf<Renderable>()
+    private var display = listOf<Searchable>()
 
     private var inventoryOpen = false
 
@@ -340,7 +342,7 @@ object ShoppingList {
             return
         }
         display = buildList {
-            addString("§l" + "Shopping List")
+            addSearchString("§lShopping List")
             categories.forEach {
                 addAll(it.getRenderables(1))
             }
@@ -498,7 +500,7 @@ object ShoppingList {
     @HandleEvent(onlyOnSkyblock = true)
     fun onRender(event: GuiRenderEvent.GuiOverlayRenderEvent) {
         if (!isEnabled()) return
-        config.position.renderRenderables(display, posLabel = "Shopping List")
+        config.position.renderRenderables(listOf(display.buildSearchBox(SearchTextInput())), posLabel = "Shopping List")
     }
 
     @HandleEvent(onlyOnSkyblock = true)
@@ -508,7 +510,7 @@ object ShoppingList {
             inventoryOpen = true
             update()
         }
-        config.position.renderRenderables(display, posLabel = "Shopping List")
+        config.position.renderRenderables(listOf(display.buildSearchBox(SearchTextInput())), posLabel = "Shopping List")
     }
 
     @HandleEvent

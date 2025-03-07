@@ -9,6 +9,8 @@ import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.Renderable.Companion.ClickTypeWithModifiers
+import at.hannibal2.skyhanni.utils.renderables.Searchable
+import at.hannibal2.skyhanni.utils.renderables.toSearchable
 import net.minecraft.item.ItemStack
 import org.lwjgl.input.Keyboard
 
@@ -167,16 +169,16 @@ class ShoppingListCategory(
         ShoppingList.moveCategoryToTop(this)
     }
 
-    fun getRenderables(indent: Int, showThis: Boolean = true): List<Renderable> {
-        val renderables = mutableListOf<Renderable>()
+    fun getRenderables(indent: Int, showThis: Boolean = true): List<Searchable> {
+        val renderables = mutableListOf<Searchable>()
 
         if ((!hidden || ShoppingList.isInventoryOpen()) && displayCondition()) {
             if (showThis) {
-                var string = ""
+                var text = ""
                 val tooltip = mutableListOf<String>()
 
-                string += if (!hidden) color.getChatColor() else "§8"
-                string += "§n$name"
+                text += if (!hidden) color.getChatColor() else "§8"
+                text += "§n$name"
 
                 tooltip.add("§7Right click to remove")
                 tooltip.add("§7Shift + right click to ${if (hidden) "un" else ""}hide")
@@ -184,10 +186,10 @@ class ShoppingListCategory(
 
                 renderables.add(
                     Renderable.clickableWithModifiers(
-                        text = string,
+                        text = text,
                         tips = tooltip,
                         onAnyClick = clickLayout.toMap(),
-                    ),
+                    ).toSearchable(text),
                 )
             }
 
