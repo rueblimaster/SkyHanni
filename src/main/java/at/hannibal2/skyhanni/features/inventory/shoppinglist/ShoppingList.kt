@@ -103,6 +103,44 @@ object ShoppingList {
     var displayItem: ItemStack? = null
 
     // all the functions for interacting with the shopping list come here
+    // parseCommandArguments only works if only the item name is also okay
+    fun parseCommandArguments(args: Array<String>): Triple<String, Double?, String?>? {
+        if (args.isEmpty()) {
+            ChatUtils.userError("No arguments entered")
+            return null
+        }
+
+        val itemName: String?
+        var amount: Double? = null
+        var categoryName: String? = null
+
+        val numberEntries = mutableListOf<Int>()
+
+        for (i in args.indices) {
+            if (args[i].toDoubleOrNull() != null) {
+                numberEntries.add(i)
+            }
+        }
+
+        if (args.size == 1) {
+            itemName = args[0]
+        } else if (numberEntries.isEmpty()) {
+            if (args.last<String>().isCategory() || !args.joinToString(" ").toInternalName().isKnownItem()) {
+                itemName = args.take(args.size - 1).joinToString(" ")
+                categoryName = args.last()
+                add(itemName.toInternalName(), categoryName = categoryName)
+            } else {
+                itemName = args.joinToString(" ")
+            }
+        } else {
+            itemName = args.take(numberEntries.last()).joinToString(" ")
+            amount = args[numberEntries.last()].toDoubleOrNull()
+            categoryName = args.getOrNull(numberEntries.last() + 1)
+        }
+
+        return Triple(itemName, amount, categoryName)
+    }
+
     fun add(itemName: NeuInternalName, amount: Double = 1.0, categoryName: String? = null) {
         if (!isConfigLoaded) return
 
@@ -123,6 +161,12 @@ object ShoppingList {
         category.add(itemName, amount)
 
         createDisplay()
+    }
+
+    fun onAddCommand(args: Array<String>) {
+        val (itemName, amount, categoryName) = parseCommandArguments(args) ?: return
+
+        add(itemName.toInternalName(), amount ?: 1.0, categoryName)
     }
 
     fun addCategory(
@@ -152,7 +196,7 @@ object ShoppingList {
         update()
     }
 
-    fun set(itemName: NeuInternalName, amount: Double = 1.0, categoryName: String? = null) {
+    fun set(itemName: NeuInternalName, amount: Double, categoryName: String? = null) {
         if (!isConfigLoaded) return
 
         // TODO: shouldn't happen @Thunderblade73
@@ -172,6 +216,35 @@ object ShoppingList {
         category.set(itemName, amount)
 
         createDisplay()
+    }
+
+    fun onSetCommand(args: Array<String>) {
+        if (args.size < 2) {
+            ChatUtils.userError("Please specify an item and an amount to set")
+            return
+        }
+
+        val itemName: String?
+        val amount: Double?
+        val categoryName: String?
+
+        val numberEntries = mutableListOf<Int>()
+
+        for (i in args.indices) {
+            if (args[i].toDoubleOrNull() != null) {
+                numberEntries.add(i)
+            }
+        }
+
+        if (numberEntries.isEmpty()) {
+            ChatUtils.userError("Please specify an item and an amount to set")
+            return
+        }
+
+        itemName = args.take(numberEntries.last()).joinToString(" ")
+        amount = args[numberEntries.last()].toDouble()
+        categoryName = args.getOrNull(numberEntries.last() + 1)
+        set(itemName.toInternalName(), amount, categoryName)
     }
 
     fun removeCategory(categoryName: String) {
@@ -208,6 +281,12 @@ object ShoppingList {
         update()
     }
 
+    fun onRemoveCommand(args: Array<String>) {
+        val (itemName, amount, categoryName) = parseCommandArguments(args) ?: return
+
+        remove(itemName, amount, categoryName)
+    }
+
     private fun handleItemNotFound(name: String) {
         if (name.isCategory()) {
             removeCategory(name)
@@ -240,7 +319,7 @@ object ShoppingList {
             if (cat.contains(itemName)) {
                 if (category != null) {
                     ChatUtils.userError(
-                        "Item ${itemName.itemName} found in multiple categories, please specify the category to remove from",
+                        "Item ${itemName.itemName}§c found in multiple categories, please specify the category to remove from",
                     )
                     return
                 }
@@ -248,7 +327,7 @@ object ShoppingList {
             }
         }
 
-        category?.remove(itemName, amount) ?: ChatUtils.userError("Item ${itemName.itemName} not found")
+        category?.remove(itemName, amount) ?: ChatUtils.userError("Item ${itemName.itemName}§c not found")
     }
 
     fun clear() {
@@ -576,14 +655,19 @@ object ShoppingList {
             description = "Add an item to the shopping list"
             category = CommandCategory.USERS_ACTIVE
             aliases = listOf("shsladd", "shsla")
-            autoComplete { listOf("Carrot", "Potato", "Wheat") }
-            callback { add(it[0].toInternalName(), it.getOrNull(1)?.toDoubleOrNull() ?: 1.0, it.getOrNull(2)) }
+            callback { onAddCommand(it) }
+        }
+        event.register("shshoppinglistset") {
+            description = "Set the amount of an item in the shopping list"
+            category = CommandCategory.USERS_ACTIVE
+            aliases = listOf("shslset")
+            callback { onSetCommand(it) }
         }
         event.register("shshoppinglistremove") {
             description = "Remove an item from the shopping list"
             category = CommandCategory.USERS_ACTIVE
             aliases = listOf("shslremove")
-            callback { remove(it[0], it.getOrNull(1)?.toDoubleOrNull(), it.getOrNull(2)) }
+            callback { onRemoveCommand(it) }
         }
         event.register("shshoppinglistremovecategory") {
             description = "Remove a category from the shopping list"
@@ -591,15 +675,6 @@ object ShoppingList {
             aliases = listOf("shslremovecategory")
             callback { removeCategory(it[0]) }
         }
-//         TODO (maybe): add a hide command
-
-//         TODO : implement set
-//         event.register("shshoppinglistset") {
-//             description = "Set the amount of an item in the shopping list"
-//             category = CommandCategory.USERS_ACTIVE
-//             aliases = listOf("shslset")
-//             callback { set(it[0].toInternalName(), it.getOrNull(1)?.toIntOrNull() ?: 1, it.getOrNull(2)) }
-//         }
         event.register("shshoppinglistupdate") {
             description = "Update the shopping list"
             category = CommandCategory.USERS_ACTIVE
