@@ -19,6 +19,7 @@ import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.MIDDLE_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
 import at.hannibal2.skyhanni.utils.LorenzUtils
+import at.hannibal2.skyhanni.utils.LorenzUtils.noTradeMode
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.NeuItems.isVanillaItem
@@ -34,6 +35,8 @@ import net.minecraft.client.gui.inventory.GuiEditSign
 import net.minecraft.init.Blocks
 import net.minecraft.item.ItemStack
 import org.lwjgl.input.Keyboard
+import org.lwjgl.input.Keyboard.KEY_DOWN
+import org.lwjgl.input.Keyboard.KEY_UP
 
 @Suppress("TooManyFunctions")
 class ShoppingListItem(
@@ -456,6 +459,71 @@ class ShoppingListItem(
         tooltip.add("§7ctrl + right click to move to top")
         clickLayout[ClickTypeWithModifiers(MIDDLE_MOUSE)] = { copyToClipboard() }
         tooltip.add("§7middle click to copy to clipboard")
+
+        // arrow keys
+        if (topLevelItem == null) {
+            clickLayout[ClickTypeWithModifiers(KEY_UP)] = {
+                changeAmountBy(1.0)
+                ShoppingList.update()
+            }
+            tooltip.add("§7up arrow to increase amount by 1")
+            clickLayout[ClickTypeWithModifiers(KEY_DOWN)] = {
+                changeAmountBy(-1.0)
+                ShoppingList.update()
+            }
+            tooltip.add("§7down arrow to decrease amount by 1")
+
+            var previousGoalAmount = 1.0
+            var goalAmount: Double
+            var flag = false
+            for (i in 2..6) {
+                goalAmount = (1 shl i).toDouble()
+                if (amount < goalAmount) {
+                    clickLayout[ClickTypeWithModifiers(KEY_UP, setOf(Keyboard.KEY_LSHIFT))] = {
+                        changeAmountTo(goalAmount)
+                        ShoppingList.update()
+                    }
+                    tooltip.add("§7shift + up arrow to set amount to ${goalAmount.displayAmount()}")
+
+                    if (amount == previousGoalAmount) {
+                        previousGoalAmount = previousGoalAmount / 2
+                    }
+
+                    if (previousGoalAmount > 1.0) {
+                        clickLayout[ClickTypeWithModifiers(KEY_DOWN, setOf(Keyboard.KEY_LSHIFT))] = {
+                            changeAmountTo(previousGoalAmount)
+                            ShoppingList.update()
+                        }
+                        tooltip.add("§7shift + down arrow to set amount to ${previousGoalAmount.displayAmount()}")
+                    }
+                    flag = true
+                    break
+                }
+                previousGoalAmount = goalAmount
+            }
+
+            if (!flag) {
+                clickLayout[ClickTypeWithModifiers(KEY_UP, setOf(Keyboard.KEY_LSHIFT))] = {
+                    changeAmountBy(64.0)
+                    ShoppingList.update()
+                }
+                tooltip.add("§7shift + up arrow to increase amount by 64")
+
+                if (amount == 64.0) {
+                    clickLayout[ClickTypeWithModifiers(KEY_DOWN, setOf(Keyboard.KEY_LSHIFT))] = {
+                        changeAmountTo(32.0)
+                        ShoppingList.update()
+                    }
+                    tooltip.add("§7shift + down arrow to set amount to 32")
+                } else {
+                    clickLayout[ClickTypeWithModifiers(KEY_DOWN, setOf(Keyboard.KEY_LSHIFT))] = {
+                        changeAmountBy(-64.0)
+                        ShoppingList.update()
+                    }
+                    tooltip.add("§7shift + down arrow to decrease amount by 64")
+                }
+            }
+        }
 
         return Pair(clickLayout, tooltip)
     }
