@@ -35,7 +35,7 @@ import at.hannibal2.skyhanni.utils.PrimitiveIngredient
 import at.hannibal2.skyhanni.utils.PrimitiveItemStack.Companion.toPrimitiveStackOrNull
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.RecipeType
-import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
+import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderable
 import at.hannibal2.skyhanni.utils.renderables.SearchTextInput
 import at.hannibal2.skyhanni.utils.renderables.Searchable
 import at.hannibal2.skyhanni.utils.renderables.buildSearchBox
@@ -500,7 +500,7 @@ object ShoppingList {
     @HandleEvent(onlyOnSkyblock = true)
     fun onRender(event: GuiRenderEvent.GuiOverlayRenderEvent) {
         if (!isEnabled()) return
-        config.position.renderRenderables(listOf(display.buildSearchBox(SearchTextInput())), posLabel = "Shopping List")
+        config.position.renderRenderable(display.buildSearchBox(SearchTextInput()), posLabel = "Shopping List")
     }
 
     @HandleEvent(onlyOnSkyblock = true)
@@ -510,7 +510,7 @@ object ShoppingList {
             inventoryOpen = true
             update()
         }
-        config.position.renderRenderables(listOf(display.buildSearchBox(SearchTextInput())), posLabel = "Shopping List")
+        config.position.renderRenderable(display.buildSearchBox(SearchTextInput()), posLabel = "Shopping List")
     }
 
     @HandleEvent
