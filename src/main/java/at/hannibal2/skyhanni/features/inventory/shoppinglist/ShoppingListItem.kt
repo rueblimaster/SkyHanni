@@ -396,6 +396,7 @@ class ShoppingListItem(
         return text
     }
 
+    @Suppress("LongMethod")
     fun getClickLayout(): Pair<Map<ClickTypeWithModifiers, () -> Unit>, List<String>> {
 
         val clickLayout: MutableMap<ClickTypeWithModifiers, () -> Unit> = mutableMapOf()
