@@ -102,9 +102,11 @@ object ShoppingList {
     var currentlyOpenRecipe: PrimitiveRecipe? = null
     var displayItem: ItemStack? = null
 
+    class CommandArguments(val itemName: String, val amount: Double?, val categoryName: String?)
+
     // all the functions for interacting with the shopping list come here
     // parseCommandArguments only works if only the item name is also okay
-    fun parseCommandArguments(args: Array<String>): Triple<String, Double?, String?>? {
+    fun parseCommandArguments(args: Array<String>): CommandArguments? {
         if (args.isEmpty()) {
             ChatUtils.userError("No arguments entered")
             return null
@@ -138,7 +140,11 @@ object ShoppingList {
             categoryName = args.getOrNull(numberEntries.last() + 1)
         }
 
-        return Triple(itemName, amount, categoryName)
+        return CommandArguments(itemName, amount, categoryName)
+    }
+
+    fun add(arguments: CommandArguments) {
+        add(arguments.itemName.toInternalName(), arguments.amount?: 1.0, arguments.categoryName)
     }
 
     fun add(itemName: NeuInternalName, amount: Double = 1.0, categoryName: String? = null) {
@@ -164,9 +170,9 @@ object ShoppingList {
     }
 
     fun onAddCommand(args: Array<String>) {
-        val (itemName, amount, categoryName) = parseCommandArguments(args) ?: return
+        val arguments = parseCommandArguments(args) ?: return
 
-        add(itemName.toInternalName(), amount ?: 1.0, categoryName)
+        add(arguments)
     }
 
     fun addCategory(
@@ -264,6 +270,10 @@ object ShoppingList {
         update()
     }
 
+    fun remove(arguments: CommandArguments) {
+        remove(arguments.itemName, arguments.amount, arguments.categoryName)
+    }
+
     fun remove(name: String, amount: Double? = null, categoryName: String? = null) {
         if (!isEnabled()) return
         if (!isConfigLoaded) return
@@ -282,9 +292,9 @@ object ShoppingList {
     }
 
     fun onRemoveCommand(args: Array<String>) {
-        val (itemName, amount, categoryName) = parseCommandArguments(args) ?: return
+        val arguments = parseCommandArguments(args) ?: return
 
-        remove(itemName, amount, categoryName)
+        remove(arguments)
     }
 
     private fun handleItemNotFound(name: String) {
