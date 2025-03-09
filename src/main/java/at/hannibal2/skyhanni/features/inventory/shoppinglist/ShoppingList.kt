@@ -172,7 +172,6 @@ object ShoppingList {
         createDisplay()
     }
 
-
     fun removeCategory(categoryName: String) {
         if (!isEnabled()) return
         if (!isConfigLoaded) return

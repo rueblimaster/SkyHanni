@@ -476,7 +476,7 @@ class ShoppingListItem(
                     text = text,
                     tips = tooltip,
                     onAnyClick = clickLayout,
-                ).toSearchable(text),
+                ).toSearchable(internalName.itemNameWithoutColor),
             )
         }
 
