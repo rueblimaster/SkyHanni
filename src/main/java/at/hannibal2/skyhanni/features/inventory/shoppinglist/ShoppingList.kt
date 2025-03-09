@@ -373,10 +373,10 @@ object ShoppingList {
 
         clear()
 
-        add("aspect of the end".toInternalName(), 2.0, categoryName = "Weapons")
+        add("ASPECT_OF_THE_END".toInternalName(), 2.0, categoryName = "Weapons")
         addCategory("Visitors", saveInStorage = false)
-        add("enchanted carrot".toInternalName(), 49.0, categoryName = "Visitors")
-        add("diamond".toInternalName(), 136.0)
+        add("ENCHANTED_CARROT".toInternalName(), 49.0, categoryName = "Visitors")
+        add("DIAMOND".toInternalName(), 136.0)
 
         update()
 
