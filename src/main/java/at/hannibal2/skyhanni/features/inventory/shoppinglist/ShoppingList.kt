@@ -144,7 +144,7 @@ object ShoppingList {
     }
 
     fun add(arguments: CommandArguments) {
-        add(arguments.itemName.toInternalName(), arguments.amount?: 1.0, arguments.categoryName)
+        add(arguments.itemName.toInternalName(), arguments.amount ?: 1.0, arguments.categoryName)
     }
 
     fun add(itemName: NeuInternalName, amount: Double = 1.0, categoryName: String? = null) {
