@@ -364,6 +364,10 @@ object ShoppingList {
         saveShoppingList()
     }
 
+    val testItem1 = "ASPECT_OF_THE_END".toInternalName()
+    val testItem2 = "ENCHANTED_CARROT".toInternalName()
+    val testItem3 = "DIAMOND".toInternalName()
+
     fun test() {
         println("test triggered")
 
@@ -373,10 +377,10 @@ object ShoppingList {
 
         clear()
 
-        add("ASPECT_OF_THE_END".toInternalName(), 2.0, categoryName = "Weapons")
+        add(testItem1, 2.0, categoryName = "Weapons")
         addCategory("Visitors", saveInStorage = false)
-        add("ENCHANTED_CARROT".toInternalName(), 49.0, categoryName = "Visitors")
-        add("DIAMOND".toInternalName(), 136.0)
+        add(testItem2, 49.0, categoryName = "Visitors")
+        add(testItem3, 136.0)
 
         update()
 
