@@ -36,6 +36,7 @@ import at.hannibal2.skyhanni.utils.PrimitiveItemStack.Companion.toPrimitiveStack
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.RecipeType
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderable
+import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.SearchTextInput
 import at.hannibal2.skyhanni.utils.renderables.Searchable
 import at.hannibal2.skyhanni.utils.renderables.buildSearchBox
@@ -93,7 +94,8 @@ object ShoppingList {
     }
 
     // TODO soon: somehow also make it searchable?
-    private var display = listOf<Searchable>()
+    private var display: Renderable? = null
+    private val textInput = SearchTextInput()
 
     private var inventoryOpen = false
 
@@ -337,18 +339,21 @@ object ShoppingList {
         if (!isConfigLoaded) return
 
         if (!isEnabled() || (categories.isEmpty() && items.isEmpty())) {
-            display = emptyList()
+            display = null
             return
         }
-        display = buildList {
+
+        val build: List<Searchable> = buildList {
             addSearchString("§lShopping List")
             categories.forEach {
                 addAll(it.getRenderables(1))
             }
             addAll(items.getRenderables(0, showThis = false))
         }
-        if (display.size == 1) {
-            display = emptyList()
+        if (build.size > 1) {
+            display = build.buildSearchBox(textInput)
+        } else {
+            display = null
         }
     }
 
@@ -503,7 +508,7 @@ object ShoppingList {
     @HandleEvent(onlyOnSkyblock = true)
     fun onRender(event: GuiRenderEvent.GuiOverlayRenderEvent) {
         if (!isEnabled()) return
-        config.position.renderRenderable(display.buildSearchBox(SearchTextInput()), posLabel = "Shopping List")
+        config.position.renderRenderable(display, posLabel = "Shopping List")
     }
 
     @HandleEvent(onlyOnSkyblock = true)
@@ -513,7 +518,7 @@ object ShoppingList {
             inventoryOpen = true
             update()
         }
-        config.position.renderRenderable(display.buildSearchBox(SearchTextInput()), posLabel = "Shopping List")
+        config.position.renderRenderable(display, posLabel = "Shopping List")
     }
 
     @HandleEvent
