@@ -238,6 +238,7 @@ class ShoppingListItem(
         return buildMap {
             this[internalName] = Pair(totalAmount, 1)
 
+            // TODO: remove this as in category is enough
             subItems.forEach { item ->
                 item.getItemsOverall().forEach { (name, pair: Pair<Double, Int>) ->
                     if (this.containsKey(name)) {
@@ -333,7 +334,7 @@ class ShoppingListItem(
                 )
             } else {
                 Pair(
-                    "${internalName.asString()} $amount.displayAmount() ${topLevelCategory.name}",
+                    "${internalName.asString()} ${amount.displayAmount()} ${topLevelCategory.name}",
                     "copied command pastable to clipboard",
                 )
             }
@@ -418,13 +419,13 @@ class ShoppingListItem(
             clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
             tooltip.add("§7shift + left click to break down recipe")
         } else {
-            if (downBreakable || buyTooltip == null) {
+            if (downBreakable || buyTooltip == null || noTradeMode) {
                 clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { breakDownIntoSubitems() }
                 if (downBreakable) {
                     tooltip.add("§7left click to break down recipe")
                 }
                 clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { buyItem() }
-                if (buyTooltip != null) {
+                if (buyTooltip != null && !noTradeMode) {
                     tooltip.add("§7shift + left click$buyTooltip")
                 }
             } else {
