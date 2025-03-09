@@ -350,10 +350,10 @@ object ShoppingList {
             }
             addAll(items.getRenderables(0, showThis = false))
         }
-        if (build.size > 1) {
-            display = build.buildSearchBox(textInput)
+        display = if (build.size > 1) {
+            build.buildSearchBox(textInput)
         } else {
-            display = null
+            null
         }
     }
 
