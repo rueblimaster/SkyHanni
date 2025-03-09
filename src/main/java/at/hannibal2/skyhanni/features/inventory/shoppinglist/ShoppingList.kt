@@ -642,7 +642,6 @@ object ShoppingList {
     }
 
     // this event should be last
-// TODO: better argument handling
     @HandleEvent()
     fun onCommandRegistration(event: CommandRegistrationEvent) {
         event.register("shshoppinglistclear") {
