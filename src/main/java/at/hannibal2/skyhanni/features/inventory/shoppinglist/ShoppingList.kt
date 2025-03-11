@@ -102,7 +102,7 @@ object ShoppingList {
     var currentlyOpenRecipe: PrimitiveRecipe? = null
     var displayItem: ItemStack? = null
 
-    class CommandArguments(val itemName: String, val amount: Double?, val categoryName: String?)
+    private class CommandArguments(val itemName: String, val amount: Double?, val categoryName: String?)
 
     // all the functions for interacting with the shopping list come here
     // parseCommandArguments only works if only the item name is also okay
