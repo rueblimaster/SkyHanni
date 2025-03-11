@@ -106,7 +106,7 @@ object ShoppingList {
 
     // all the functions for interacting with the shopping list come here
     // parseCommandArguments only works if only the item name is also okay
-    fun parseCommandArguments(args: Array<String>): CommandArguments? {
+    private fun parseCommandArguments(args: Array<String>): CommandArguments? {
         if (args.isEmpty()) {
             ChatUtils.userError("No arguments entered")
             return null
@@ -143,7 +143,7 @@ object ShoppingList {
         return CommandArguments(itemName, amount, categoryName)
     }
 
-    fun add(arguments: CommandArguments) {
+    private fun add(arguments: CommandArguments) {
         add(arguments.itemName.toInternalName(), arguments.amount ?: 1.0, arguments.categoryName)
     }
 
@@ -270,7 +270,7 @@ object ShoppingList {
         update()
     }
 
-    fun remove(arguments: CommandArguments) {
+    private fun remove(arguments: CommandArguments) {
         remove(arguments.itemName, arguments.amount, arguments.categoryName)
     }
 
