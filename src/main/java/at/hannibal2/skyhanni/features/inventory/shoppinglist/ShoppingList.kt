@@ -502,6 +502,7 @@ object ShoppingList {
     @HandleEvent(onlyOnSkyblock = true)
     fun onInventoryClose(event: InventoryCloseEvent) {
         recheckInInventory()
+        currentlyOpenRecipe = null
         update()
     }
 
