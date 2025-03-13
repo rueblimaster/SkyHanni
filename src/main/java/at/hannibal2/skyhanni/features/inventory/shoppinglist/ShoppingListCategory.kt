@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
+import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.ItemsOverallEntry
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
@@ -41,7 +42,7 @@ class ShoppingListCategory(
     what may we want to see:
         - name
         - optional icon?
-        - TODO later: total cost
+        - TODO: total cost
      */
 
     override fun toString(): String {
@@ -128,14 +129,14 @@ class ShoppingListCategory(
         return items.any { it.internalName == itemName }
     }
 
-    fun getItemsOverall(): Map<NeuInternalName, Pair<Double, Int>> {
+    fun getItemsOverall(): Map<NeuInternalName, ItemsOverallEntry> {
         return buildMap {
             items.forEach { item ->
-                item.getItemsOverall().forEach { (name, pair: Pair<Double, Int>) ->
+                item.getItemsOverall().forEach { (name, itemEntry: ItemsOverallEntry) ->
                     if (this.containsKey(name)) {
-                        this[name]?.let { entry -> this[name] = Pair(entry.first + pair.first, entry.second + pair.second) }
+                        this[name]?.let { this[name] = it.plus(itemEntry) }
                     } else {
-                        this[name] = pair
+                        this[name] = itemEntry
                     }
                 }
             }

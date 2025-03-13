@@ -3,6 +3,7 @@ package at.hannibal2.skyhanni.features.inventory.shoppinglist
 import at.hannibal2.skyhanni.api.GetFromSackApi
 import at.hannibal2.skyhanni.api.ItemBuyApi.buy
 import at.hannibal2.skyhanni.features.inventory.bazaar.BazaarApi.isBazaarItem
+import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.ItemsOverallEntry
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.currentlyOpenRecipe
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
 import at.hannibal2.skyhanni.utils.ChatUtils
@@ -237,17 +238,16 @@ class ShoppingListItem(
         }
     }
 
-    fun getItemsOverall(): Map<NeuInternalName, Pair<Double, Int>> {
+    fun getItemsOverall(): Map<NeuInternalName, ItemsOverallEntry> {
         return buildMap {
-            this[internalName] = Pair(totalAmount, 1)
+            this[internalName] = ItemsOverallEntry(totalAmount, 1)
 
-            // TODO: remove this as in category is enough
             subItems.forEach { item ->
-                item.getItemsOverall().forEach { (name, pair: Pair<Double, Int>) ->
+                item.getItemsOverall().forEach { (name, itemEntry: ItemsOverallEntry) ->
                     if (this.containsKey(name)) {
-                        this[name]?.let { entry -> this[name] = Pair(entry.first + pair.first, entry.second + pair.second) }
+                        this[name]?.let { this[name] = it.plus(itemEntry) }
                     } else {
-                        this[name] = pair
+                        this[name] = itemEntry
                     }
                 }
             }
@@ -364,7 +364,7 @@ class ShoppingListItem(
         ChatUtils.chat(chatMessage)
     }
 
-    fun Double.displayAmount(): String {
+    private fun Double.displayAmount(): String {
         return if (this % 1 == 0.0) {
             this.toInt().toString()
         } else {
@@ -382,8 +382,8 @@ class ShoppingListItem(
         text += "${internalName.itemName} §f${getCurrentAmount()}/${totalAmount.displayAmount()}"
 
         ShoppingList.ItemsOverall.get(internalName)?.let {
-            if (it.second > 1) {
-                text += " (${it.first.displayAmount()} total over ${it.second} items)"
+            if (it.frequency > 1) {
+                text += " (${it.amount.displayAmount()} total over ${it.frequency} items)"
             }
         }
 

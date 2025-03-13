@@ -54,8 +54,17 @@ object ShoppingList {
     private val categories: MutableList<ShoppingListCategory> = mutableListOf()
     private var items: ShoppingListCategory = ShoppingListCategory("Items")
 
+    data class ItemsOverallEntry(val amount: Double, val frequency: Int) {
+        fun plus(other: ItemsOverallEntry): ItemsOverallEntry {
+            return ItemsOverallEntry(
+                amount = this.amount + other.amount,
+                frequency = this.frequency + other.frequency
+            )
+        }
+    }
+
     object ItemsOverall {
-        private val allItems: MutableMap<NeuInternalName, Pair<Double, Int>> = mutableMapOf()
+        private val allItems: MutableMap<NeuInternalName, ItemsOverallEntry> = mutableMapOf()
 
         fun update() {
             if (!isConfigLoaded) return
@@ -63,19 +72,17 @@ object ShoppingList {
             allItems.clear()
             for (category in categories + items) {
 
-                category.getItemsOverall().forEach { (name, pair: Pair<Double, Int>) ->
+                category.getItemsOverall().forEach { (name, itemEntry: ItemsOverallEntry) ->
                     if (allItems.containsKey(name)) {
-                        allItems[name]?.let { entry ->
-                            allItems[name] = Pair(entry.first + pair.first, entry.second + pair.second)
-                        }
+                        allItems[name]?.let { allItems[name] = it.plus(itemEntry) }
                     } else {
-                        allItems[name] = pair
+                        allItems[name] = itemEntry
                     }
                 }
             }
         }
 
-        fun getItems(): MutableMap<NeuInternalName, Pair<Double, Int>> {
+        fun getItems(): MutableMap<NeuInternalName, ItemsOverallEntry> {
             return allItems
         }
 
@@ -83,7 +90,7 @@ object ShoppingList {
             var result = "ItemsOverall("
 
             for ((item, pair) in allItems) {
-                result += ("\nItem: $item, Amount: ${pair.first}, in items: ${pair.second}")
+                result += ("\nItem: $item, Amount: ${pair.amount}, in items: ${pair.frequency}")
             }
 
             result += "\n)"
@@ -647,7 +654,7 @@ object ShoppingList {
 
             add("ItemsOverall:")
             for ((item, pair) in ItemsOverall.getItems()) {
-                add("  Item: ${item.itemNameWithoutColor}, Amount: ${pair.first}, in items: ${pair.second}")
+                add("  Item: ${item.itemNameWithoutColor}, Amount: ${pair.amount}, in items: ${pair.frequency}")
             }
         }
     }
