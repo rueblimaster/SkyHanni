@@ -643,9 +643,7 @@ object GardenVisitorFeatures {
         val gui = event.gui
         if (gui !is GuiEditSign) return
 
-        if (config.shoppingList.onlyWhenClose && !GardenApi.onBarnPlot) return
-
-        if (!hideExtraGuis() && shouldShowShoppingList()) {
+        if (!hideExtraGuis() && showGui()) {
             config.shoppingList.pos.renderStringsAndItems(display, posLabel = "Visitor Shopping List")
         }
     }
