@@ -615,6 +615,8 @@ object GardenVisitorFeatures {
         return ready
     }
 
+    fun renderDisplay() = config.shoppingList.pos.renderStringsAndItems(display, posLabel = "Visitor Shopping List")
+
     @SubscribeEvent
     fun onRenderInSigns(event: DrawScreenEvent.Post) {
         if (!GardenApi.inGarden()) return
@@ -622,21 +624,17 @@ object GardenVisitorFeatures {
         val gui = event.gui
         if (gui !is GuiEditSign) return
 
-        if (config.shoppingList.onlyWhenClose && !GardenApi.onBarnPlot) return
-
-        if (!hideExtraGuis() && shouldShowShoppingList()) {
-            config.shoppingList.pos.renderStringsAndItems(display, posLabel = "Visitor Shopping List")
+        if (showGui() && shouldShowShoppingList()) {
+            renderDisplay()
         }
     }
-
-    private fun hideExtraGuis() = GardenApi.hideExtraGuis() && !VisitorApi.inInventory
 
     @HandleEvent
     fun onRenderOverlay(event: GuiRenderEvent) {
         if (!config.shoppingList.display) return
 
         if (showGui() && shouldShowShoppingList()) {
-            config.shoppingList.pos.renderStringsAndItems(display, posLabel = "Visitor Shopping List")
+            renderDisplay()
         }
     }
 
@@ -646,9 +644,12 @@ object GardenVisitorFeatures {
         val currentScreen = Minecraft.getMinecraft().currentScreen ?: return true
         val isInOwnInventory = currentScreen is GuiInventory
         if (isInOwnInventory) return true
+        if (currentScreen is GuiEditSign) return true
 
         return false
     }
+
+    private fun hideExtraGuis() = GardenApi.hideExtraGuis() && !VisitorApi.inInventory
 
     private fun showGui(): Boolean {
         if (IslandType.HUB.isInIsland()) {
