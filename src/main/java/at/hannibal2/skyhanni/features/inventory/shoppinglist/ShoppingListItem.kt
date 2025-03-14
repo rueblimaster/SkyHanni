@@ -13,8 +13,8 @@ import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventory
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventoryAndSacks
 import at.hannibal2.skyhanni.utils.ItemPriceUtils.isAuctionHouseItem
-import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
+import at.hannibal2.skyhanni.utils.ItemUtils.repoItemName
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.MIDDLE_MOUSE
@@ -107,7 +107,7 @@ class ShoppingListItem(
      */
 
     override fun toString(): String {
-        return "${internalName.itemName} x$amount" + if (subItems.isNotEmpty()) {
+        return "${internalName.repoItemName} x$amount" + if (subItems.isNotEmpty()) {
             " (${subItems.joinToString(", ")})"
         } else {
             ""
@@ -379,7 +379,7 @@ class ShoppingListItem(
             text += "§7${amount.displayAmount()}x "
         }
 
-        text += "${internalName.itemName} §f${getCurrentAmount()}/${totalAmount.displayAmount()}"
+        text += "${internalName.repoItemName} §f${getCurrentAmount()}/${totalAmount.displayAmount()}"
 
         if (ShoppingList.config.showOverall) {
             ShoppingList.ItemsOverall.get(internalName)?.let {
