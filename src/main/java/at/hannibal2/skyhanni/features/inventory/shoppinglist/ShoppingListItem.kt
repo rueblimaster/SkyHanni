@@ -19,13 +19,13 @@ import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.MIDDLE_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
-import at.hannibal2.skyhanni.utils.LorenzUtils
 import at.hannibal2.skyhanni.utils.LorenzUtils.noTradeMode
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.NeuItems.isVanillaItem
 import at.hannibal2.skyhanni.utils.PrimitiveIngredient
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
+import at.hannibal2.skyhanni.utils.SignUtils
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.Renderable.Companion.ClickTypeWithModifiers
@@ -257,7 +257,7 @@ class ShoppingListItem(
     fun checkIfInSignAndInsertAmount(): Boolean {
         if (Minecraft.getMinecraft().currentScreen is GuiEditSign) {
             ChatUtils.chat("Detected sign gui, pasting number into sign instead")
-            LorenzUtils.setTextIntoSign("${remainingAmount.toInt()}")
+            SignUtils.setTextIntoSign("${remainingAmount.toInt()}")
             return true
         } else {
             return false
