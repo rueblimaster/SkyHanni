@@ -381,9 +381,11 @@ class ShoppingListItem(
 
         text += "${internalName.itemName} §f${getCurrentAmount()}/${totalAmount.displayAmount()}"
 
-        ShoppingList.ItemsOverall.get(internalName)?.let {
-            if (it.frequency > 1) {
-                text += " (${it.amount.displayAmount()} total over ${it.frequency} items)"
+        if (ShoppingList.config.showOverall) {
+            ShoppingList.ItemsOverall.get(internalName)?.let {
+                if (it.frequency > 1) {
+                    text += " (${it.amount.displayAmount()} total over ${it.frequency} items)"
+                }
             }
         }
 

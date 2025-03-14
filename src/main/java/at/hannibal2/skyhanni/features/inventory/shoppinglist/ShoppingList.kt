@@ -46,7 +46,7 @@ import net.minecraft.item.ItemStack
 
 @SkyHanniModule
 object ShoppingList {
-    private val config get() = SkyHanniMod.feature.inventory.shoppingList
+    val config get() = SkyHanniMod.feature.inventory.shoppingList
 
     private val storage: ProfileSpecificStorage.ShoppingListStorage? get() = ProfileStorageData.profileSpecific?.shoppingList
 
