@@ -24,8 +24,8 @@ import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.CollectionUtils.addSearchString
 import at.hannibal2.skyhanni.utils.InventoryUtils.closeInventory
 import at.hannibal2.skyhanni.utils.InventoryUtils.inAnyInventory
-import at.hannibal2.skyhanni.utils.ItemUtils.itemName
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
+import at.hannibal2.skyhanni.utils.ItemUtils.repoItemName
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.LorenzUtils
@@ -336,7 +336,7 @@ object ShoppingList {
             if (cat.contains(itemName)) {
                 if (category != null) {
                     ChatUtils.userError(
-                        "Item ${itemName.itemName}§c found in multiple categories, please specify the category to remove from",
+                        "Item ${itemName.repoItemName}§c found in multiple categories, please specify the category to remove from",
                     )
                     return
                 }
@@ -344,7 +344,7 @@ object ShoppingList {
             }
         }
 
-        category?.remove(itemName, amount) ?: ChatUtils.userError("Item ${itemName.itemName}§c not found")
+        category?.remove(itemName, amount) ?: ChatUtils.userError("Item ${itemName.repoItemName}§c not found")
     }
 
     fun clear() {
