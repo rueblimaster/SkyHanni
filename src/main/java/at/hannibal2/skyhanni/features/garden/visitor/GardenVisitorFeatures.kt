@@ -6,6 +6,7 @@ import at.hannibal2.skyhanni.config.features.garden.visitor.VisitorConfig.Highli
 import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.data.SackApi.getAmountInSacks
 import at.hannibal2.skyhanni.data.SackApi.getAmountInSacksOrNull
+import at.hannibal2.skyhanni.data.TitleManager
 import at.hannibal2.skyhanni.events.DebugDataCollectEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.OwnInventoryItemUpdateEvent
@@ -506,7 +507,7 @@ object GardenVisitorFeatures {
         val recentWorldSwitch = LorenzUtils.lastWorldSwitch.passedSince() < 2.seconds
 
         if (config.notificationTitle && !recentWorldSwitch) {
-            LorenzUtils.sendTitle("§eNew Visitor", 5.seconds)
+            TitleManager.sendTitle("§eNew Visitor", 5.seconds)
         }
         if (config.notificationChat) {
             val displayName = GardenVisitorColorNames.getColoredName(name)
