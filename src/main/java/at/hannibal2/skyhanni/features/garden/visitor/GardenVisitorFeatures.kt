@@ -1,5 +1,7 @@
 package at.hannibal2.skyhanni.features.garden.visitor
 
+import at.hannibal2.skyhanni.api.ItemBuyApi.buy
+import at.hannibal2.skyhanni.api.ItemBuyApi.createBuyTip
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.ConfigUpdaterMigrator
 import at.hannibal2.skyhanni.config.features.garden.visitor.VisitorConfig.HighlightMode
@@ -26,9 +28,6 @@ import at.hannibal2.skyhanni.features.garden.GardenApi
 import at.hannibal2.skyhanni.features.garden.farming.GardenCropSpeed.getSpeed
 import at.hannibal2.skyhanni.features.garden.visitor.VisitorApi.blockReason
 import at.hannibal2.skyhanni.features.inventory.bazaar.BazaarApi
-import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList
-import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.getCategory
-import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.isCategory
 import at.hannibal2.skyhanni.mixins.hooks.RenderLivingEntityHelper
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.test.command.ErrorManager
@@ -45,7 +44,7 @@ import at.hannibal2.skyhanni.utils.ItemUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.getInternalName
 import at.hannibal2.skyhanni.utils.ItemUtils.getLore
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
-import at.hannibal2.skyhanni.utils.LorenzColor
+import at.hannibal2.skyhanni.utils.ItemUtils.repoItemName
 import at.hannibal2.skyhanni.utils.LorenzLogger
 import at.hannibal2.skyhanni.utils.LorenzUtils
 import at.hannibal2.skyhanni.utils.LorenzUtils.isInIsland
@@ -182,30 +181,7 @@ object GardenVisitorFeatures {
         if (!config.shoppingList.display) return@buildList
         val (shoppingList, newVisitors) = prepareDrawingData()
 
-        if (!shoppingList.isEmpty()) {
-            if (!"Visitors".isCategory()) {
-                ShoppingList.addCategory(
-                    "Visitors",
-                    color = LorenzColor.DARK_GREEN,
-                    saveInStorage = false,
-                    displayCondition = { showGui() && shouldShowShoppingList() },
-                )
-            }
-
-            val category = "Visitors".getCategory()
-            if (category == null) return@buildList
-
-            for (item in category.items) {
-                if (!shoppingList.containsKey(item.internalName)) {
-                    category.remove(item)
-                }
-            }
-
-            for ((itemName, amount) in shoppingList) {
-                category.set(itemName, amount.toDouble())
-            }
-        }
-
+        drawShoppingList(shoppingList)
         drawVisitors(newVisitors, shoppingList)
     }
 
@@ -227,6 +203,51 @@ object GardenVisitorFeatures {
             }
         }
         return globalShoppingList to newVisitors
+    }
+
+    private fun MutableList<List<Any>>.drawShoppingList(shoppingList: MutableMap<NeuInternalName, Int>) {
+        if (shoppingList.isEmpty()) return
+
+        var totalPrice = 0.0
+        addAsSingletonList("§7Visitor Shopping List:")
+        for ((internalName, amount) in shoppingList) {
+            val name = internalName.repoItemName
+            val itemStack = internalName.getItemStack()
+
+            val list = mutableListOf<Any>()
+            list.add(" §7- ")
+            list.add(itemStack)
+
+            list.add(
+                Renderable.clickable(
+                    "$name §ex${amount.addSeparators()}",
+                    tips = internalName.createBuyTip(),
+                    onLeftClick = {
+                        if (!GardenApi.inGarden() || NeuItems.neuHasFocus()) return@clickable
+                        if (Minecraft.getMinecraft().currentScreen is GuiEditSign) {
+                            SignUtils.setTextIntoSign("$amount")
+                        } else {
+                            internalName.buy(amount)
+                        }
+                    },
+                ),
+            )
+
+            if (config.shoppingList.showPrice) {
+                val price = internalName.getPrice() * amount
+                totalPrice += price
+                val format = price.shortFormat()
+                list.add(" §7(§6$format§7)")
+            }
+
+            addSackData(internalName, amount, list)
+
+            add(list)
+        }
+        if (totalPrice > 0) {
+            val format = totalPrice.shortFormat()
+            this[0] = listOf("§7Visitor Shopping List: §7(§6$format§7)")
+        }
     }
 
     private fun addSackData(
