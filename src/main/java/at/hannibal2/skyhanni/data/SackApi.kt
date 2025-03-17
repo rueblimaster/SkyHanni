@@ -351,7 +351,6 @@ object SackApi {
         sackListNames = uniqueSackItems.map { it.itemNameWithoutColor.removeNonAscii().trim().uppercase() }.toSet()
     }
 
-    // TODO: also update sacks when items are added/removed from sack, not only on summary
     private fun updateSacks(changes: SackChangeEvent) {
         sackData = ProfileStorageData.sackProfiles?.sackContents ?: return
 
