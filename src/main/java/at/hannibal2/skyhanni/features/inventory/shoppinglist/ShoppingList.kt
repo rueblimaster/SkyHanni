@@ -21,7 +21,7 @@ import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.CategoryTemplate.Companion.toCategoryTemplate
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
-import at.hannibal2.skyhanni.utils.CollectionUtils.addSearchString
+import at.hannibal2.skyhanni.utils.CollectionUtils.addString
 import at.hannibal2.skyhanni.utils.InventoryUtils.closeInventory
 import at.hannibal2.skyhanni.utils.InventoryUtils.inAnyInventory
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
@@ -35,11 +35,9 @@ import at.hannibal2.skyhanni.utils.PrimitiveIngredient
 import at.hannibal2.skyhanni.utils.PrimitiveItemStack.Companion.toPrimitiveStackOrNull
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.RecipeType
-import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderable
+import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.SearchTextInput
-import at.hannibal2.skyhanni.utils.renderables.Searchable
-import at.hannibal2.skyhanni.utils.renderables.buildSearchBox
 import net.minecraft.entity.player.InventoryPlayer
 import net.minecraft.init.Blocks
 import net.minecraft.item.ItemStack
@@ -101,7 +99,7 @@ object ShoppingList {
     }
 
     // TODO soon: somehow also make it searchable?
-    private var display: Renderable? = null
+    private var display: List<Renderable> = listOf()
     private val textInput = SearchTextInput()
 
     private var inventoryOpen = false
@@ -435,21 +433,16 @@ object ShoppingList {
         if (!isConfigLoaded) return
 
         if (!isEnabled() || (categories.isEmpty() && items.isEmpty())) {
-            display = null
+            display = listOf()
             return
         }
 
-        val build: List<Searchable> = buildList {
-            addSearchString("§lShopping List")
+        display = buildList {
+            addString("§lShopping List")
             categories.forEach {
                 addAll(it.getRenderables(1))
             }
             addAll(items.getRenderables(0, showThis = false))
-        }
-        display = if (build.size > 1) {
-            build.buildSearchBox(textInput)
-        } else {
-            null
         }
     }
 
@@ -605,7 +598,7 @@ object ShoppingList {
     @HandleEvent(onlyOnSkyblock = true)
     fun onRender(event: GuiRenderEvent.GuiOverlayRenderEvent) {
         if (!isEnabled()) return
-        config.position.renderRenderable(display, posLabel = "Shopping List")
+        config.position.renderRenderables(display, posLabel = "Shopping List")
     }
 
     @HandleEvent(onlyOnSkyblock = true)
@@ -615,7 +608,7 @@ object ShoppingList {
             inventoryOpen = true
             update()
         }
-        config.position.renderRenderable(display, posLabel = "Shopping List")
+        config.position.renderRenderables(display, posLabel = "Shopping List")
     }
 
     @HandleEvent

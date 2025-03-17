@@ -10,8 +10,6 @@ import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.Renderable.Companion.ClickTypeWithModifiers
-import at.hannibal2.skyhanni.utils.renderables.Searchable
-import at.hannibal2.skyhanni.utils.renderables.toSearchable
 import net.minecraft.item.ItemStack
 import org.lwjgl.input.Keyboard
 
@@ -170,8 +168,8 @@ class ShoppingListCategory(
         ShoppingList.moveCategoryToTop(this)
     }
 
-    fun getRenderables(indent: Int, showThis: Boolean = true): List<Searchable> {
-        val renderables = mutableListOf<Searchable>()
+    fun getRenderables(indent: Int, showThis: Boolean = true): List<Renderable> {
+        val renderables = mutableListOf<Renderable>()
 
         if ((!hidden || ShoppingList.isInventoryOpen()) && displayCondition()) {
             if (showThis) {
@@ -190,7 +188,7 @@ class ShoppingListCategory(
                         text = text,
                         tips = tooltip,
                         onAnyClick = clickLayout.toMap(),
-                    ).toSearchable(text),
+                    ),
                 )
             }
 
