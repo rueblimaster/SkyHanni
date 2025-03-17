@@ -100,7 +100,6 @@ object ShoppingList {
 
     // TODO soon: somehow also make it searchable?
     private var display: List<Renderable> = listOf()
-    private val textInput = SearchTextInput()
 
     private var inventoryOpen = false
 
