@@ -435,7 +435,7 @@ object ShoppingList {
             return
         }
 
-        val display: List<Renderable> = buildList {
+        display = buildList {
             addString("§lShopping List")
             categories.forEach {
                 addAll(it.getRenderables(1))
