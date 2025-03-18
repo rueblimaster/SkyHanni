@@ -1022,6 +1022,10 @@ interface Renderable {
             return horizontalContainer(buildList { builderAction() })
         }
 
+        fun vertical(builderAction: MutableList<Renderable>.() -> Unit): Renderable {
+            return verticalContainer(buildList { builderAction() }, spacing = 2)
+        }
+
         fun horizontalContainer(
             content: List<Renderable>,
             spacing: Int = 0,
