@@ -60,6 +60,8 @@ import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.RenderUtils.drawString
 import at.hannibal2.skyhanni.utils.RenderUtils.renderStringsAndItems
 import at.hannibal2.skyhanni.utils.SignUtils
+import at.hannibal2.skyhanni.utils.SignUtils.isBazaarSign
+import at.hannibal2.skyhanni.utils.SignUtils.isSupercraftAmountSetSign
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.TimeUtils.format
@@ -637,7 +639,11 @@ object GardenVisitorFeatures {
         return ready
     }
 
-    private fun renderDisplay() = config.shoppingList.pos.renderStringsAndItems(display, posLabel = "Visitor Shopping List")
+    private fun renderDisplay() {
+        if (showGui() && shouldShowShoppingList()) {
+            config.shoppingList.pos.renderStringsAndItems(display, posLabel = "Visitor Shopping List")
+        }
+    }
 
     @HandleEvent(onlyOnIsland = IslandType.GARDEN)
     fun onScreenDrawn(event: ScreenDrawnEvent) {
@@ -645,20 +651,14 @@ object GardenVisitorFeatures {
         val gui = event.gui
         if (gui !is GuiEditSign) return
 
-        if (config.shoppingList.onlyWhenClose && !GardenApi.onBarnPlot) return
-
-        if (showGui() && shouldShowShoppingList()) {
-            renderDisplay()
-        }
+        renderDisplay()
     }
 
     @HandleEvent
     fun onRenderOverlay(event: GuiRenderEvent) {
         if (!config.shoppingList.display) return
 
-        if (showGui() && shouldShowShoppingList()) {
-            renderDisplay()
-        }
+        renderDisplay()
     }
 
     private fun shouldShowShoppingList(): Boolean {
@@ -667,7 +667,7 @@ object GardenVisitorFeatures {
         val currentScreen = Minecraft.getMinecraft().currentScreen ?: return true
         val isInOwnInventory = currentScreen is GuiInventory
         if (isInOwnInventory) return true
-        if (currentScreen is GuiEditSign) return true
+        if (currentScreen is GuiEditSign && (currentScreen.isBazaarSign() || currentScreen.isSupercraftAmountSetSign())) return true
 
         return false
     }
