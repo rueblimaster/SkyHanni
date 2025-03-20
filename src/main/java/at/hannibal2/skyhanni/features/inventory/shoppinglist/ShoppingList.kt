@@ -24,7 +24,6 @@ import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.CollectionUtils.addString
 import at.hannibal2.skyhanni.utils.InventoryUtils.closeInventory
 import at.hannibal2.skyhanni.utils.InventoryUtils.inAnyInventory
-import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.ItemUtils.repoItemName
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.LorenzColor
@@ -50,52 +49,6 @@ object ShoppingList {
     private var isConfigLoaded = false
     private val categories: MutableList<ShoppingListCategory> = mutableListOf()
     private var items: ShoppingListCategory = ShoppingListCategory("Items")
-
-    data class ItemsOverallEntry(val amount: Double, val frequency: Int) {
-        fun plus(other: ItemsOverallEntry): ItemsOverallEntry {
-            return ItemsOverallEntry(
-                amount = this.amount + other.amount,
-                frequency = this.frequency + other.frequency,
-            )
-        }
-    }
-
-    object ItemsOverall {
-        private val allItems: MutableMap<NeuInternalName, ItemsOverallEntry> = mutableMapOf()
-
-        fun update() {
-            if (!isConfigLoaded) return
-
-            allItems.clear()
-            for (category in categories + items) {
-
-                category.getItemsOverall().forEach { (name, itemEntry: ItemsOverallEntry) ->
-                    if (allItems.containsKey(name)) {
-                        allItems[name]?.let { allItems[name] = it.plus(itemEntry) }
-                    } else {
-                        allItems[name] = itemEntry
-                    }
-                }
-            }
-        }
-
-        fun getItems(): MutableMap<NeuInternalName, ItemsOverallEntry> {
-            return allItems
-        }
-
-        override fun toString(): String {
-            var result = "ItemsOverall("
-
-            for ((item, pair) in allItems) {
-                result += ("\nItem: $item, Amount: ${pair.amount}, in items: ${pair.frequency}")
-            }
-
-            result += "\n)"
-            return result
-        }
-
-        fun get(item: NeuInternalName) = allItems[item]
-    }
 
     // TODO soon: somehow also make it searchable?
     private var display: List<Renderable> = listOf()
@@ -449,8 +402,6 @@ object ShoppingList {
         if (!isEnabled()) return
         if (!isConfigLoaded) return
 
-        ItemsOverall.update()
-
         createDisplay()
 
         saveShoppingList()
@@ -643,10 +594,6 @@ object ShoppingList {
 
             add("")
 
-            add("ItemsOverall:")
-            for ((item, pair) in ItemsOverall.getItems()) {
-                add("  Item: ${item.itemNameWithoutColor}, Amount: ${pair.amount}, in items: ${pair.frequency}")
-            }
         }
     }
 

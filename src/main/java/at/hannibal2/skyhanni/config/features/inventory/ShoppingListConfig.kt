@@ -19,11 +19,6 @@ class ShoppingListConfig {
     var position: Position = Position(10, 10, false, false)
 
     @Expose
-    @ConfigOption(name = "Show overall", desc = "For each item, show how many items are needed over the whole shopping list")
-    @ConfigEditorBoolean
-    var showOverall: Boolean = true
-
-    @Expose
     @ConfigOption(name = "Show the cost of each item", desc = "Show the cost of each item in the shopping list")
     @ConfigEditorBoolean
     var showItemCost: Boolean = true

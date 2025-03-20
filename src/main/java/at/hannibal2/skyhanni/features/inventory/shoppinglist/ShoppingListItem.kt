@@ -3,7 +3,6 @@ package at.hannibal2.skyhanni.features.inventory.shoppinglist
 import at.hannibal2.skyhanni.api.GetFromSackApi
 import at.hannibal2.skyhanni.api.ItemBuyApi.buy
 import at.hannibal2.skyhanni.features.inventory.bazaar.BazaarApi.isBazaarItem
-import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.ItemsOverallEntry
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.currentlyOpenRecipe
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
 import at.hannibal2.skyhanni.utils.ChatUtils
@@ -236,22 +235,6 @@ class ShoppingListItem(
         }
     }
 
-    fun getItemsOverall(): Map<NeuInternalName, ItemsOverallEntry> {
-        return buildMap {
-            this[internalName] = ItemsOverallEntry(totalAmount, 1)
-
-            subItems.forEach { item ->
-                item.getItemsOverall().forEach { (name, itemEntry: ItemsOverallEntry) ->
-                    if (this.containsKey(name)) {
-                        this[name]?.let { this[name] = it.plus(itemEntry) }
-                    } else {
-                        this[name] = itemEntry
-                    }
-                }
-            }
-        }
-    }
-
     fun checkIfInSignAndInsertAmount(): Boolean {
         if (Minecraft.getMinecraft().currentScreen is GuiEditSign) {
             ChatUtils.chat("Detected sign gui, pasting number into sign instead")
@@ -378,14 +361,6 @@ class ShoppingListItem(
         }
 
         text += "${internalName.repoItemName} §f${getCurrentAmount()}/${totalAmount.displayAmount()}"
-
-        if (ShoppingList.config.showOverall) {
-            ShoppingList.ItemsOverall.get(internalName)?.let {
-                if (it.frequency > 1) {
-                    text += " (${it.amount.displayAmount()} total over ${it.frequency} items)"
-                }
-            }
-        }
 
         if (hasItems()) {
             text += " §a✓"

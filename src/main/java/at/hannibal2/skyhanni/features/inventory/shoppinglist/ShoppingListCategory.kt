@@ -1,6 +1,5 @@
 package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
-import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.ItemsOverallEntry
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
@@ -125,20 +124,6 @@ class ShoppingListCategory(
 
     fun contains(itemName: NeuInternalName): Boolean {
         return items.any { it.internalName == itemName }
-    }
-
-    fun getItemsOverall(): Map<NeuInternalName, ItemsOverallEntry> {
-        return buildMap {
-            items.forEach { item ->
-                item.getItemsOverall().forEach { (name, itemEntry: ItemsOverallEntry) ->
-                    if (this.containsKey(name)) {
-                        this[name]?.let { this[name] = it.plus(itemEntry) }
-                    } else {
-                        this[name] = itemEntry
-                    }
-                }
-            }
-        }
     }
 
     fun onItemClicked(clickedItem: ItemStack): Boolean {
