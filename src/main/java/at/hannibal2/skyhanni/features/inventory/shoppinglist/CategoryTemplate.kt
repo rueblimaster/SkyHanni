@@ -7,9 +7,9 @@ import com.google.gson.annotations.Expose
 
 class CategoryTemplate(
     @Expose val name: String,
-    @Expose val color: Char = '6',
-    @Expose val hidden: Boolean = false,
-    @Expose val items: List<ItemTemplate> = emptyList(),
+    @Expose val color: Char,
+    @Expose val hidden: Boolean,
+    @Expose val items: List<ItemTemplate>,
 ) {
 
     fun toShoppingListCategory(): ShoppingListCategory {

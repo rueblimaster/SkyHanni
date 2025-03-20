@@ -29,8 +29,6 @@ import at.hannibal2.skyhanni.utils.SignUtils
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.Renderable.Companion.ClickTypeWithModifiers
-import at.hannibal2.skyhanni.utils.renderables.Searchable
-import at.hannibal2.skyhanni.utils.renderables.toSearchable
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.inventory.GuiEditSign
 import net.minecraft.init.Blocks
@@ -531,8 +529,8 @@ class ShoppingListItem(
         return Pair(clickLayout, tooltip)
     }
 
-    fun getRenderables(indent: String, continuedIndent: String? = null): List<Searchable> {
-        val renderables = mutableListOf<Searchable>()
+    fun getRenderables(indent: String, continuedIndent: String? = null): List<Renderable> {
+        val renderables = mutableListOf<Renderable>()
         if (!hidden || ShoppingList.isInventoryOpen()) {
 
             var text = getDisplayRepresentation(indent)
@@ -548,7 +546,7 @@ class ShoppingListItem(
                     text = text,
                     tips = tooltip,
                     onAnyClick = clickLayout,
-                ).toSearchable(internalName.itemNameWithoutColor),
+                ),
             )
         }
 
