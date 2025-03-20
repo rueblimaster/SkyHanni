@@ -55,7 +55,7 @@ object ShoppingList {
         fun plus(other: ItemsOverallEntry): ItemsOverallEntry {
             return ItemsOverallEntry(
                 amount = this.amount + other.amount,
-                frequency = this.frequency + other.frequency
+                frequency = this.frequency + other.frequency,
             )
         }
     }

@@ -19,7 +19,7 @@ class ShoppingListCategory(
     val saveInStorage: Boolean = true,
     val displayCondition: () -> Boolean = { true }, // TODO: later (maybe): implement only in area somehow
     // TODO later maybe?: implement icons
-    var hidden: Boolean = false
+    var hidden: Boolean = false,
 ) {
     val items = mutableListOf<ShoppingListItem>()
 
