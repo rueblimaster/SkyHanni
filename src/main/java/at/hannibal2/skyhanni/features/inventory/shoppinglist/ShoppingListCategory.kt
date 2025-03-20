@@ -15,7 +15,6 @@ import org.lwjgl.input.Keyboard
 class ShoppingListCategory(
     val name: String,
     val color: LorenzColor = LorenzColor.GOLD,
-    val saveInStorage: Boolean = true,
     val displayCondition: () -> Boolean = { true }, // TODO: later (maybe): implement only in area somehow
     // TODO later maybe?: implement icons
     var hidden: Boolean = false,

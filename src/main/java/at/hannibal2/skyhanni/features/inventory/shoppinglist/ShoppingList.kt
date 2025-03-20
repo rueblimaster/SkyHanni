@@ -4,9 +4,6 @@ import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
-import at.hannibal2.skyhanni.config.storage.ProfileSpecificStorage
-import at.hannibal2.skyhanni.data.ProfileStorageData
-import at.hannibal2.skyhanni.events.ConfigLoadEvent
 import at.hannibal2.skyhanni.events.DebugDataCollectEvent
 import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
@@ -18,7 +15,6 @@ import at.hannibal2.skyhanni.events.SackDataUpdateEvent
 import at.hannibal2.skyhanni.events.entity.ItemAddInInventoryEvent
 import at.hannibal2.skyhanni.events.minecraft.WorldChangeEvent
 import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
-import at.hannibal2.skyhanni.features.inventory.shoppinglist.CategoryTemplate.Companion.toCategoryTemplate
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.CollectionUtils.addString
@@ -44,9 +40,6 @@ import net.minecraft.item.ItemStack
 object ShoppingList {
     val config get() = SkyHanniMod.feature.inventory.shoppingList
 
-    private val storage: ProfileSpecificStorage.ShoppingListStorage? get() = ProfileStorageData.profileSpecific?.shoppingList
-
-    private var isConfigLoaded = false
     private val categories: MutableList<ShoppingListCategory> = mutableListOf()
     private var items: ShoppingListCategory = ShoppingListCategory("Items")
 
@@ -104,8 +97,6 @@ object ShoppingList {
     }
 
     fun add(itemName: NeuInternalName, amount: Double = 1.0, categoryName: String? = null) {
-        if (!isConfigLoaded) return
-
         // TODO: shouldn't happen @Thunderblade73
         if (!isEnabled()) return
 
@@ -134,22 +125,19 @@ object ShoppingList {
     fun addCategory(
         categoryName: String,
         color: LorenzColor? = null,
-        saveInStorage: Boolean = true,
         displayCondition: () -> Boolean = { true },
     ) {
         if (!isEnabled()) return
-        if (!isConfigLoaded) return
 
         if (categories.any { it.name == categoryName }) return
 
         if (color == null) {
-            categories.add(ShoppingListCategory(categoryName, saveInStorage = saveInStorage, displayCondition = displayCondition))
+            categories.add(ShoppingListCategory(categoryName, displayCondition = displayCondition))
         } else {
             categories.add(
                 ShoppingListCategory(
                     categoryName,
                     color = color,
-                    saveInStorage = saveInStorage,
                     displayCondition = displayCondition,
                 ),
             )
@@ -159,8 +147,6 @@ object ShoppingList {
     }
 
     fun set(itemName: NeuInternalName, amount: Double, categoryName: String? = null) {
-        if (!isConfigLoaded) return
-
         // TODO: shouldn't happen @Thunderblade73
         if (!isEnabled()) return
 
@@ -211,7 +197,6 @@ object ShoppingList {
 
     fun removeCategory(categoryName: String) {
         if (!isEnabled()) return
-        if (!isConfigLoaded) return
 
         val category = categories.firstOrNull { it.name == categoryName } ?: return
         categories.remove(category)
@@ -220,7 +205,6 @@ object ShoppingList {
 
     fun removeCategory(category: ShoppingListCategory) {
         if (!isEnabled()) return
-        if (!isConfigLoaded) return
 
         categories.remove(category)
         update()
@@ -232,7 +216,6 @@ object ShoppingList {
 
     fun remove(name: String, amount: Double? = null, categoryName: String? = null) {
         if (!isEnabled()) return
-        if (!isConfigLoaded) return
 
         val itemName: NeuInternalName? = name.toInternalName()
 
@@ -297,8 +280,6 @@ object ShoppingList {
     }
 
     fun clear() {
-        if (!isConfigLoaded) return
-
         categories.clear()
         items.clear()
 
@@ -338,40 +319,8 @@ object ShoppingList {
         }
     }
 
-    fun loadShoppingList(forceOverwriteCurrent: Boolean = false) {
-        if (isConfigLoaded && !forceOverwriteCurrent) return
-        if (storage == null) return // technically not needed I guess
-
-        val storedCategories = storage?.categories ?: return
-        val storedItems = storage?.items ?: return
-
-        categories.clear()
-        for (category in storedCategories) {
-            categories.add(category.toShoppingListCategory())
-        }
-
-        items = storedItems.toShoppingListCategory()
-
-        isConfigLoaded = true
-    }
-
-    fun saveShoppingList() {
-        if (!isConfigLoaded) return
-
-        val tempCategories = mutableListOf<CategoryTemplate>()
-        for (category in categories) {
-            if (category.saveInStorage) {
-                tempCategories.add(category.toCategoryTemplate())
-            }
-        }
-
-        ProfileStorageData.profileSpecific?.shoppingList?.categories = tempCategories
-        ProfileStorageData.profileSpecific?.shoppingList?.items = items.toCategoryTemplate()
-    }
-
     fun moveCategoryToTop(category: ShoppingListCategory) {
         if (!isEnabled()) return
-        if (!isConfigLoaded) return
 
         categories.remove(category)
         categories.add(0, category)
@@ -381,8 +330,6 @@ object ShoppingList {
 
     // all display related functions
     fun createDisplay() {
-        if (!isConfigLoaded) return
-
         if (!isEnabled() || (categories.isEmpty() && items.isEmpty())) {
             display = listOf()
             return
@@ -400,11 +347,8 @@ object ShoppingList {
     // other functions etc.
     fun update() {
         if (!isEnabled()) return
-        if (!isConfigLoaded) return
 
         createDisplay()
-
-        saveShoppingList()
     }
 
     val testItem1 = "ASPECT_OF_THE_END".toInternalName()
@@ -414,14 +358,12 @@ object ShoppingList {
     fun test() {
         println("test triggered")
 
-        println("is config loaded: $isConfigLoaded")
         println("categories: $categories")
         println("items: $items")
 
         clear()
 
         add(testItem1, 2.0, categoryName = "Weapons")
-        addCategory("Visitors", saveInStorage = false)
         add(testItem2, 49.0, categoryName = "Visitors")
         add(testItem3, 136.0)
 
@@ -504,8 +446,6 @@ object ShoppingList {
         if (event.slotId != 51) return
         if (event.item == null) return
 
-        if (!isConfigLoaded) return
-
         val currentlyOpenRecipe = currentlyOpenRecipe
 
         if (currentlyOpenRecipe == null) {
@@ -538,12 +478,6 @@ object ShoppingList {
         }
     }
 
-    @HandleEvent
-    fun onConfigLoad(event: ConfigLoadEvent) {
-        loadShoppingList()
-        update()
-    }
-
     @HandleEvent(onlyOnSkyblock = true)
     fun onRender(event: GuiRenderEvent.GuiOverlayRenderEvent) {
         if (!isEnabled()) return
@@ -565,11 +499,6 @@ object ShoppingList {
         event.title("Shopping List")
         if (!isEnabled()) {
             event.addIrrelevant("Shopping List is disabled")
-            return
-        }
-
-        if (!isConfigLoaded) {
-            event.addIrrelevant("Shopping List is not loaded")
             return
         }
 
