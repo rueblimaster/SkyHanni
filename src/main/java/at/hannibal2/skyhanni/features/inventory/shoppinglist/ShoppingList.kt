@@ -304,27 +304,6 @@ object ShoppingList {
         createDisplay()
     }
 
-    val testItem1 = "ASPECT_OF_THE_END".toInternalName()
-    val testItem2 = "ENCHANTED_CARROT".toInternalName()
-    val testItem3 = "DIAMOND".toInternalName()
-
-    fun test() {
-        println("test triggered")
-
-        println("categories: $categories")
-        println("items: $items")
-
-        clear()
-
-        add(testItem1, 2.0, categoryName = "Weapons")
-        add(testItem2, 49.0, categoryName = "Visitors")
-        add(testItem3, 136.0)
-
-        update()
-
-        println("test done")
-    }
-
     fun InventoryFullyOpenedEvent.isRecipe() = inventoryName.contains("Recipe") && inventorySize == 54
 
     // all events come here
@@ -505,13 +484,5 @@ object ShoppingList {
             aliases = listOf("shslupdate")
             callback { update() }
         }
-        event.register("shshoppinglisttest") {
-            description = "Test the shopping list feature"
-            category = CommandCategory.DEVELOPER_TEST
-            aliases = listOf("shsltest")
-            callback { test() }
-        }
-
     }
-
 }
