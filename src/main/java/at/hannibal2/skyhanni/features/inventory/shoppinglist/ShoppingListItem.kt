@@ -45,21 +45,15 @@ class ShoppingListItem(
     var recipe: PrimitiveRecipe? = null,
     var hidden: Boolean = false,
 ) {
-
-    // TODO soon (probably): add a way to offset the amount of an item counted in the inventory etc.
-
     val totalAmount: Double
         get() = amount * (topLevelItem?.remainingAmount ?: 1.0)
-
     val remainingAmount: Double
         get() = if (getCurrentAmount() > totalAmount) 0.0 else totalAmount - getCurrentAmount()
 
     var possibleRecipes: List<PrimitiveRecipe> = emptyList()
     var displayItem: ItemStack? = null
     val downBreakable: Boolean
-        get() {
-            return subItems.isEmpty() && possibleRecipes.isNotEmpty()
-        }
+        get() = subItems.isEmpty() && possibleRecipes.isNotEmpty()
 
     val subItems = mutableListOf<ShoppingListItem>()
 
@@ -76,18 +70,14 @@ class ShoppingListItem(
     }
 
     fun breakDownIntoSubitems() {
-
         if (recipe == null) {
             val success = decideRecipe()
             if (success == false) {
                 return
             }
         }
-
         subItems.clear()
-
         addRecipe()
-
         ShoppingList.update()
     }
 
@@ -107,7 +97,6 @@ class ShoppingListItem(
 
     fun loadPossibleRecipes() {
         if (recipe != null) return
-
         possibleRecipes = NeuItems.getRecipes(internalName).filter { it.isCraftingRecipe() }.filter { recipe ->
             !recipe.isRecursing() && !recipe.isRecursingCompacting()
         }
@@ -118,19 +107,11 @@ class ShoppingListItem(
             ChatUtils.chat("No recipes found for ${internalName.itemNameWithoutColor}")
             return false
         }
-
         if (possibleRecipes.size > 1) {
             ChatUtils.chat("Multiple recipes found for ${internalName.itemNameWithoutColor}\n§7Select one")
-
-            val lore = buildList {
-                add("§8(From SkyHanni)")
-
-                // TODO (maybe): add stuff
-            }
-
+            val lore = listOf("§8(From SkyHanni)")
             displayItem = ItemStack(Blocks.diamond_block).setLore(lore).setStackDisplayName("§bSelect Recipe")
             ShoppingList.displayItem = displayItem
-
             viewRecipe(internalName.asString())
         } else {
             recipe = possibleRecipes[0]
@@ -146,27 +127,19 @@ class ShoppingListItem(
             breakDownIntoSubitems()
             return true
         }
-        subItems.forEach {
-            if (it.onItemClick(clickedItem)) {
-                return true
-            }
-        }
+        subItems.forEach { if (it.onItemClick(clickedItem)) return true }
         return false
     }
 
     fun addRecipe() {
         val usedRecipe: PrimitiveRecipe = recipe?.copy() ?: return
-
         for (ingredient: PrimitiveIngredient in usedRecipe.ingredients) {
             val item = subItems.firstOrNull { it.internalName == ingredient.internalName } as ShoppingListItem?
-
             val ingredientAmount = ingredient.count / (usedRecipe.output?.count ?: 1.0)
 
             if (item == null) {
                 subItems.add(ShoppingListItem(ingredient.internalName, ingredientAmount, topLevelCategory, this))
-            } else {
-                item.changeAmountBy(ingredientAmount)
-            }
+            } else item.changeAmountBy(ingredientAmount)
         }
     }
 
@@ -178,26 +151,14 @@ class ShoppingListItem(
         this.amount = amount
     }
 
-    fun getCurrentAmount(): Int {
-        // TODO later: also get the amount in the storage (as an option), as it's relevant for supercraft
-        return internalName.getAmountInInventoryAndSacks()
-    }
+    // TODO later: also get the amount in the storage (as an option), as it's relevant for supercraft
+    fun getCurrentAmount(): Int = internalName.getAmountInInventoryAndSacks()
 
-    fun getMissingAmountInInventory(): Double {
-        return totalAmount - internalName.getAmountInInventory()
-    }
+    fun getMissingAmountInInventory(): Double = totalAmount - internalName.getAmountInInventory()
 
-    fun hasItems(): Boolean {
-        return totalAmount <= getCurrentAmount()
-    }
+    fun hasItems(): Boolean = totalAmount <= getCurrentAmount()
 
-    fun hasAllSubItems(): Boolean {
-        return if (subItems.isEmpty()) {
-            hasItems()
-        } else {
-            subItems.all { it.hasAllSubItems() }
-        }
-    }
+    fun hasAllSubItems(): Boolean = if (subItems.isEmpty()) hasItems() else subItems.all { it.hasAllSubItems() }
 
     fun checkIfInSignAndInsertAmount(): Boolean {
         if (Minecraft.getMinecraft().currentScreen is GuiEditSign) {
@@ -212,20 +173,17 @@ class ShoppingListItem(
     fun buyItem() {
         if (checkIfInSignAndInsertAmount()) return
         if (remainingAmount <= 0) return
-
         internalName.buy(remainingAmount.toInt())
     }
 
     fun openCraftingRecipe() {
         if (checkIfInSignAndInsertAmount()) return
-
         if (internalName.isVanillaItem()) {
             ChatUtils.chat("Vanilla item, can't open recipe, opening the crafting table and getting all required items instead")
             subItems.forEach {
                 it.fetchItemFromAvailableStorage()
                 craft()
             }
-
         } else {
             viewRecipe(internalName.asString())
         }
@@ -234,7 +192,6 @@ class ShoppingListItem(
     fun fetchItemFromAvailableStorage() {
         if (checkIfInSignAndInsertAmount()) return
         if (getMissingAmountInInventory() <= 0) return
-
         GetFromSackApi.getFromSack(internalName, getMissingAmountInInventory().toInt())
     }
 
@@ -265,12 +222,8 @@ class ShoppingListItem(
                 it.toggleHide(true, forceSetTo ?: hidden)
             }
         }
-        if (!hidden) {
-            unhideCategory()
-        }
-        if (forceSetTo == null) {
-            ShoppingList.update()
-        }
+        if (!hidden) unhideCategory()
+        if (forceSetTo == null) ShoppingList.update()
     }
 
     fun getCopyContent(): Pair<String, String> =
@@ -304,7 +257,6 @@ class ShoppingListItem(
 
     fun copyToClipboard() {
         val (copyContent, chatMessage) = getCopyContent()
-
         ClipboardUtils.copyToClipboard(copyContent)
         ChatUtils.chat(chatMessage)
     }
@@ -319,27 +271,17 @@ class ShoppingListItem(
 
     fun getDisplayRepresentation(indent: String): String {
         var text = "§8$indent"
-
         if (topLevelItem != null) {
             text += "§7${amount.displayAmount()}x "
         }
-
         text += "${internalName.repoItemName} §f${getCurrentAmount()}/${totalAmount.displayAmount()}"
-
-        if (hasItems()) {
-            text += " §a✓"
-        } else if (hasAllSubItems()) {
-            text += " §e✓"
-        }
-
+        text += if (hasItems()) " §a✓" else if (hasAllSubItems()) text += " §e✓" else ""
         return text
     }
 
     @Suppress("LongMethod")
     fun getClickLayout(): Pair<Map<ClickTypeWithModifiers, () -> Unit>, List<String>> {
-
         val clickLayout: MutableMap<ClickTypeWithModifiers, () -> Unit> = mutableMapOf()
-        // TODO (maybe): make the tooltips be generated from the clickLayout
         val tooltip = mutableListOf<String>()
 
         // left click
@@ -350,7 +292,6 @@ class ShoppingListItem(
         } else {
             null
         }
-
         if (hasItems()) {
             clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { fetchItemFromAvailableStorage() }
             tooltip.add("§7left click to fetch from storage")
@@ -378,7 +319,6 @@ class ShoppingListItem(
                 tooltip.add("§7shift + left click to break down recipe")
             }
         }
-
         // right click
         if (topLevelItem == null) {
             clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE)] = { removeItem() }
@@ -394,12 +334,10 @@ class ShoppingListItem(
             tooltip.add("§7shift + right click to ${if (hidden) "un" else ""}hide tree")
             clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL, Keyboard.KEY_LSHIFT))] = { toggleHide(true) }
         }
-
         clickLayout[ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL))] = { moveThisToTop() }
         tooltip.add("§7ctrl + right click to move to top")
         clickLayout[ClickTypeWithModifiers(MIDDLE_MOUSE)] = { copyToClipboard() }
         tooltip.add("§7middle click to copy to clipboard")
-
         // arrow keys
         if (topLevelItem == null) {
             clickLayout[ClickTypeWithModifiers(KEY_UP)] = {
@@ -424,11 +362,9 @@ class ShoppingListItem(
                         ShoppingList.update()
                     }
                     tooltip.add("§7shift + up arrow to set amount to ${goalAmount.displayAmount()}")
-
                     if (amount == previousGoalAmount) {
                         previousGoalAmount = previousGoalAmount / 2
                     }
-
                     if (previousGoalAmount > 1.0) {
                         clickLayout[ClickTypeWithModifiers(KEY_DOWN, setOf(Keyboard.KEY_LSHIFT))] = {
                             changeAmountTo(previousGoalAmount)
@@ -441,7 +377,6 @@ class ShoppingListItem(
                 }
                 previousGoalAmount = goalAmount
             }
-
             if (!flag) {
                 clickLayout[ClickTypeWithModifiers(KEY_UP, setOf(Keyboard.KEY_LSHIFT))] = {
                     changeAmountBy(64.0)
@@ -464,22 +399,17 @@ class ShoppingListItem(
                 }
             }
         }
-
         return Pair(clickLayout, tooltip)
     }
 
     fun getRenderables(indent: String, continuedIndent: String? = null): List<Renderable> {
         val renderables = mutableListOf<Renderable>()
         if (!hidden || ShoppingList.isInventoryOpen()) {
-
             var text = getDisplayRepresentation(indent)
-
             if (hidden) {
                 text = "§8${text.removeColor()}"
             }
-
             val (clickLayout, tooltip) = getClickLayout()
-
             renderables.add(
                 Renderable.clickableWithModifiers(
                     text = text,
@@ -488,7 +418,6 @@ class ShoppingListItem(
                 ),
             )
         }
-
         for (i in 0 until subItems.size) {
             val isLastItem = i == subItems.size - 1
             var newContinuedIndent = continuedIndent ?: indent
@@ -501,10 +430,7 @@ class ShoppingListItem(
                 newIndent += "`·"
                 newContinuedIndent += "  "
             }
-
-            subItems[i].getRenderables(newIndent, newContinuedIndent).forEach {
-                renderables.add(it)
-            }
+            subItems[i].getRenderables(newIndent, newContinuedIndent).forEach { renderables.add(it) }
         }
         return renderables
     }

@@ -43,11 +43,9 @@ object ShoppingList {
     private val categories: MutableList<ShoppingListCategory> = mutableListOf()
     private val items: ShoppingListCategory = ShoppingListCategory("Items")
 
-    // TODO soon: somehow also make it searchable?
     private var display: List<Renderable> = listOf()
 
     private var inventoryOpen = false
-
     var currentlyOpenRecipe: PrimitiveRecipe? = null
     var displayItem: ItemStack? = null
 
@@ -60,19 +58,16 @@ object ShoppingList {
             ChatUtils.userError("No arguments entered")
             return null
         }
-
         val itemName: String?
         var amount: Double? = null
         var categoryName: String? = null
 
         val numberEntries = mutableListOf<Int>()
-
         for (i in args.indices) {
             if (args[i].toDoubleOrNull() != null) {
                 numberEntries.add(i)
             }
         }
-
         if (args.size == 1) {
             itemName = args[0]
         } else if (numberEntries.isEmpty()) {
@@ -88,7 +83,6 @@ object ShoppingList {
             amount = args[numberEntries.last()].toDoubleOrNull()
             categoryName = args.getOrNull(numberEntries.last() + 1)
         }
-
         return CommandArguments(itemName, amount, categoryName)
     }
 
@@ -97,9 +91,7 @@ object ShoppingList {
     }
 
     fun add(itemName: NeuInternalName, amount: Double = 1.0, categoryName: String? = null) {
-        // TODO: shouldn't happen @Thunderblade73
         if (!isEnabled()) return
-
         val category: ShoppingListCategory
         if (categoryName != null) {
             if (!categoryName.isCategory()) {
@@ -112,13 +104,11 @@ object ShoppingList {
             category = items
         }
         category.add(itemName, amount)
-
         createDisplay()
     }
 
     fun onAddCommand(args: Array<String>) {
         val arguments = parseCommandArguments(args) ?: return
-
         add(arguments)
     }
 
@@ -128,9 +118,7 @@ object ShoppingList {
         displayCondition: () -> Boolean = { true },
     ) {
         if (!isEnabled()) return
-
         if (categories.any { it.name == categoryName }) return
-
         if (color == null) {
             categories.add(ShoppingListCategory(categoryName, displayCondition = displayCondition))
         } else {
@@ -142,14 +130,11 @@ object ShoppingList {
                 ),
             )
         }
-
         update()
     }
 
     fun set(itemName: NeuInternalName, amount: Double, categoryName: String? = null) {
-        // TODO: shouldn't happen @Thunderblade73
         if (!isEnabled()) return
-
         val category: ShoppingListCategory
         if (categoryName != null) {
             if (!categoryName.isCategory()) {
@@ -162,7 +147,6 @@ object ShoppingList {
             category = items
         }
         category.set(itemName, amount)
-
         createDisplay()
     }
 
@@ -171,24 +155,20 @@ object ShoppingList {
             ChatUtils.userError("Please specify an item and an amount to set")
             return
         }
-
         val itemName: String?
         val amount: Double?
         val categoryName: String?
 
         val numberEntries = mutableListOf<Int>()
-
         for (i in args.indices) {
             if (args[i].toDoubleOrNull() != null) {
                 numberEntries.add(i)
             }
         }
-
         if (numberEntries.isEmpty()) {
             ChatUtils.userError("Please specify an item and an amount to set")
             return
         }
-
         itemName = args.take(numberEntries.last()).joinToString(" ")
         amount = args[numberEntries.last()].toDouble()
         categoryName = args.getOrNull(numberEntries.last() + 1)
@@ -197,7 +177,6 @@ object ShoppingList {
 
     fun removeCategory(categoryName: String) {
         if (!isEnabled()) return
-
         val category = categories.firstOrNull { it.name == categoryName } ?: return
         categories.remove(category)
         update()
@@ -205,7 +184,6 @@ object ShoppingList {
 
     fun removeCategory(category: ShoppingListCategory) {
         if (!isEnabled()) return
-
         categories.remove(category)
         update()
     }
@@ -216,9 +194,7 @@ object ShoppingList {
 
     fun remove(name: String, amount: Double? = null, categoryName: String? = null) {
         if (!isEnabled()) return
-
         val itemName: NeuInternalName? = name.toInternalName()
-
         if (itemName == null || !itemName.isKnownItem()) {
             handleItemNotFound(name)
         } else if (categoryName != null) {
@@ -226,22 +202,15 @@ object ShoppingList {
         } else {
             removeItemFromItemsOrCategories(itemName, amount)
         }
-
         update()
     }
 
     fun onRemoveCommand(args: Array<String>) {
-        val arguments = parseCommandArguments(args) ?: return
-
-        remove(arguments)
+        remove(parseCommandArguments(args) ?: return)
     }
 
     private fun handleItemNotFound(name: String) {
-        if (name.isCategory()) {
-            removeCategory(name)
-        } else {
-            ChatUtils.userError("Item $name not found")
-        }
+        if (name.isCategory()) removeCategory(name) else ChatUtils.userError("Item $name not found")
     }
 
     private fun removeFromCategory(itemName: NeuInternalName, categoryName: String, amount: Double?) {
@@ -249,17 +218,13 @@ object ShoppingList {
             ChatUtils.userError("Category $categoryName not found")
             return
         }
-
         val category = categories.firstOrNull { it.name == categoryName }
         category?.remove(itemName, amount) ?: ChatUtils.userError("Category $categoryName not found")
     }
 
     private fun removeItemFromItemsOrCategories(itemName: NeuInternalName, amount: Double?) {
-        if (items.contains(itemName)) {
-            items.remove(itemName, amount)
-        } else {
-            removeFromMultipleCategories(itemName, amount)
-        }
+        if (items.contains(itemName)) items.remove(itemName, amount)
+        else removeFromMultipleCategories(itemName, amount)
     }
 
     private fun removeFromMultipleCategories(itemName: NeuInternalName, amount: Double?) {
@@ -267,22 +232,18 @@ object ShoppingList {
         for (cat in categories) {
             if (cat.contains(itemName)) {
                 if (category != null) {
-                    ChatUtils.userError(
-                        "Item ${itemName.repoItemName}§c found in multiple categories, please specify the category to remove from",
-                    )
+                    ChatUtils.userError("Item ${itemName.repoItemName}§c found in multiple categories, please specify the category to remove from")
                     return
                 }
                 category = cat
             }
         }
-
         category?.remove(itemName, amount) ?: ChatUtils.userError("Item ${itemName.repoItemName}§c not found")
     }
 
     fun clear() {
         categories.clear()
         items.clear()
-
         update()
     }
 
@@ -300,11 +261,9 @@ object ShoppingList {
     fun createDisplayItem() {
         if (currentlyOpenRecipe == null) return
         if (displayItem != null && displayItem?.displayName == "§bSelect Recipe") return
-
         val lore = mutableListOf<String>()
         lore.add("§7Left click to add the recipe to the shopping list")
         lore.add("§7Right click to only add the result to the shopping list")
-
         displayItem = ItemStack(Blocks.diamond_block).setLore(lore).setStackDisplayName("§bAdd Recipe to shopping list")
     }
 
@@ -321,10 +280,8 @@ object ShoppingList {
 
     fun moveCategoryToTop(category: ShoppingListCategory) {
         if (!isEnabled()) return
-
         categories.remove(category)
         categories.add(0, category)
-
         update()
     }
 
@@ -334,12 +291,9 @@ object ShoppingList {
             display = listOf()
             return
         }
-
         display = buildList {
             addString("§lShopping List")
-            categories.forEach {
-                addAll(it.getRenderables(1))
-            }
+            categories.forEach { addAll(it.getRenderables(1)) }
             addAll(items.getRenderables(0, showThis = false))
         }
     }
@@ -347,7 +301,6 @@ object ShoppingList {
     // other functions etc.
     fun update() {
         if (!isEnabled()) return
-
         createDisplay()
     }
 
@@ -417,17 +370,14 @@ object ShoppingList {
             currentlyOpenRecipe = null
             return
         }
-
         val ingredients = listOf(10, 11, 12, 13, 19, 20, 21, 28, 29, 30).mapNotNull {
             event.inventoryItems[it]?.toPrimitiveStackOrNull()?.toPrimitiveIngredient()
         }.toSet<PrimitiveIngredient>()
 
         val result = event.inventoryItems[25]?.toPrimitiveStackOrNull()?.toPrimitiveIngredient()
-
         currentlyOpenRecipe = PrimitiveRecipe(ingredients, setOf(result ?: return), RecipeType.CRAFTING)
 
         createDisplayItem()
-
         recheckInInventory()
         update()
     }
@@ -447,7 +397,6 @@ object ShoppingList {
         if (event.item == null) return
 
         val currentlyOpenRecipe = currentlyOpenRecipe
-
         if (currentlyOpenRecipe == null) {
             return
         }
@@ -463,18 +412,15 @@ object ShoppingList {
         } else if (event.item.displayName == "§bAdd Recipe to shopping list") {
             event.cancel()
             val output = currentlyOpenRecipe.output
-
             if (output == null) {
                 ChatUtils.chat("Invalid Recipe with no output")
                 return
             }
-
             if (event.clickedButton == 2) {
                 items.add(output.internalName, 1.0)
             } else {
                 items.add(output.internalName, 1.0, recipe = currentlyOpenRecipe)
             }
-
         }
     }
 
@@ -501,12 +447,10 @@ object ShoppingList {
             event.addIrrelevant("Shopping List is disabled")
             return
         }
-
         if (categories.isEmpty() && items.isEmpty()) {
             event.addIrrelevant("Shopping List is empty")
             return
         }
-
         event.addData {
             categories.forEach {
                 add("§${it.color.chatColorCode}${it.name}")
@@ -514,15 +458,11 @@ object ShoppingList {
                     add("  $item")
                 }
             }
-
             add("")
-
             items.items.forEach { item ->
                 add(item.toString())
             }
-
             add("")
-
         }
     }
 

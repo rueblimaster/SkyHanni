@@ -15,12 +15,10 @@ import org.lwjgl.input.Keyboard
 class ShoppingListCategory(
     val name: String,
     val color: LorenzColor = LorenzColor.GOLD,
-    val displayCondition: () -> Boolean = { true }, // TODO: later (maybe): implement only in area somehow
-    // TODO later maybe?: implement icons
+    val displayCondition: () -> Boolean = { true },
     var hidden: Boolean = false,
 ) {
     val items = mutableListOf<ShoppingListItem>()
-
     val clickLayout: MutableMap<ClickTypeWithModifiers, () -> Unit> = mutableMapOf(
         ClickTypeWithModifiers(LEFT_MOUSE) to { },
         ClickTypeWithModifiers(RIGHT_MOUSE) to { ShoppingList.removeCategory(this) },
@@ -28,29 +26,20 @@ class ShoppingListCategory(
         ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL)) to { moveThisToTop() },
     )
 
-    override fun toString(): String {
-        return name + " (" + items.size + " items)"
-    }
+    override fun toString(): String = name + " (" + items.size + " items)"
 
-    fun isEmpty(): Boolean {
-        return items.isEmpty()
-    }
+    fun isEmpty(): Boolean = items.isEmpty()
 
     fun add(itemName: NeuInternalName, amount: Double = 1.0, recipe: PrimitiveRecipe? = null) {
         if (!itemName.isKnownItem()) {
             ChatUtils.userError("Item ${itemName.itemNameWithoutColor} not found")
             return
         }
-
         var item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
-
         if (item == null) {
             items.add(ShoppingListItem(itemName, amount, this, recipe = recipe))
             item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
-            if (recipe != null && item != null) {
-                item.breakDownIntoSubitems()
-            }
-
+            if (recipe != null && item != null) item.breakDownIntoSubitems()
         } else {
             item.changeAmountBy(amount)
             if (item.amount <= 0.0) {
@@ -68,9 +57,7 @@ class ShoppingListCategory(
             ChatUtils.userError("Item ${itemName.itemNameWithoutColor} not found")
             return
         }
-
         val item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
-
         if (item == null) {
             items.add(ShoppingListItem(itemName, amount, this))
         } else {
@@ -83,9 +70,7 @@ class ShoppingListCategory(
             items.remove(item)
         } else {
             item.changeAmountBy(-amount)
-            if (item.amount <= 0.0) {
-                items.remove(item)
-            }
+            if (item.amount <= 0.0) items.remove(item)
         }
     }
 
@@ -94,9 +79,7 @@ class ShoppingListCategory(
             ChatUtils.userError("Item ${itemName.itemNameWithoutColor} not found")
             return
         }
-
         val item = items.firstOrNull { it.internalName == itemName } as ShoppingListItem?
-
         if (item == null) {
             ChatUtils.userError("Item ${itemName.itemNameWithoutColor} not found in category $name")
         } else {
@@ -108,24 +91,13 @@ class ShoppingListCategory(
         items.clear()
     }
 
-    fun contains(itemName: NeuInternalName): Boolean {
-        return items.any { it.internalName == itemName }
-    }
+    fun contains(itemName: NeuInternalName): Boolean = items.any { it.internalName == itemName }
 
-    fun onItemClicked(clickedItem: ItemStack): Boolean {
-        items.forEach {
-            if (it.onItemClick(clickedItem)) {
-                return true
-            }
-        }
-        return false
-    }
+    fun onItemClicked(clickedItem: ItemStack): Boolean = items.any { it.onItemClick(clickedItem) }
 
     fun toggleHide() {
         hidden = !hidden
-        items.forEach {
-            it.toggleHide(true, hidden)
-        }
+        items.forEach { it.toggleHide(true, hidden) }
         ShoppingList.update()
     }
 
@@ -141,19 +113,15 @@ class ShoppingListCategory(
 
     fun getRenderables(indent: Int, showThis: Boolean = true): List<Renderable> {
         val renderables = mutableListOf<Renderable>()
-
         if ((!hidden || ShoppingList.isInventoryOpen()) && displayCondition()) {
             if (showThis) {
                 var text = ""
                 val tooltip = mutableListOf<String>()
-
                 text += if (!hidden) color.getChatColor() else "§8"
                 text += "§n$name"
-
                 tooltip.add("§7Right click to remove")
                 tooltip.add("§7Shift + right click to ${if (hidden) "un" else ""}hide")
                 tooltip.add("§7Ctrl + right click to move to top")
-
                 renderables.add(
                     Renderable.clickableWithModifiers(
                         text = text,
@@ -162,7 +130,6 @@ class ShoppingListCategory(
                     ),
                 )
             }
-
             items.forEach { item ->
                 renderables.addAll(item.getRenderables("  ".repeat(indent)))
             }
