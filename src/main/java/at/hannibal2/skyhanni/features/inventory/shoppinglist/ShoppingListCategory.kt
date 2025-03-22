@@ -28,19 +28,6 @@ class ShoppingListCategory(
         ClickTypeWithModifiers(RIGHT_MOUSE, setOf(Keyboard.KEY_LCONTROL)) to { moveThisToTop() },
     )
 
-    /*
-    TODO later: make this all configurable
-    what do we want to be able to do from the display widget:
-        - (right click) remove it
-        - (shift + right click) hide/unhide it along with tree
-        - (ctrl + right click) move to top
-
-    what may we want to see:
-        - name
-        - optional icon?
-        - TODO: total cost
-     */
-
     override fun toString(): String {
         return name + " (" + items.size + " items)"
     }

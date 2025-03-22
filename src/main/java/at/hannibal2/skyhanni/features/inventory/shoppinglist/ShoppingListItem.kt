@@ -67,42 +67,6 @@ class ShoppingListItem(
         loadPossibleRecipes()
     }
 
-    /*
-    TODO later: make this all configurable
-    what do we want to be able to do from the display widget:
-        left click is for doing stuff with it
-        - (left click) get from ah/bz  (switch ah/bz and break down as a setting) also only (click) if no recipe
-        - open recipe to craft it
-        - (shift + left click) break down into its subitems
-        right click is for doing stuff with the item itself
-        - (right click) remove
-        - (shift + right click) hide/unhide
-        - (ctrl + shift + right click) hide/unhide all whole tree
-        - (ctrl + right click) move to top
-
-        - (middle click) copy to clipboard
-
-        maybe?
-        (probably not as it isn't really necessary and a lot of work)
-        - move to another category
-        - copy to another category
-        - changing amount with arrow keys
-
-     what may we want to see of the item:
-        - the name with rarity as color
-        - the required amount
-        - the possesed amount
-        - the missing amount
-        - the price for 1 (on hover)
-        - the price for the required amount
-
-        - icon (if plausible)
-
-     what may we want to see of subitems additionally:
-        - the amount per craft (on hover)
-        - the price for the amount per craft (on hover)
-     */
-
     override fun toString(): String {
         return "${internalName.repoItemName} x$amount" + if (subItems.isNotEmpty()) {
             " (${subItems.joinToString(", ")})"
