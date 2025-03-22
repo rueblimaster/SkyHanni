@@ -232,7 +232,9 @@ object ShoppingList {
         for (cat in categories) {
             if (cat.contains(itemName)) {
                 if (category != null) {
-                    ChatUtils.userError("Item ${itemName.repoItemName}§c found in multiple categories, please specify the category to remove from")
+                    ChatUtils.userError(
+                        "Item ${itemName.repoItemName}§c found in multiple categories, please specify the category to remove from",
+                    )
                     return
                 }
                 category = cat
