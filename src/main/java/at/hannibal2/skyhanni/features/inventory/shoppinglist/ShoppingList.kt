@@ -21,7 +21,6 @@ import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.CategoryTemplate.Companion.toCategoryTemplate
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
-import at.hannibal2.skyhanni.utils.CollectionUtils.addString
 import at.hannibal2.skyhanni.utils.InventoryUtils.closeInventory
 import at.hannibal2.skyhanni.utils.InventoryUtils.inAnyInventory
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
@@ -36,6 +35,7 @@ import at.hannibal2.skyhanni.utils.PrimitiveItemStack.Companion.toPrimitiveStack
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.RecipeType
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
+import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import net.minecraft.entity.player.InventoryPlayer
 import net.minecraft.init.Blocks
