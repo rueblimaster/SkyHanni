@@ -29,6 +29,7 @@ import at.hannibal2.skyhanni.features.inventory.bazaar.BazaarApi
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.getCategory
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.isCategory
+import at.hannibal2.skyhanni.features.misc.IslandAreas
 import at.hannibal2.skyhanni.mixins.hooks.RenderLivingEntityHelper
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.test.command.ErrorManager
@@ -57,7 +58,7 @@ import at.hannibal2.skyhanni.utils.NumberUtil.shortFormat
 import at.hannibal2.skyhanni.utils.PrimitiveIngredient.Companion.toPrimitiveItemStacks
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.RenderUtils.drawString
-import at.hannibal2.skyhanni.utils.RenderUtils.renderStringsAndItems
+import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.SignUtils
 import at.hannibal2.skyhanni.utils.SignUtils.isBazaarSign
 import at.hannibal2.skyhanni.utils.SignUtils.isSupercraftAmountSetSign
@@ -65,7 +66,8 @@ import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.TimeUtils.format
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.addOrPut
-import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addAsSingletonList
+import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addItemStack
+import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
 import at.hannibal2.skyhanni.utils.getLorenzVec
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
@@ -84,7 +86,7 @@ import kotlin.time.Duration.Companion.seconds
 object GardenVisitorFeatures {
 
     private val config get() = VisitorApi.config
-    private var display = emptyList<List<Any>>()
+    private var display = emptyList<Renderable>()
 
     private val patternGroup = RepoPattern.group("garden.visitor")
 
@@ -234,7 +236,7 @@ object GardenVisitorFeatures {
     private fun addSackData(
         internalName: NeuInternalName,
         amount: Int,
-        list: MutableList<Any>,
+        list: MutableList<Renderable>,
     ) {
         if (!config.shoppingList.showSackCount) return
 
@@ -242,7 +244,7 @@ object GardenVisitorFeatures {
         internalName.getAmountInSacksOrNull()?.let {
             amountInSacks = it
             val textColor = if (it >= amount) "a" else "e"
-            list.add(" §7(§${textColor}x${it.addSeparators()} §7in sacks)")
+            list.addString(" §7(§${textColor}x${it.addSeparators()} §7in sacks)")
         }
 
         val ingredients = NeuItems.getRecipes(internalName)
@@ -265,7 +267,7 @@ object GardenVisitorFeatures {
         }
         if (hasIngredients && (amount - amountInSacks) > 0) {
             val leftToCraft = amount - amountInSacks
-            list.add(" §7(")
+            list.addString(" §7(")
             list.add(
                 Renderable.optionalLink(
                     "§aCraftable!",
@@ -278,31 +280,31 @@ object GardenVisitorFeatures {
                     },
                 ) { GardenApi.inGarden() && !NeuItems.neuHasFocus() },
             )
-            list.add("§7)")
+            list.addString("§7)")
         }
     }
 
-    private fun MutableList<List<Any>>.drawVisitors(
+    private fun MutableList<Renderable>.drawVisitors(
         newVisitors: List<String>,
         shoppingList: Map<NeuInternalName, Int>,
     ) {
         if (newVisitors.isEmpty()) return
         if (shoppingList.isNotEmpty()) {
-            addAsSingletonList("")
+            addString("")
         }
         val amount = newVisitors.size
         val visitorLabel = if (amount == 1) "visitor" else "visitors"
-        addAsSingletonList("§e$amount §7new $visitorLabel:")
+        addString("§e$amount §7new $visitorLabel:")
         for (visitor in newVisitors) {
             drawVisitor(visitor)
         }
     }
 
-    private fun MutableList<List<Any>>.drawVisitor(visitor: String) {
+    private fun MutableList<Renderable>.drawVisitor(visitor: String) {
         val displayName = GardenVisitorColorNames.getColoredName(visitor)
 
-        val list = mutableListOf<Any>()
-        list.add(" §7- $displayName")
+        val list = mutableListOf<Renderable>()
+        list.addString(" §7- $displayName")
 
         if (config.shoppingList.itemPreview) {
             val items = GardenVisitorColorNames.visitorItems[visitor.removeColor()]
@@ -310,19 +312,19 @@ object GardenVisitorFeatures {
                 val text = "Visitor '$visitor' has no items in repo!"
                 logger.log(text)
                 ChatUtils.debug(text)
-                list.add(" §7(§c?§7)")
+                list.addString(" §7(§c?§7)")
                 return
             }
             if (items.isEmpty()) {
-                list.add(" §7(§fAny§7)")
+                list.addString(" §7(§fAny§7)")
             } else {
                 for (item in items) {
-                    list.add(NeuInternalName.fromItemName(item).getItemStack())
+                    list.addItemStack(NeuInternalName.fromItemName(item).getItemStack())
                 }
             }
         }
 
-        add(list)
+        add(Renderable.horizontalContainer(list))
     }
 
     @HandleEvent
@@ -389,6 +391,7 @@ object GardenVisitorFeatures {
         lastFullPrice = 0.0
         val foundRewards = mutableListOf<NeuInternalName>()
 
+        // Todo: Extract duplicated code
         for (formattedLine in stack.getLore()) {
             if (formattedLine.contains("Rewards")) {
                 readingShoppingList = false
@@ -509,7 +512,7 @@ object GardenVisitorFeatures {
         val recentWorldSwitch = LorenzUtils.lastWorldSwitch.passedSince() < 2.seconds
 
         if (config.notificationTitle && !recentWorldSwitch) {
-            TitleManager.sendTitle("§eNew Visitor", duration = 5.seconds)
+            TitleManager.sendTitle("§eNew Visitor")
         }
         if (config.notificationChat) {
             val displayName = GardenVisitorColorNames.getColoredName(name)
@@ -620,7 +623,7 @@ object GardenVisitorFeatures {
 
     private fun renderDisplay() {
         if (showGui() && shouldShowShoppingList()) {
-            config.shoppingList.pos.renderStringsAndItems(display, posLabel = "Visitor Shopping List")
+            config.shoppingList.pos.renderRenderables(display, posLabel = "Visitor Shopping List")
         }
     }
 
@@ -657,10 +660,10 @@ object GardenVisitorFeatures {
 
     private fun showGui(): Boolean {
         if (IslandType.HUB.isInIsland()) {
-            if (config.shoppingList.inBazaarAlley && LorenzUtils.skyBlockArea == "Bazaar Alley") {
+            if (config.shoppingList.inBazaarAlley && IslandAreas.currentAreaName == "Bazaar Alley") {
                 return true
             }
-            if (config.shoppingList.inFarmingAreas && LorenzUtils.skyBlockArea == "Farm") {
+            if (config.shoppingList.inFarmingAreas && IslandAreas.currentAreaName == "Farm") {
                 return true
             }
         }
