@@ -47,7 +47,7 @@ object Translator {
         if (editedComponent.chatStyle?.chatClickEvent?.action == ClickEvent.Action.OPEN_URL) return
 
         val clickStyle = createClickStyle(message, editedComponent.chatStyle)
-        editedComponent.setChatStyle(clickStyle)
+        editedComponent.chatStyle = clickStyle
     }
 
     @HandleEvent
@@ -87,8 +87,8 @@ object Translator {
 
     private fun createClickStyle(message: String, style: ChatStyle): ChatStyle {
         val text = messageContentRegex.find(message)!!.groupValues[1].removeColor()
-        style.setChatClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/shtranslate $text"))
-        style.setChatHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, "§bClick to translate!".asComponent()))
+        style.chatClickEvent = ClickEvent(ClickEvent.Action.RUN_COMMAND, "/shtranslate $text")
+        style.chatHoverEvent = HoverEvent(HoverEvent.Action.SHOW_TEXT, "§bClick to translate!".asComponent())
         return style
     }
 

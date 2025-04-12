@@ -3,7 +3,6 @@ package at.hannibal2.skyhanni.features.garden.farming
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.ConfigUpdaterMigrator
 import at.hannibal2.skyhanni.config.features.garden.cropmilestones.NextConfig
-import at.hannibal2.skyhanni.config.features.garden.cropmilestones.NextConfig.BestTypeEntry
 import at.hannibal2.skyhanni.data.GardenCropMilestones
 import at.hannibal2.skyhanni.data.GardenCropMilestones.getCounter
 import at.hannibal2.skyhanni.data.GardenCropMilestones.isMaxed
@@ -151,7 +150,7 @@ object GardenBestCropTime {
         event.move(3, "garden.cropMilestoneBestHideTitle", "garden.cropMilestones.next.bestHideTitle")
 
         event.transform(17, "garden.cropMilestones.next.bestType") { element ->
-            ConfigUtils.migrateIntToEnum(element, BestTypeEntry::class.java)
+            ConfigUtils.migrateIntToEnum(element, NextConfig.BestTypeEntry::class.java)
         }
     }
 }

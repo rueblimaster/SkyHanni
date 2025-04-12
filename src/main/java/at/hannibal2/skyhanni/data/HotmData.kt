@@ -1,8 +1,6 @@
 package at.hannibal2.skyhanni.data
 
 import at.hannibal2.skyhanni.api.HotmApi
-import at.hannibal2.skyhanni.api.HotmApi.MayhemPerk
-import at.hannibal2.skyhanni.api.HotmApi.SkymallPerk
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.data.jsonobjects.local.HotmTree
 import at.hannibal2.skyhanni.data.model.TabWidget
@@ -672,7 +670,7 @@ enum class HotmData(
                 }
                 skymallPattern.matchMatcher(lore[index + 1]) {
                     val perk = group("perk")
-                    HotmApi.skymall = SkymallPerk.entries.firstOrNull { it.itemPattern.matches(perk) } ?: run {
+                    HotmApi.skymall = HotmApi.SkymallPerk.entries.firstOrNull { it.itemPattern.matches(perk) } ?: run {
                         ErrorManager.logErrorStateWithData(
                             "Could not read the skymall effect from the hotm tree",
                             "no itemPattern matched",
@@ -735,7 +733,7 @@ enum class HotmData(
             }
             skymallPattern.matchMatcher(event.message) {
                 val perk = group("perk")
-                HotmApi.skymall = SkymallPerk.entries.firstOrNull { it.chatPattern.matches(perk) } ?: run {
+                HotmApi.skymall = HotmApi.SkymallPerk.entries.firstOrNull { it.chatPattern.matches(perk) } ?: run {
                     ErrorManager.logErrorStateWithData(
                         "Could not read the skymall effect from chat",
                         "no chatPattern matched",
@@ -750,7 +748,7 @@ enum class HotmData(
             DelayedRun.runNextTick {
                 mayhemChatPattern.matchMatcher(event.message) {
                     val perk = group("perk")
-                    HotmApi.mineshaftMayhem = MayhemPerk.entries.firstOrNull { it.chatPattern.matches(perk) } ?: run {
+                    HotmApi.mineshaftMayhem = HotmApi.MayhemPerk.entries.firstOrNull { it.chatPattern.matches(perk) } ?: run {
                         ErrorManager.logErrorStateWithData(
                             "Could not read the mayhem effect from chat",
                             "no chatPattern matched",

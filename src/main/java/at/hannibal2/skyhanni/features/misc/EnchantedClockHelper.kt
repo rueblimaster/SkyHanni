@@ -153,7 +153,7 @@ object EnchantedClockHelper {
     }
 
     private fun loadBoostsReadyNow(): List<BoostType> {
-        val storage = EnchantedClockHelper.storage ?: return emptyList()
+        val storage = storage ?: return emptyList()
 
         val readyNowBoosts: MutableList<BoostType> = mutableListOf()
 

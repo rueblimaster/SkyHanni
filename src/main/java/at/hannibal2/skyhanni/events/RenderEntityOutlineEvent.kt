@@ -97,7 +97,7 @@ class RenderEntityOutlineEvent(theType: Type?, potentialEntities: HashSet<Entity
         entitiesToChooseFrom = HashSet(entities.size)
         // Only consider entities that aren't invisible armorstands to increase FPS significantly
         for (entity in entities) {
-            if (!(entity is EntityArmorStand && entity.isInvisible()) && entity !is EntityItemFrame) {
+            if (!(entity is EntityArmorStand && entity.isInvisible) && entity !is EntityItemFrame) {
                 entitiesToChooseFrom!!.add(entity)
             }
         }

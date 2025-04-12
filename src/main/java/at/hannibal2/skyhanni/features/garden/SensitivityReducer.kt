@@ -173,7 +173,6 @@ object SensitivityReducer {
 
     @HandleEvent
     fun onHypixelJoin(event: HypixelJoinEvent) {
-        val divisor = config.reducingFactor.get()
         val expectedLoweredSensitivity = doTheMath(gameSettings.mouseSensitivity, true)
         if (abs(storage.savedMouseloweredSensitivity - expectedLoweredSensitivity) <= 0.0001) {
             ChatUtils.debug("Fixing incorrectly lowered sensitivity")

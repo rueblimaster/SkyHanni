@@ -30,7 +30,7 @@ data class CachedItemData(
     /**
      * Delegate constructor to avoid calling a function with default arguments from java.
      * We can't call the generated no args constructors (or rather we cannot generate that constructor), because inline
-     * classes are not part of the java-kotlin ABI that is super well supported (especially with default arguments).
+     * classes are not part of the java-kotlin API that is super well supported (especially with default arguments).
      */
     @Suppress("ForbiddenVoid", "UnusedPrivateProperty")
     constructor(void: Void?) : this()

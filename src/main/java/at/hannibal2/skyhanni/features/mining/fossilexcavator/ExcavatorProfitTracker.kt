@@ -220,9 +220,7 @@ object ExcavatorProfitTracker {
         if (!isEnabled()) return false
         val inChest = Minecraft.getMinecraft().currentScreen is GuiChest
         // Only show in excavation menu
-        if (inChest && !FossilExcavatorApi.inExcavatorMenu) return false
-
-        return true
+        return !(inChest && !FossilExcavatorApi.inExcavatorMenu)
     }
 
     @HandleEvent

@@ -49,11 +49,10 @@ public class MixinGuiChat {
     public void chatHoverEvent(int mouseX, int mouseY, float partialTicks, CallbackInfo ci, IChatComponent component) {
         // Only ChatComponentText components can make it to this point
 
-        // Always set the replacement, so if someone is no longer editing the replacement
-        // we get the original component back
+        // Always set the replacement, so if someone is no longer editing the replacement, we get the original component back
         GuiChatHook.INSTANCE.setReplacement((ChatComponentText) component);
 
-        new ChatHoverEvent((ChatComponentText) component).post();
+        new ChatHoverEvent(component).post();
     }
 
     @ModifyArg(method = "drawScreen", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiChat;handleComponentHover(Lnet/minecraft/util/IChatComponent;II)V"), index = 0)

@@ -20,7 +20,6 @@ import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonWriter
 import net.minecraft.item.ItemStack
 import java.time.LocalDate
-import java.util.UUID
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -28,7 +27,7 @@ object SkyHanniTypeAdapters {
 
     val NEU_ITEMSTACK: TypeAdapter<ItemStack> = SimpleStringTypeAdapter(NeuItems::saveNBTData, NeuItems::loadNBTData)
 
-    val UUID: TypeAdapter<UUID> = SimpleStringTypeAdapter(
+    val UUID: TypeAdapter<java.util.UUID> = SimpleStringTypeAdapter(
         { this.toString() },
         { java.util.UUID.fromString(this) },
     )
