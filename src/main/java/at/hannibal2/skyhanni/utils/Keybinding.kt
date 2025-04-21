@@ -47,14 +47,7 @@ class Keybinding(
             }
             return field
         }
-        private set(value) {
-            field = value
-            if (value) {
-                activeKeybindings.add(this)
-            } else {
-                activeKeybindings.remove(this)
-            }
-        }
+        private set
 
     private var lastTimeExecuted: SimpleTimeMark = SimpleTimeMark.farPast()
     private var lastTimePressed: SimpleTimeMark = SimpleTimeMark.farPast()
@@ -113,7 +106,7 @@ class Keybinding(
     private fun isOnCooldown(): Boolean = lastTimeExecuted.passedSince() < cooldown
 
     private fun onTick() {
-        if (checkInstantCondition() && isKeyDown() && !isOnCooldown()) {
+        if (active && checkInstantCondition() && isKeyDown() && !isOnCooldown()) {
             execute()
         }
     }
@@ -129,30 +122,20 @@ class Keybinding(
             KEYBOARD,
         }
 
-        private val keybindings = mutableListOf<Keybinding>()
-        private val activeKeybindings = mutableListOf<Keybinding>()
+        private val keybindings = mutableSetOf<Keybinding>()
 
         private fun addKeyBinding(keybinding: Keybinding) {
             keybindings.add(keybinding)
             keybinding.updateActiveState()
-            if (keybinding.active) {
-                activeKeybindings.add(keybinding)
-            }
         }
 
         fun updateActiveStates() {
             keybindings.forEach { it.updateActiveState() }
-            updateActiveKeybindings() // this is technically not needed, but it makes sure that activeKeybindings is up to date
-        }
-
-        private fun updateActiveKeybindings() {
-            activeKeybindings.clear()
-            keybindings.forEach { if (it.active) activeKeybindings.add(it) }
         }
 
         @HandleEvent
         fun onTick(event: SkyHanniTickEvent) {
-            activeKeybindings.forEach { it.onTick() }
+            keybindings.forEach { it.onTick() }
         }
 
         @HandleEvent
@@ -178,9 +161,9 @@ class Keybinding(
                 description = "Reloads the active state of all keybindings"
                 category = CommandCategory.USERS_BUG_FIX
                 callback {
-                    val oldActiveKeyBindings = activeKeybindings.toList()
+                    val oldActiveKeyBindings = keybindings.filter { it.active }
                     updateActiveStates()
-                    val newActiveKeyBindings = activeKeybindings.toList()
+                    val newActiveKeyBindings = keybindings.filter { it.active }
                     val removedKeyBindings = oldActiveKeyBindings.filter { keybinding ->
                         keybinding !in newActiveKeyBindings
                     }
