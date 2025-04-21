@@ -5,6 +5,7 @@ import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
 import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.events.ConfigLoadEvent
+import at.hannibal2.skyhanni.events.DebugDataCollectEvent
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniTickEvent
 import at.hannibal2.skyhanni.events.minecraft.WorldChangeEvent
 import at.hannibal2.skyhanni.events.skyblock.GraphAreaChangeEvent
@@ -152,6 +153,23 @@ class Keybinding(
         @HandleEvent
         fun onTick(event: SkyHanniTickEvent) {
             activeKeybindings.forEach { it.onTick() }
+        }
+
+        @HandleEvent
+        fun onDebug(event: DebugDataCollectEvent) {
+            event.title("Keybindings")
+            event.addData {
+                add("${activeKeybindings.size} active keybindings out of ${keybindings.size} keybindings")
+                add("Active keybindings:")
+                activeKeybindings.forEach {
+                    add(it.toString())
+                }
+                add("Inactive Keybindings:")
+                keybindings.forEach {
+                    if (activeKeybindings.contains(it)) return@forEach
+                    add(it.toString())
+                }
+            }
         }
 
         @HandleEvent
