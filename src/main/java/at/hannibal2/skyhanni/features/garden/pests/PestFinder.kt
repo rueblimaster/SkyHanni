@@ -8,7 +8,6 @@ import at.hannibal2.skyhanni.data.model.TabWidget
 import at.hannibal2.skyhanni.events.IslandChangeEvent
 import at.hannibal2.skyhanni.events.chat.SkyHanniChatEvent
 import at.hannibal2.skyhanni.events.garden.pests.PestUpdateEvent
-import at.hannibal2.skyhanni.events.minecraft.KeyPressEvent
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniRenderWorldEvent
 import at.hannibal2.skyhanni.features.garden.GardenApi
 import at.hannibal2.skyhanni.features.garden.GardenPlotApi
@@ -21,9 +20,9 @@ import at.hannibal2.skyhanni.features.garden.GardenPlotApi.sendTeleportTo
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.HypixelCommands
+import at.hannibal2.skyhanni.utils.Keybinding
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.LorenzVec
-import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
 import at.hannibal2.skyhanni.utils.RenderDisplayHelper
 import at.hannibal2.skyhanni.utils.RenderUtils.drawDynamicText
@@ -33,7 +32,6 @@ import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.StringUtils
 import at.hannibal2.skyhanni.utils.renderables.Renderable
-import net.minecraft.client.Minecraft
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -197,16 +195,13 @@ object PestFinder {
         if (PestApi.noPestsChatPattern.matches(event.message)) TitleManager.sendTitle("§eNo pests!", duration = 2.seconds)
     }
 
-    @HandleEvent(onlyOnIsland = IslandType.GARDEN)
-    fun onKeyPress(event: KeyPressEvent) {
-        if (Minecraft.getMinecraft().currentScreen != null) return
-        if (NeuItems.neuHasFocus()) return
-
-        if (event.keyCode != config.teleportHotkey) return
-        if (lastKeyPress.passedSince() < 2.seconds) return
-        lastKeyPress = SimpleTimeMark.now()
-
-        teleportNearestInfestedPlot()
+    init {
+        Keybinding(
+            keyCodeProvider = { config.teleportHotkey },
+            functionToExecute = { teleportNearestInfestedPlot() },
+            cooldown = 2.seconds,
+            onlyOnIsland = IslandType.GARDEN,
+        )
     }
 
     fun teleportNearestInfestedPlot() {
