@@ -84,7 +84,7 @@ class Keybinding(
     fun reloadKeybindingType() {
         keybindingType = when {
             keyCode < 0 -> KeybindingType.MOUSE
-            keyCode in 0..Keyboard.KEYBOARD_SIZE -> KeybindingType.KEYBOARD
+            keyCode in 1 until Keyboard.KEYBOARD_SIZE -> KeybindingType.KEYBOARD
             else -> null
         }
     }
