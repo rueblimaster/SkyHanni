@@ -1,6 +1,8 @@
 package at.hannibal2.skyhanni.utils
 
 import at.hannibal2.skyhanni.api.event.HandleEvent
+import at.hannibal2.skyhanni.config.commands.CommandCategory
+import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
 import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.events.ConfigLoadEvent
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniTickEvent
@@ -150,6 +152,24 @@ class Keybinding(
         @HandleEvent
         fun onTick(event: SkyHanniTickEvent) {
             activeKeybindings.forEach { it.onTick() }
+        }
+
+        @HandleEvent
+        fun onCommandRegistration(event: CommandRegistrationEvent) {
+            event.register("shreloadkeybindings") {
+                description = "Reloads the active state of all keybindings"
+                category = CommandCategory.USERS_BUG_FIX
+                callback {
+                    val oldActiveKeyBindings = activeKeybindings.toList()
+                    updateActiveStates()
+                    val newActiveKeyBindings = activeKeybindings.toList()
+                    val removedKeyBindings = oldActiveKeyBindings.filter { it !in newActiveKeyBindings }
+                    val addedKeyBindings = newActiveKeyBindings.filter { it !in oldActiveKeyBindings }
+                    ChatUtils.debug("Removed $removedKeyBindings")
+                    ChatUtils.debug("Added $addedKeyBindings")
+                    ChatUtils.chat("Reloaded keybindings")
+                }
+            }
         }
 
         // from here on downwards all the events on which the active state of the keybindings are updated
