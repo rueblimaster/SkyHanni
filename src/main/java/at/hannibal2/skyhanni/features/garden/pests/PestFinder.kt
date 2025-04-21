@@ -186,8 +186,6 @@ object PestFinder {
         event.drawDynamicText(location, "§e$number §c$pestsName §7in §b$plotName", 1.5)
     }
 
-    private var lastKeyPress = SimpleTimeMark.farPast()
-
     @HandleEvent(onlyOnIsland = IslandType.GARDEN)
     fun onChat(event: SkyHanniChatEvent) {
         if (!config.noPestTitle) return
