@@ -6,6 +6,7 @@ import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
 import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.events.ConfigLoadEvent
 import at.hannibal2.skyhanni.events.DebugDataCollectEvent
+import at.hannibal2.skyhanni.events.IslandChangeEvent
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniTickEvent
 import at.hannibal2.skyhanni.events.minecraft.WorldChangeEvent
 import at.hannibal2.skyhanni.events.skyblock.GraphAreaChangeEvent
@@ -124,6 +125,7 @@ class Keybinding(
             keybinding.updateActiveState()
         }
 
+        @HandleEvent(eventTypes = [ConfigLoadEvent::class, WorldChangeEvent::class, IslandChangeEvent::class, GraphAreaChangeEvent::class])
         fun updateActiveStates() {
             keybindings.forEach { it.updateActiveState() }
         }
@@ -185,22 +187,6 @@ class Keybinding(
                     ChatUtils.chat("Reloaded keybindings")
                 }
             }
-        }
-
-        // from here on downwards all the events on which the active state of the keybindings are updated
-        @HandleEvent
-        fun onConfigLoad(event: ConfigLoadEvent) {
-            updateActiveStates()
-        }
-
-        @HandleEvent
-        fun onWorldChange(event: WorldChangeEvent) {
-            updateActiveStates()
-        }
-
-        @HandleEvent
-        fun onAreaChange(event: GraphAreaChangeEvent) {
-            updateActiveStates()
         }
     }
 }
