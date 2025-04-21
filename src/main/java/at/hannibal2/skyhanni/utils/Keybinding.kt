@@ -2,6 +2,7 @@ package at.hannibal2.skyhanni.utils
 
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.data.IslandType
+import at.hannibal2.skyhanni.events.ConfigLoadEvent
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniTickEvent
 import at.hannibal2.skyhanni.events.minecraft.WorldChangeEvent
 import at.hannibal2.skyhanni.events.skyblock.GraphAreaChangeEvent
@@ -59,6 +60,11 @@ class Keybinding(
         addKeyBinding(this)
     }
 
+    override fun toString(): String {
+        return "Keybinding(keyCode=$keyCode, keybindingType=$keybindingType, active=$active, " +
+            "lastTimeActiveChecked=$lastTimeActiveChecked, lastTimeExecuted=$lastTimeExecuted)"
+    }
+
     private fun isKeyDown(): Boolean = when (keybindingType) {
         KeybindingType.MOUSE -> MouseCompat.isButtonDown(keyCode + 100)
         KeybindingType.KEYBOARD -> Keyboard.isKeyDown(keyCode)
@@ -104,15 +110,9 @@ class Keybinding(
     private fun isOnCooldown(): Boolean = lastTimeExecuted.passedSince() < cooldown
 
     private fun onTick() {
-        println("Keybinding $keyCode tick")
-            println("Keybinding $keyCode pressed")
         if (checkGuiCondition() && isKeyDown() && !isOnCooldown()) {
             execute()
         }
-    }
-
-    fun updateAllActiveStates() {
-        updateActiveStates()
     }
 
     @SkyHanniModule
@@ -139,7 +139,7 @@ class Keybinding(
 
         fun updateActiveStates() {
             keybindings.forEach { it.updateActiveState() }
-            updateActiveKeybindings() // this is technically not needed, but it makes sure the activeKeybindings list is up to date
+            updateActiveKeybindings() // this is technically not needed, but it makes sure that activeKeybindings is up to date
         }
 
         private fun updateActiveKeybindings() {
@@ -149,11 +149,15 @@ class Keybinding(
 
         @HandleEvent
         fun onTick(event: SkyHanniTickEvent) {
-//             println("Keybinding tick ${keybindings.size} ${activeKeybindings.size} $keybindings")
             activeKeybindings.forEach { it.onTick() }
         }
 
         // from here on downwards all the events on which the active state of the keybindings are updated
+        @HandleEvent
+        fun onConfigLoad(event: ConfigLoadEvent) {
+            updateActiveStates()
+        }
+
         @HandleEvent
         fun onWorldChange(event: WorldChangeEvent) {
             updateActiveStates()
