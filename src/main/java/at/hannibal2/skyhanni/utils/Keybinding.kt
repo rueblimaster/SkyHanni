@@ -23,7 +23,7 @@ class Keybinding(
     val functionToExecute: () -> Unit,
     val cooldown: Duration = 2.seconds,
     val condition: (() -> Boolean)? = null,
-    val guiCondition: (() -> Boolean)? = { Minecraft.getMinecraft().currentScreen == null && !NeuItems.neuHasFocus() },
+    val instantCondition: (() -> Boolean)? = { Minecraft.getMinecraft().currentScreen == null && !NeuItems.neuHasFocus() },
     val onlyOnIsland: IslandType = IslandType.ANY,
     vararg val onlyOnIslands: IslandType = arrayOf(),
 ) {
@@ -78,7 +78,7 @@ class Keybinding(
     }
 
     fun checkCondition() = condition?.invoke() ?: true
-    fun checkGuiCondition() = guiCondition?.invoke() ?: true
+    fun checkInstantCondition() = instantCondition?.invoke() ?: true
 
     fun reloadKeybindingType() {
         keybindingType = when {
@@ -112,7 +112,7 @@ class Keybinding(
     private fun isOnCooldown(): Boolean = lastTimeExecuted.passedSince() < cooldown
 
     private fun onTick() {
-        if (checkGuiCondition() && isKeyDown() && !isOnCooldown()) {
+        if (checkInstantCondition() && isKeyDown() && !isOnCooldown()) {
             execute()
         }
     }
