@@ -19,8 +19,8 @@ class Keybinding(
     val keyCodeGet: () -> Int, // this may range from -100 to keyboard.KEYBOARD_SIZE
     val functionToExecute: () -> Unit,
     val cooldown: Duration = 2.seconds,
-    val condition: () -> Boolean = { true },
-    val guiCondition: () -> Boolean = { Minecraft.getMinecraft().currentScreen == null && !NeuItems.neuHasFocus() },
+    val condition: (() -> Boolean)? = null,
+    val guiCondition: (() -> Boolean)? = { Minecraft.getMinecraft().currentScreen == null && !NeuItems.neuHasFocus() },
     val onlyOnIsland: IslandType = IslandType.ANY,
     vararg val onlyOnIslands: IslandType = arrayOf(),
 ) {
@@ -71,13 +71,16 @@ class Keybinding(
         }
     }
 
+    fun checkCondition() = condition?.invoke() ?: true
+    fun checkGuiCondition() = guiCondition?.invoke() ?: true
+
     fun isActive() = active
 
     private fun checkIsActive(): Boolean {
         if (keybindingType == null) return false
         if (onlyOnIsland != IslandType.ANY && !onlyOnIsland.isInIsland()) return false
         if (onlyOnIslands.isNotEmpty() && !onlyOnIslands.any { it.isInIsland() }) return false
-        return condition()
+        return checkCondition()
     }
 
     fun updateActiveState() {
@@ -94,8 +97,8 @@ class Keybinding(
 
     private fun onTick() {
         println("Keybinding $keyCode tick")
-        if (guiCondition() && isKeyDown() && !isOnCooldown()) {
             println("Keybinding $keyCode pressed")
+        if (checkGuiCondition() && isKeyDown() && !isOnCooldown()) {
             execute()
         }
     }
