@@ -32,12 +32,17 @@ class Keybinding(
         get() {
             if (keyCodeProvider() != field) {
                 field = keyCodeProvider()
-                reloadKeybindingType()
+                updateActiveState()
             }
             return field
         }
 
-    private var keybindingType: KeybindingType? = null
+    private val keybindingType: KeybindingType?
+        get() = when {
+            keyCode < 0 -> KeybindingType.MOUSE
+            keyCode in 1 until Keyboard.KEYBOARD_SIZE -> KeybindingType.KEYBOARD
+            else -> null
+        }
 
     private var lastTimeActiveChecked: SimpleTimeMark = SimpleTimeMark.farPast()
     var active: Boolean = false
@@ -74,14 +79,6 @@ class Keybinding(
     fun checkCondition() = condition?.invoke() ?: true
     fun checkInstantCondition() = instantCondition?.invoke() ?: true
 
-    fun reloadKeybindingType() {
-        keybindingType = when {
-            keyCode < 0 -> KeybindingType.MOUSE
-            keyCode in 1 until Keyboard.KEYBOARD_SIZE -> KeybindingType.KEYBOARD
-            else -> null
-        }
-    }
-
     fun isActive() = active
 
     private fun checkIsActive(): Boolean {
@@ -92,8 +89,6 @@ class Keybinding(
     }
 
     fun updateActiveState() {
-        reloadKeybindingType()
-
         active = checkIsActive()
         lastTimeActiveChecked = SimpleTimeMark.now()
     }
