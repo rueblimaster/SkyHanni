@@ -16,7 +16,7 @@ import kotlin.time.Duration.Companion.seconds
 class Keybinding(
     // it would be an easy change to support modifieres etc. with this,
     // but it's not added as it's not really possible to set in config
-    val keyCodeGet: () -> Int, // this may range from -100 to keyboard.KEYBOARD_SIZE
+    val keyCodeProvider: () -> Int, // this may range from -100 to keyboard.KEYBOARD_SIZE
     val functionToExecute: () -> Unit,
     val cooldown: Duration = 2.seconds,
     val condition: (() -> Boolean)? = null,
@@ -24,29 +24,27 @@ class Keybinding(
     val onlyOnIsland: IslandType = IslandType.ANY,
     vararg val onlyOnIslands: IslandType = arrayOf(),
 ) {
-    private var keyCode: Int = keyCodeGet()
-        get() = keyCodeGet()
+    private var keyCode: Int = keyCodeProvider()
+        get() {
+            if (keyCodeProvider() != field) {
+                field = keyCodeProvider()
+                reloadKeybindingType()
+            }
+            return field
+        }
 
-    private val keybindingType: KeybindingType? = if (keyCode < 0) {
-        KeybindingType.MOUSE
-    } else if (keyCode < Keyboard.KEYBOARD_SIZE) {
-        KeybindingType.KEYBOARD
-    } else {
-        ChatUtils.userError("Invalid keybind with keycode: $keyCode, key: ${keyCode.toChar()}")
-        null
-    }
+    private var keybindingType: KeybindingType? = null
 
     private var lastTimeActiveChecked: SimpleTimeMark = SimpleTimeMark.farPast()
-    private var activeCache: Boolean = false
-    var active: Boolean
+    var active: Boolean = false
         get() {
             if (lastTimeActiveChecked.passedSince() > 10.seconds) {
                 updateActiveState()
             }
-            return activeCache
+            return field
         }
         private set(value) {
-            activeCache = value
+            field = value
             if (value) {
                 activeKeybindings.add(this)
             } else {
@@ -74,6 +72,14 @@ class Keybinding(
     fun checkCondition() = condition?.invoke() ?: true
     fun checkGuiCondition() = guiCondition?.invoke() ?: true
 
+    fun reloadKeybindingType() {
+        keybindingType = when {
+            keyCode < 0 -> KeybindingType.MOUSE
+            keyCode in 0..Keyboard.KEYBOARD_SIZE -> KeybindingType.KEYBOARD
+            else -> null
+        }
+    }
+
     fun isActive() = active
 
     private fun checkIsActive(): Boolean {
@@ -84,6 +90,8 @@ class Keybinding(
     }
 
     fun updateActiveState() {
+        reloadKeybindingType()
+
         active = checkIsActive()
         lastTimeActiveChecked = SimpleTimeMark.now()
     }
@@ -141,6 +149,7 @@ class Keybinding(
 
         @HandleEvent
         fun onTick(event: SkyHanniTickEvent) {
+//             println("Keybinding tick ${keybindings.size} ${activeKeybindings.size} $keybindings")
             activeKeybindings.forEach { it.onTick() }
         }
 
