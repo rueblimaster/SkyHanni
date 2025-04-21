@@ -1,10 +1,12 @@
 package at.hannibal2.skyhanni.utils
 
 import at.hannibal2.skyhanni.api.event.HandleEvent
+import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniTickEvent
 import at.hannibal2.skyhanni.events.minecraft.WorldChangeEvent
 import at.hannibal2.skyhanni.events.skyblock.GraphAreaChangeEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
+import at.hannibal2.skyhanni.utils.LorenzUtils.isInIsland
 import at.hannibal2.skyhanni.utils.compat.MouseCompat
 import net.minecraft.client.Minecraft
 import org.lwjgl.input.Keyboard
@@ -14,12 +16,17 @@ import kotlin.time.Duration.Companion.seconds
 class Keybinding(
     // it would be an easy change to support modifieres etc. with this,
     // but it's not added as it's not really possible to set in config
-    val keyCode: Int, // this may range from -100 to keyboard.KEYBOARD_SIZE
+    val keyCodeGet: () -> Int, // this may range from -100 to keyboard.KEYBOARD_SIZE
     val functionToExecute: () -> Unit,
     val cooldown: Duration = 2.seconds,
     val condition: () -> Boolean = { true },
-    val guiCondition: () -> Boolean = { Minecraft.getMinecraft().currentScreen == null },
+    val guiCondition: () -> Boolean = { Minecraft.getMinecraft().currentScreen == null && !NeuItems.neuHasFocus() },
+    val onlyOnIsland: IslandType = IslandType.ANY,
+    vararg val onlyOnIslands: IslandType = arrayOf(),
 ) {
+    private var keyCode: Int = keyCodeGet()
+        get() = keyCodeGet()
+
     private val keybindingType: KeybindingType? = if (keyCode < 0) {
         KeybindingType.MOUSE
     } else if (keyCode < Keyboard.KEYBOARD_SIZE) {
@@ -68,6 +75,8 @@ class Keybinding(
 
     private fun checkIsActive(): Boolean {
         if (keybindingType == null) return false
+        if (onlyOnIsland != IslandType.ANY && !onlyOnIsland.isInIsland()) return false
+        if (onlyOnIslands.isNotEmpty() && !onlyOnIslands.any { it.isInIsland() }) return false
         return condition()
     }
 
@@ -84,9 +93,15 @@ class Keybinding(
     private fun isOnCooldown(): Boolean = lastTimeExecuted.passedSince() < cooldown
 
     private fun onTick() {
+        println("Keybinding $keyCode tick")
         if (guiCondition() && isKeyDown() && !isOnCooldown()) {
+            println("Keybinding $keyCode pressed")
             execute()
         }
+    }
+
+    fun updateAllActiveStates() {
+        updateActiveStates()
     }
 
     @SkyHanniModule
@@ -103,7 +118,7 @@ class Keybinding(
         private val keybindings = mutableListOf<Keybinding>()
         private val activeKeybindings = mutableListOf<Keybinding>()
 
-        fun addKeyBinding(keybinding: Keybinding) {
+        private fun addKeyBinding(keybinding: Keybinding) {
             keybindings.add(keybinding)
             keybinding.updateActiveState()
             if (keybinding.active) {
@@ -113,10 +128,10 @@ class Keybinding(
 
         fun updateActiveStates() {
             keybindings.forEach { it.updateActiveState() }
-            updateActiveKeybindings()
+            updateActiveKeybindings() // this is technically not needed, but it makes sure the activeKeybindings list is up to date
         }
 
-        fun updateActiveKeybindings() {
+        private fun updateActiveKeybindings() {
             activeKeybindings.clear()
             keybindings.forEach { if (it.active) activeKeybindings.add(it) }
         }
