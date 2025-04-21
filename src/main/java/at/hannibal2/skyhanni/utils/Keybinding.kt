@@ -175,9 +175,9 @@ class Keybinding(
                 description = "Reloads the active state of all keybindings"
                 category = CommandCategory.USERS_BUG_FIX
                 callback {
-                    val oldActiveKeyBindings = keybindings.filter { it.active }
+                    val oldActiveKeyBindings = keybindings.filter { keybinding -> keybinding.active }
                     updateActiveStates()
-                    val newActiveKeyBindings = keybindings.filter { it.active }
+                    val newActiveKeyBindings = keybindings.filter { keybinding -> keybinding.active }
                     val removedKeyBindings = oldActiveKeyBindings.filter { keybinding ->
                         keybinding !in newActiveKeyBindings
                     }
