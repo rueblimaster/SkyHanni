@@ -28,6 +28,7 @@ class Keybinding(
     val instantCondition: (() -> Boolean)? = { Minecraft.getMinecraft().currentScreen == null && !NeuItems.neuHasFocus() },
     val onlyOnIsland: IslandType = IslandType.ANY,
     vararg val onlyOnIslands: IslandType = arrayOf(),
+    val requireSeparateTaps: Boolean = true, // TODO: define
 ) {
     private var keyCode: Int = keyCodeProvider()
         get() {
@@ -57,6 +58,7 @@ class Keybinding(
 
     private var lastTimeExecuted: SimpleTimeMark = SimpleTimeMark.farPast()
     private var lastTimePressed: SimpleTimeMark = SimpleTimeMark.farPast()
+    private var lastTimeUnpressed: SimpleTimeMark = SimpleTimeMark.now()
 
     init {
         addKeyBinding(this)
@@ -72,9 +74,7 @@ class Keybinding(
         KeybindingType.KEYBOARD -> Keyboard.isKeyDown(keyCode)
         null -> false
     }.also {
-        if (it) {
-            lastTimePressed = SimpleTimeMark.now()
-        }
+        if (it) lastTimePressed = SimpleTimeMark.now() else lastTimeUnpressed = SimpleTimeMark.now()
     }
 
     fun checkCondition() = condition?.invoke() ?: true
@@ -101,8 +101,10 @@ class Keybinding(
 
     private fun isOnCooldown(): Boolean = lastTimeExecuted.passedSince() < cooldown
 
+    private fun isKeyTapped(): Boolean = (!requireSeparateTaps || lastTimeUnpressed > lastTimePressed) && isKeyDown()
+
     private fun onTick() {
-        if (active && checkInstantCondition() && isKeyDown() && !isOnCooldown()) {
+        if (active && checkInstantCondition() && isKeyTapped() && !isOnCooldown()) {
             execute()
         }
     }
