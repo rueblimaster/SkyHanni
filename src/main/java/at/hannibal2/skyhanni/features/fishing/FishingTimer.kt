@@ -11,9 +11,9 @@ import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.MobEvent
 import at.hannibal2.skyhanni.events.SecondPassedEvent
 import at.hannibal2.skyhanni.events.fishing.SeaCreatureFishEvent
-import at.hannibal2.skyhanni.events.minecraft.KeyDownEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.DelayedRun
+import at.hannibal2.skyhanni.utils.Keybinding
 import at.hannibal2.skyhanni.utils.LocationUtils.distanceTo
 import at.hannibal2.skyhanni.utils.LocationUtils.distanceToPlayer
 import at.hannibal2.skyhanni.utils.LorenzUtils
@@ -28,7 +28,6 @@ import at.hannibal2.skyhanni.utils.TimeLimitedSet
 import at.hannibal2.skyhanni.utils.TimeUnit
 import at.hannibal2.skyhanni.utils.TimeUtils.format
 import at.hannibal2.skyhanni.utils.getLorenzVec
-import net.minecraft.client.Minecraft
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -163,15 +162,17 @@ object FishingTimer {
         updateInfo()
     }
 
-    @HandleEvent
-    fun onKeyDown(event: KeyDownEvent) {
-        if (!isEnabled()) return
-        if (Minecraft.getMinecraft().currentScreen != null) return
-        if (event.keyCode != config.manualResetTimer) return
-
-        mobDespawnTime.replaceAll { _, _ ->
-            SimpleTimeMark.now()
-        }
+    init {
+        Keybinding(
+            keyCodeProvider = { config.manualResetTimer },
+            functionToExecute = {
+                mobDespawnTime.replaceAll { _, _ ->
+                    SimpleTimeMark.now()
+                }
+            },
+            cooldown = 0.seconds,
+            condition = { isEnabled() },
+        )
     }
 
     private fun updateInfo() {
