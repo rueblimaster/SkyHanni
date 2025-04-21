@@ -139,6 +139,7 @@ class Keybinding(
             }
         }
 
+        @HandleEvent(eventTypes = [ConfigLoadEvent::class, WorldChangeEvent::class, GraphAreaChangeEvent::class])
         fun updateActiveStates() {
             keybindings.forEach { it.updateActiveState() }
             updateActiveKeybindings() // this is technically not needed, but it makes sure that activeKeybindings is up to date
@@ -152,6 +153,23 @@ class Keybinding(
         @HandleEvent
         fun onTick(event: SkyHanniTickEvent) {
             activeKeybindings.forEach { it.onTick() }
+        }
+
+        @HandleEvent
+        fun onDebug(event: DebugDataCollectEvent) {
+            event.title("Keybindings")
+            event.addData {
+                add("${activeKeybindings.size} active keybindings out of ${keybindings.size} keybindings")
+                add("Active keybindings:")
+                activeKeybindings.forEach {
+                    add(it.toString())
+                }
+                add("Inactive Keybindings:")
+                keybindings.forEach {
+                    if (activeKeybindings.contains(it)) return@forEach
+                    add(it.toString())
+                }
+            }
         }
 
         @HandleEvent
