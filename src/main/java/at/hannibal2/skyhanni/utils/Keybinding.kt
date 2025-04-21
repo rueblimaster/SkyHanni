@@ -140,17 +140,32 @@ class Keybinding(
 
         @HandleEvent
         fun onDebug(event: DebugDataCollectEvent) {
+            val activeKeybindings = keybindings.filter { it.active }
+            val nullKeybindings = keybindings.filter { it.keybindingType == null }
+            val inactiveKeybindings = keybindings.filter {
+                !activeKeybindings.contains(it) && !nullKeybindings.contains(it)
+            }
+
             event.title("Keybindings")
-            event.addData {
-                add("${activeKeybindings.size} active keybindings out of ${keybindings.size} keybindings")
-                add("Active keybindings:")
-                activeKeybindings.forEach {
-                    add(it.toString())
+            event.addIrrelevant {
+                add("Total of ${keybindings.size} keybindings")
+                if (activeKeybindings.isNotEmpty()) {
+                    add("${activeKeybindings.size} active keybindings:")
+                    activeKeybindings.forEach {
+                        add(it.toString())
+                    }
                 }
-                add("Inactive Keybindings:")
-                keybindings.forEach {
-                    if (activeKeybindings.contains(it)) return@forEach
-                    add(it.toString())
+                if (nullKeybindings.isNotEmpty()) {
+                    add("${nullKeybindings.size} keybindings without a set key:")
+                    nullKeybindings.forEach {
+                        add(it.toString())
+                    }
+                }
+                if (inactiveKeybindings.isNotEmpty()) {
+                    add("${inactiveKeybindings.size} inactive keybindings:")
+                    inactiveKeybindings.forEach {
+                        add(it.toString())
+                    }
                 }
             }
         }
