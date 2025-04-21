@@ -181,8 +181,12 @@ class Keybinding(
                     val oldActiveKeyBindings = activeKeybindings.toList()
                     updateActiveStates()
                     val newActiveKeyBindings = activeKeybindings.toList()
-                    val removedKeyBindings = oldActiveKeyBindings.filter { it !in newActiveKeyBindings }
-                    val addedKeyBindings = newActiveKeyBindings.filter { it !in oldActiveKeyBindings }
+                    val removedKeyBindings = oldActiveKeyBindings.filter { keybinding ->
+                        keybinding !in newActiveKeyBindings
+                    }
+                    val addedKeyBindings = newActiveKeyBindings.filter { keybinding ->
+                        keybinding !in oldActiveKeyBindings
+                    }
                     ChatUtils.debug("Removed $removedKeyBindings")
                     ChatUtils.debug("Added $addedKeyBindings")
                     ChatUtils.chat("Reloaded keybindings")
