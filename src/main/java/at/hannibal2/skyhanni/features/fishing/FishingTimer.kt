@@ -11,7 +11,7 @@ import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.MobEvent
 import at.hannibal2.skyhanni.events.SecondPassedEvent
 import at.hannibal2.skyhanni.events.fishing.SeaCreatureFishEvent
-import at.hannibal2.skyhanni.events.minecraft.KeyDownEvent
+import at.hannibal2.skyhanni.events.minecraft.KeyPressEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.DelayedRun
 import at.hannibal2.skyhanni.utils.LocationUtils.distanceTo
@@ -164,9 +164,8 @@ object FishingTimer {
     }
 
     @HandleEvent
-    fun onKeyDown(event: KeyDownEvent) {
+    fun onKeyDown(event: KeyPressEvent) {
         if (!isEnabled()) return
-        if (Minecraft.getMinecraft().currentScreen != null) return
         if (event.keyCode != config.manualResetTimer) return
 
         mobDespawnTime.replaceAll { _, _ ->

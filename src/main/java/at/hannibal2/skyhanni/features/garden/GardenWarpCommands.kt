@@ -3,16 +3,14 @@ package at.hannibal2.skyhanni.features.garden
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.events.MessageSendToServerEvent
-import at.hannibal2.skyhanni.events.minecraft.KeyDownEvent
+import at.hannibal2.skyhanni.events.minecraft.KeyPressEvent
 import at.hannibal2.skyhanni.features.misc.LockMouseLook
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.HypixelCommands
-import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.client.Minecraft
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -58,10 +56,7 @@ object GardenWarpCommands {
     }
 
     @HandleEvent(onlyOnIsland = IslandType.GARDEN)
-    fun onKeyDown(event: KeyDownEvent) {
-        if (Minecraft.getMinecraft().currentScreen != null) return
-        if (NeuItems.neuHasFocus()) return
-
+    fun onKeyDown(event: KeyPressEvent) {
         when (event.keyCode) {
             config.homeHotkey -> {
                 if (lastWarpTime.passedSince() < 2.seconds) return

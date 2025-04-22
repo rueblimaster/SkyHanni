@@ -3,7 +3,7 @@ package at.hannibal2.skyhanni.features.inventory
 import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.events.InventoryOpenEvent
-import at.hannibal2.skyhanni.events.minecraft.KeyDownEvent
+import at.hannibal2.skyhanni.events.minecraft.KeyPressEvent
 import at.hannibal2.skyhanni.events.minecraft.ToolTipEvent
 import at.hannibal2.skyhanni.features.inventory.bazaar.BazaarApi
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
@@ -60,7 +60,7 @@ object FocusMode {
     }
 
     @HandleEvent
-    fun onKeyDown(event: KeyDownEvent) {
+    fun onKeyDown(event: KeyPressEvent) {
         if (!isEnabled()) return
         if (config.alwaysEnabled) return
         if (event.keyCode != config.toggleKey) return
