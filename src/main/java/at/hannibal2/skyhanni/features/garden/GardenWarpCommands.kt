@@ -58,6 +58,7 @@ object GardenWarpCommands {
             functionToExecute = { HypixelCommands.warp("garden") },
             cooldown = 2.seconds,
             onlyOnIsland = IslandType.GARDEN,
+            name = "Garden Home",
         )
         Keybinding(
             keyCodeProvider = { config.barnHotkey },
@@ -67,11 +68,13 @@ object GardenWarpCommands {
             },
             cooldown = 2.seconds,
             onlyOnIsland = IslandType.GARDEN,
+            name = "Garden Barn",
         )
         Keybinding(
             keyCodeProvider = { config.sethomeHotkey },
             functionToExecute = { HypixelCommands.setHome() },
             onlyOnIsland = IslandType.GARDEN,
+            name = "Garden Set Home",
         )
     }
 }

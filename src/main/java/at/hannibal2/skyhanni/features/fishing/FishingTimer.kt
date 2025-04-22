@@ -172,6 +172,7 @@ object FishingTimer {
             },
             cooldown = 0.seconds,
             condition = { isEnabled() },
+            name = "Fishing Timer Manual Reset",
         )
     }
 

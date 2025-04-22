@@ -67,6 +67,7 @@ object FocusMode {
             cooldown = 0.seconds,
             condition = { !config.alwaysEnabled },
             instantCondition = { isEnabled() },
+            name = "Focus Mode Toggle",
         )
     }
 

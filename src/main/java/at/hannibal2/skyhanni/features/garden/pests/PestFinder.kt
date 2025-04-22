@@ -198,6 +198,7 @@ object PestFinder {
             functionToExecute = { teleportNearestInfestedPlot() },
             cooldown = 2.seconds,
             onlyOnIsland = IslandType.GARDEN,
+            name = "Pest Finder Teleport",
         )
     }
 

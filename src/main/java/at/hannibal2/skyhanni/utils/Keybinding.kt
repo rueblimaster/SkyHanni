@@ -29,6 +29,7 @@ class Keybinding(
     val onlyOnIsland: IslandType = IslandType.ANY,
     vararg val onlyOnIslands: IslandType = arrayOf(),
     val requireSeparateTaps: Boolean = true, // TODO: define
+    val name: String? = null, // this is used for debugging and logging
 ) {
     private var keyCode: Int = keyCodeProvider()
         get() {
@@ -64,8 +65,11 @@ class Keybinding(
         addKeyBinding(this)
     }
 
-    override fun toString(): String {
-        return "Keybinding(keyCode=$keyCode, keybindingType=$keybindingType, active=$active, " +
+    override fun toString(): String = if (name != null) {
+        "Keybinding(name='$name', keyCode=$keyCode, keybindingType=$keybindingType, " +
+            "active=$active, lastTimeActiveChecked=$lastTimeActiveChecked, lastTimeExecuted=$lastTimeExecuted)"
+    } else {
+        "Keybinding(keyCode=$keyCode, keybindingType=$keybindingType, active=$active, " +
             "lastTimeActiveChecked=$lastTimeActiveChecked, lastTimeExecuted=$lastTimeExecuted)"
     }
 
