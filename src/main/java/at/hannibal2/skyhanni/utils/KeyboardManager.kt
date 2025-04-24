@@ -86,7 +86,6 @@ object KeyboardManager {
 
     /**
      * Can only be used once per click, since the function locks itself until the key is no longer held.
-     * Do not use in KeyPressEvent, since it won't be unlocked again, use KeyDownEvent instead.
      * */
     fun Int.isKeyClicked(): Boolean = if (this.isKeyHeld()) {
         if (lockedKeys[this] != true) {

@@ -4,6 +4,8 @@ import at.hannibal2.skyhanni.events.minecraft.KeyHeldEvent
 import at.hannibal2.skyhanni.events.minecraft.KeyPressEvent
 import at.hannibal2.skyhanni.events.minecraft.KeyReleaseEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
+import at.hannibal2.skyhanni.utils.NeuItems
+import net.minecraft.client.Minecraft
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import net.minecraftforge.fml.common.gameevent.InputEvent
 import org.lwjgl.input.Keyboard
@@ -12,6 +14,9 @@ import org.lwjgl.input.Mouse
 @SkyHanniModule
 object KeyStateManager {
     //#if MC < 1.16
+    // inventory check is not needed, as forge only send events when not in a gui
+    private fun shouldTrigger(): Boolean = !NeuItems.neuHasFocus()
+
     private fun getSyntheticKeyboardKeyCode(key: Int, char: Char): Int = if (key == 0) char.code + 256 else key
 
     /**
@@ -19,6 +24,8 @@ object KeyStateManager {
      */
     @SubscribeEvent
     fun onKeyboardEvent(event: InputEvent.KeyInputEvent) {
+        if (!shouldTrigger()) return
+
         var keyCode = Keyboard.getEventKey()
         val keyChar = Keyboard.getEventCharacter()
         val keyState = Keyboard.getEventKeyState()
@@ -45,6 +52,8 @@ object KeyStateManager {
      */
     @SubscribeEvent
     fun onMouseEvent(event: InputEvent.MouseInputEvent) {
+        if (!shouldTrigger()) return
+
         var button = Mouse.getEventButton()
         if (button == -1) return // No button pressed
         button = button - 100
