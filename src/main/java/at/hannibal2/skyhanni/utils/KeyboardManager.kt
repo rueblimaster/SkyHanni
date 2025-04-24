@@ -19,8 +19,6 @@ object KeyboardManager {
     const val RIGHT_MOUSE = -99
     const val MIDDLE_MOUSE = -98
 
-    private var lastClickedMouseButton = -1
-
     // A mac-only key, represents Windows key on windows (but different key code)
     private fun isCommandKeyDown() = Keyboard.KEY_LMETA.isKeyHeld() || Keyboard.KEY_RMETA.isKeyHeld()
 
