@@ -3,13 +3,12 @@ package at.hannibal2.skyhanni.features.garden
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.events.MessageSendToServerEvent
-import at.hannibal2.skyhanni.events.minecraft.KeyPressEvent
 import at.hannibal2.skyhanni.features.misc.LockMouseLook
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.HypixelCommands
+import at.hannibal2.skyhanni.utils.Keybinding
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
-import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 import kotlin.time.Duration.Companion.seconds
 
@@ -26,8 +25,6 @@ object GardenWarpCommands {
         "garden.warpcommand.tpplot",
         "/tp (?<plot>.*)",
     )
-
-    private var lastWarpTime = SimpleTimeMark.farPast()
 
     @HandleEvent(onlyOnIsland = IslandType.GARDEN)
     fun onMessageSendToServer(event: MessageSendToServerEvent) {
@@ -55,29 +52,29 @@ object GardenWarpCommands {
         }
     }
 
-    @HandleEvent(onlyOnIsland = IslandType.GARDEN)
-    fun onKeyDown(event: KeyPressEvent) {
-        when (event.keyCode) {
-            config.homeHotkey -> {
-                if (lastWarpTime.passedSince() < 2.seconds) return
-                lastWarpTime = SimpleTimeMark.now()
-
-                HypixelCommands.warp("garden")
-            }
-
-            config.sethomeHotkey -> {
-                HypixelCommands.setHome()
-            }
-
-            config.barnHotkey -> {
-                if (lastWarpTime.passedSince() < 2.seconds) return
-                lastWarpTime = SimpleTimeMark.now()
-
+    init {
+        Keybinding(
+            keyCodeProvider = { config.homeHotkey },
+            functionToExecute = { HypixelCommands.warp("garden") },
+            cooldown = 2.seconds,
+            onlyOnIsland = IslandType.GARDEN,
+            name = "Garden Home",
+        )
+        Keybinding(
+            keyCodeProvider = { config.barnHotkey },
+            functionToExecute = {
                 LockMouseLook.autoDisable()
                 HypixelCommands.teleportToPlot("barn")
-            }
-
-            else -> return
-        }
+            },
+            cooldown = 2.seconds,
+            onlyOnIsland = IslandType.GARDEN,
+            name = "Garden Barn",
+        )
+        Keybinding(
+            keyCodeProvider = { config.sethomeHotkey },
+            functionToExecute = { HypixelCommands.setHome() },
+            onlyOnIsland = IslandType.GARDEN,
+            name = "Garden Set Home",
+        )
     }
 }
