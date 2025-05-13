@@ -13,7 +13,6 @@
     <ID>CyclomaticComplexMethod:EnoughUpdatesManager.kt$EnoughUpdatesManager$private fun getPetLoreReplacements(petName: String?, tier: String?, level: Int): Map&lt;String, String&gt;</ID>
     <ID>CyclomaticComplexMethod:GardenCropMilestoneDisplay.kt$GardenCropMilestoneDisplay$private fun drawProgressDisplay(crop: CropType): List&lt;Renderable&gt;</ID>
     <ID>CyclomaticComplexMethod:GardenVisitorFeatures.kt$GardenVisitorFeatures$private fun readToolTip(visitor: VisitorApi.Visitor, itemStack: ItemStack?, toolTip: MutableList&lt;String&gt;)</ID>
-    <ID>CyclomaticComplexMethod:GardenVisitorTimer.kt$GardenVisitorTimer$@HandleEvent fun onSecondPassed(event: SecondPassedEvent)</ID>
     <ID>CyclomaticComplexMethod:GraphEditor.kt$GraphEditor$private fun input()</ID>
     <ID>CyclomaticComplexMethod:ItemAbilityCooldown.kt$ItemAbilityCooldown$@HandleEvent fun onPlaySound(event: PlaySoundEvent)</ID>
     <ID>CyclomaticComplexMethod:ItemDisplayOverlayFeatures.kt$ItemDisplayOverlayFeatures$private fun getStackTip(item: ItemStack): String?</ID>
@@ -67,11 +66,17 @@
     <ID>NoNameShadowing:RepoManager.kt$RepoManager${ unsuccessfulConstants.add(it) }</ID>
     <ID>NoNameShadowing:RepoPatternManager.kt$RepoPatternManager${ it == '.' }</ID>
     <ID>NoNameShadowing:Shimmy.kt$Shimmy.Companion$source</ID>
-    <ID>PreprocessingImportOrdering:MouseCompat.kt$//#if MC &lt; 1.16</ID>
+    <ID>PreprocessingImportOrdering:AlignmentConfig.kt$//#if TODO</ID>
+    <ID>PreprocessingImportOrdering:BroodmotherSpawnAlertConfig.kt$//#if TODO</ID>
+    <ID>PreprocessingImportOrdering:ChunkedStatsConfig.kt$//#if TODO</ID>
+    <ID>PreprocessingImportOrdering:EventsConfig.kt$//#if TODO</ID>
+    <ID>PreprocessingImportOrdering:InquisitorSoundConfig.kt$//#if TODO</ID>
+    <ID>PreprocessingImportOrdering:LaneSwitchSoundSettings.kt$//#if TODO</ID>
+    <ID>PreprocessingImportOrdering:LowHealthAlertSoundConfig.kt$//#if TODO</ID>
+    <ID>PreprocessingImportOrdering:RepositoryConfig.kt$//#if TODO</ID>
+    <ID>PreprocessingImportOrdering:SkyHanniMod.kt$//#if TODO</ID>
+    <ID>PreprocessingImportOrdering:TitleAndFooterConfig.kt$//#if TODO</ID>
     <ID>RepoPatternRegexTestMissing:AshfangFreezeCooldown.kt$AshfangFreezeCooldown$by RepoPattern.pattern( "ashfang.freeze.cryogenic", "§cAshfang Follower's Cryogenic Blast hit you for .* damage!", )</ID>
-    <ID>RepoPatternRegexTestMissing:BasketWaypoints.kt$BasketWaypoints$by patternGroup.pattern( "basket", "^(?:(?:§.)+You found a Candy Basket! (?:(?:§.)+\\((?:§.)+(?&lt;current&gt;\\d+)(?:§.)+/(?:§.)+(?&lt;max&gt;\\d+)(?:§.)+\\))?|(?:§.)+You already found this Candy Basket!)\$" )</ID>
-    <ID>RepoPatternRegexTestMissing:BasketWaypoints.kt$BasketWaypoints$by patternGroup.pattern( "main.scoreboard.basket", "^Baskets Found: §a\\d+§f/§a\\d+\$" )</ID>
-    <ID>RepoPatternRegexTestMissing:BasketWaypoints.kt$BasketWaypoints$by patternGroup.pattern( "main.scoreboard.halloween", "^§6Halloween \\d+$" )</ID>
     <ID>RepoPatternRegexTestMissing:BazaarCancelledBuyOrderClipboard.kt$BazaarCancelledBuyOrderClipboard$by patternGroup.pattern( "cancelledmessage", "§6\\[Bazaar] §r§7§r§cCancelled! §r§7Refunded §r§6(?&lt;coins&gt;.*) coins §r§7from cancelling Buy Order!", )</ID>
     <ID>RepoPatternRegexTestMissing:BeaconPower.kt$BeaconPower$by group.pattern( "stat", "§7Current Stat: (?&lt;stat&gt;.+)", )</ID>
     <ID>RepoPatternRegexTestMissing:BeaconPower.kt$BeaconPower$by group.pattern( "time", "§7Power Remaining: §e(?&lt;time&gt;.+)", )</ID>
@@ -133,6 +138,9 @@
     <ID>RepoPatternRegexTestMissing:GardenLevelDisplay.kt$GardenLevelDisplay$by patternGroup.pattern( "inventory.overflow", ".*§r §6(?&lt;overflow&gt;.*)", )</ID>
     <ID>RepoPatternRegexTestMissing:GardenPlotApi.kt$GardenPlotApi$by patternGroup.pattern( "spray.target", "§a§lSPRAYONATOR! §r§7You sprayed §r§aPlot §r§7- §r§b(?&lt;plot&gt;.*) §r§7with §r§a(?&lt;spray&gt;.*)§r§7!" )</ID>
     <ID>RepoPatternRegexTestMissing:GlacitePowderFeatures.kt$GlacitePowderFeatures$by patternGroup.pattern( "glacitepowder", "Glacite Powder x(?&lt;amount&gt;.*)" )</ID>
+    <ID>RepoPatternRegexTestMissing:HalloweenBasketWaypoints.kt$HalloweenBasketWaypoints$by patternGroup.pattern( "basket", "^(?:(?:§.)+You found a Candy Basket! (?:(?:§.)+\\((?:§.)+(?&lt;current&gt;\\d+)(?:§.)+/(?:§.)+(?&lt;max&gt;\\d+)(?:§.)+\\))?|(?:§.)+You already found this Candy Basket!)\$", )</ID>
+    <ID>RepoPatternRegexTestMissing:HalloweenBasketWaypoints.kt$HalloweenBasketWaypoints$by patternGroup.pattern( "main.scoreboard.basket", "^Baskets Found: §a\\d+§f/§a\\d+\$", )</ID>
+    <ID>RepoPatternRegexTestMissing:HalloweenBasketWaypoints.kt$HalloweenBasketWaypoints$by patternGroup.pattern( "main.scoreboard.halloween", "^§6Halloween \\d+$", )</ID>
     <ID>RepoPatternRegexTestMissing:HighlightPlaceableNpcs.kt$HighlightPlaceableNpcs$by patternGroup.pattern( "location", "§7Location: §f\\[§e\\d+§f, §e\\d+§f, §e\\d+§f]", )</ID>
     <ID>RepoPatternRegexTestMissing:HotmData.kt$HotmData.Companion$by patternGroup.pattern( "mayhem", "§b§lMAYHEM! §r§7(?&lt;perk&gt;.*)", )</ID>
     <ID>RepoPatternRegexTestMissing:HotmData.kt$HotmData.Companion$by patternGroup.pattern( "perk.notunlocked", "(?:§.)*Requires.*|.*Mountain!|(?:§.)*Click to unlock!|", )</ID>
@@ -197,7 +205,6 @@
     <ID>RepoPatternRegexTestMissing:TestCopyBestiaryValues.kt$TestCopyBestiaryValues$by RepoPattern.pattern( "test.bestiary.type", "\\[Lv(?&lt;lvl&gt;.*)] (?&lt;text&gt;.*)" )</ID>
     <ID>RepoPatternRegexTestMissing:TotemOfCorruption.kt$TotemOfCorruption$by patternGroup.pattern( "owner", "§7Owner: §e(?&lt;owner&gt;.+)" )</ID>
     <ID>RepoPatternRegexTestMissing:TotemOfCorruption.kt$TotemOfCorruption$by patternGroup.pattern( "timeremaining", "§7Remaining: §e(?:(?&lt;min&gt;\\d+)m )?(?&lt;sec&gt;\\d+)s" )</ID>
-    <ID>RepoPatternRegexTestMissing:TunnelsMaps.kt$TunnelsMaps$by RepoPattern.pattern( "mining.commisson.collector", "§9(?&lt;what&gt;\\w+(?: \\w+)?) Collector", )</ID>
     <ID>RepoPatternRegexTestMissing:TunnelsMaps.kt$TunnelsMaps$by RepoPattern.pattern( "mining.commisson.collector.invalid", "Glacite|Scrap", )</ID>
     <ID>RepoPatternRegexTestMissing:TunnelsMaps.kt$TunnelsMaps$by RepoPattern.pattern( "mining.tunnels.maps.gem.new", ".*(?:Aquamarine|Onyx|Citrine|Peridot).*", )</ID>
     <ID>RepoPatternRegexTestMissing:TunnelsMaps.kt$TunnelsMaps$by RepoPattern.pattern( "mining.tunnels.maps.gem.old", ".*(?:Ruby|Amethyst|Jade|Sapphire|Amber|Topaz).*", )</ID>
@@ -217,7 +224,6 @@
     <ID>ReturnCount:BingoNextStepHelper.kt$BingoNextStepHelper$private fun readDescription(description: String): NextStep?</ID>
     <ID>ReturnCount:BroodmotherFeatures.kt$BroodmotherFeatures$private fun onStageUpdate()</ID>
     <ID>ReturnCount:ChatPeek.kt$ChatPeek$@JvmStatic fun peek(): Boolean</ID>
-    <ID>ReturnCount:ChestValue.kt$ChestValue$private fun isValidStorage(): Boolean</ID>
     <ID>ReturnCount:CollectionTracker.kt$CollectionTracker$private fun command(args: Array&lt;String&gt;)</ID>
     <ID>ReturnCount:CompactBingoChat.kt$CompactBingoChat$private fun onSkyBlockLevelUp(message: String): Boolean</ID>
     <ID>ReturnCount:CrimsonMinibossRespawnTimer.kt$CrimsonMinibossRespawnTimer$private fun updateArea()</ID>
@@ -253,6 +259,7 @@
     <ID>SpreadOperator:LimboPlaytime.kt$LimboPlaytime$( itemID.getItemStack().item, ITEM_NAME, *createItemLore() )</ID>
     <ID>SpreadOperator:TextHelper.kt$TextHelper$(*component.toTypedArray(), separator = separator)</ID>
     <ID>TooManyFunctions:CollectionUtils.kt$CollectionUtils</ID>
+    <ID>TooManyFunctions:ColorUtils.kt$ColorUtils</ID>
     <ID>TooManyFunctions:EstimatedItemValueCalculator.kt$EstimatedItemValueCalculator</ID>
     <ID>TooManyFunctions:HypixelCommands.kt$HypixelCommands</ID>
     <ID>TooManyFunctions:ItemResolutionQuery.kt$ItemResolutionQuery</ID>
@@ -261,8 +268,6 @@
     <ID>TooManyFunctions:MobFinder.kt$MobFinder</ID>
     <ID>TooManyFunctions:NumberUtil.kt$NumberUtil</ID>
     <ID>TooManyFunctions:RegexUtils.kt$RegexUtils</ID>
-    <ID>TooManyFunctions:Renderable.kt$Renderable$Companion</ID>
-    <ID>TooManyFunctions:SkyBlockItemModifierUtils.kt$SkyBlockItemModifierUtils</ID>
     <ID>TooManyFunctions:SkyHanniTracker.kt$SkyHanniTracker&lt;Data : TrackerData&gt;</ID>
     <ID>TooManyFunctions:StringUtils.kt$StringUtils</ID>
     <ID>UnsafeCallOnNullableType:BucketedItemTrackerData.kt$BucketedItemTrackerData$it.value[internalName]?.hidden!!</ID>
@@ -281,7 +286,6 @@
     <ID>UnsafeCallOnNullableType:DicerRngDropTracker.kt$DicerRngDropTracker$event.toolItem!!</ID>
     <ID>UnsafeCallOnNullableType:DiscordStatus.kt$ownerRegex.find(colorlessLine)!!</ID>
     <ID>UnsafeCallOnNullableType:EasterEggWaypoints.kt$EasterEggWaypoints$EasterEgg.entries.minByOrNull { it.waypoint.distanceSqToPlayer() }!!</ID>
-    <ID>UnsafeCallOnNullableType:EasterEggWaypoints.kt$EasterEggWaypoints$notFoundEggs.minByOrNull { it.waypoint.distanceSqToPlayer() }!!</ID>
     <ID>UnsafeCallOnNullableType:EntityMovementData.kt$EntityMovementData$entityLocation[entity]!!</ID>
     <ID>UnsafeCallOnNullableType:EntityOutlineRenderer.kt$EntityOutlineRenderer$entityRenderCache.noXrayCache!!</ID>
     <ID>UnsafeCallOnNullableType:EntityOutlineRenderer.kt$EntityOutlineRenderer$entityRenderCache.xrayCache!!</ID>

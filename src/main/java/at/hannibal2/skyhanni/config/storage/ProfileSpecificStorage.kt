@@ -575,6 +575,7 @@ class ProfileSpecificStorage {
         var farmingWeight: FarmingWeightConfig = FarmingWeightConfig()
 
         class FarmingWeightConfig {
+            // TODO rename to lastLeaderboard
             @Expose
             var lastFarmingWeightLeaderboard: Int = -1
         }
@@ -659,9 +660,9 @@ class ProfileSpecificStorage {
 
     // - mining
     @Expose
-    var mining: MiningConfig = MiningConfig()
+    var mining: MiningStorage = MiningStorage()
 
-    class MiningConfig {
+    class MiningStorage {
         @Expose
         var kingsTalkedTo: MutableList<String> = mutableListOf()
 

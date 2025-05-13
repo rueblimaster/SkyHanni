@@ -73,6 +73,7 @@ import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 import com.google.gson.JsonArray
 import com.google.gson.JsonPrimitive
 import net.minecraft.client.Minecraft
+import net.minecraft.client.entity.EntityOtherPlayerMP
 import net.minecraft.client.gui.inventory.GuiEditSign
 import net.minecraft.client.gui.inventory.GuiInventory
 import net.minecraft.entity.EntityLivingBase
@@ -182,7 +183,7 @@ object GardenVisitorFeatures {
     }
 
     private fun drawDisplay() = buildList {
-        if (!config.shoppingList.display) return@buildList
+        if (!config.shoppingList.enabled) return@buildList
         val (shoppingList, newVisitors) = prepareDrawingData()
 
         if (!shoppingList.isEmpty()) {
@@ -274,7 +275,7 @@ object GardenVisitorFeatures {
                         if (Minecraft.getMinecraft().currentScreen is GuiEditSign) {
                             SignUtils.setTextIntoSign("$leftToCraft")
                         } else {
-                            HypixelCommands.viewRecipe(internalName.asString())
+                            HypixelCommands.viewRecipe(internalName)
                         }
                     },
                 ) { GardenApi.inGarden() && !NeuItems.neuHasFocus() },
@@ -491,7 +492,7 @@ object GardenVisitorFeatures {
 
     @HandleEvent(onlyOnIsland = IslandType.GARDEN)
     fun onTick(event: SkyHanniTickEvent) {
-        if (!config.shoppingList.display && config.highlightStatus == HighlightMode.DISABLED) return
+        if (!config.shoppingList.enabled && config.highlightStatus == HighlightMode.DISABLED) return
         if (!event.isMod(10, 2)) return
 
         if (GardenApi.onBarnPlot && config.highlightStatus != HighlightMode.DISABLED) {
@@ -507,9 +508,10 @@ object GardenVisitorFeatures {
         update()
 
         logger.log("New visitor detected: '$name'")
-        val recentWorldSwitch = LorenzUtils.lastWorldSwitch.passedSince() < 2.seconds
+        // do not show titles and chat messages for visitors that spawned while the player was offline
+        if (LorenzUtils.lastWorldSwitch.passedSince() < 3.seconds) return
 
-        if (config.notificationTitle && !recentWorldSwitch) {
+        if (config.notificationTitle) {
             TitleManager.sendTitle("§eNew Visitor")
         }
         if (config.notificationChat) {
@@ -517,15 +519,13 @@ object GardenVisitorFeatures {
             ChatUtils.chat("$displayName §eis visiting your garden!")
         }
 
-        if (!recentWorldSwitch) {
-            if (name.removeColor().contains("Jerry")) {
-                logger.log("Jerry!")
-                ItemBlink.setBlink(NeuItems.getItemStackOrNull("JERRY;4"), 5_000)
-            }
-            if (name.removeColor().contains("Spaceman")) {
-                logger.log("Spaceman!")
-                ItemBlink.setBlink(NeuItems.getItemStackOrNull("DCTR_SPACE_HELM"), 5_000)
-            }
+        if (name.removeColor().contains("Jerry")) {
+            logger.log("Jerry!")
+            ItemBlink.setBlink(NeuItems.getItemStackOrNull("JERRY;4"), 5_000)
+        }
+        if (name.removeColor().contains("Spaceman")) {
+            logger.log("Spaceman!")
+            ItemBlink.setBlink(NeuItems.getItemStackOrNull("DCTR_SPACE_HELM"), 5_000)
         }
     }
 
@@ -540,11 +540,15 @@ object GardenVisitorFeatures {
             event.blockedReason = "garden_visitor_message"
         }
 
-        if (config.shoppingList.display) {
+        if (config.shoppingList.enabled) {
             partialAcceptedPattern.matchMatcher(event.message) {
                 ChatUtils.chat("Talk to the visitor again to update the number of items needed!")
             }
         }
+    }
+
+    private fun doesVisitorEntityExist(name: String) = EntityUtils.getEntities<EntityOtherPlayerMP>().any {
+        it.name.trim().equals(name, true)
     }
 
     private fun hideVisitorMessage(message: String) = visitorChatMessagePattern.matchMatcher(message) {
@@ -554,7 +558,10 @@ object GardenVisitorFeatures {
         val name = group("name")
         if (name in setOf("Beth", "Maeve", "Spaceman")) return false
 
-        return VisitorApi.getVisitorsMap().keys.any { it.removeColor() == name }
+        val isInKnownVisitors = VisitorApi.getVisitorsMap().keys.any { it.removeColor() == name }
+
+        return if (isInKnownVisitors) true
+        else doesVisitorEntityExist(name)
     } ?: false
 
     private fun update() {
@@ -621,13 +628,13 @@ object GardenVisitorFeatures {
 
     private fun renderDisplay() {
         if (showGui() && shouldShowShoppingList()) {
-            config.shoppingList.pos.renderRenderables(display, posLabel = "Visitor Shopping List")
+            config.shoppingList.position.renderRenderables(display, posLabel = "Visitor Shopping List")
         }
     }
 
     @HandleEvent(onlyOnIsland = IslandType.GARDEN)
     fun onScreenDrawn(event: ScreenDrawnEvent) {
-        if (!config.shoppingList.display) return
+        if (!config.shoppingList.enabled) return
         val gui = event.gui
         if (gui !is GuiEditSign) return
 
@@ -636,7 +643,7 @@ object GardenVisitorFeatures {
 
     @HandleEvent
     fun onRenderOverlay(event: GuiRenderEvent) {
-        if (!config.shoppingList.display) return
+        if (!config.shoppingList.enabled) return
         val currentScreen = Minecraft.getMinecraft().currentScreen
         if (currentScreen is GuiEditSign) return
 
@@ -761,6 +768,9 @@ object GardenVisitorFeatures {
         }
 
         event.move(18, "garden.visitors.needs", "garden.visitors.shoppingList")
+
+        event.move(87, "garden.visitors.shoppingList.display", "garden.visitors.shoppingList.enabled")
+        event.move(87, "garden.visitors.shoppingList.pos", "garden.visitors.shoppingList.position")
     }
 }
 
