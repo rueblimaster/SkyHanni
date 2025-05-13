@@ -44,7 +44,6 @@ class ShoppingListCategory(
             item.changeAmountBy(amount)
             if (item.amount <= 0.0) {
                 items.remove(item)
-                item = null
             } else if (recipe != null) {
                 item.recipe = recipe
                 item.breakDownIntoSubitems()

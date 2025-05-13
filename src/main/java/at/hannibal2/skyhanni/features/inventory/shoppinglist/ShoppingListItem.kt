@@ -18,7 +18,7 @@ import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.MIDDLE_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
-import at.hannibal2.skyhanni.utils.LorenzUtils.noTradeMode
+import at.hannibal2.skyhanni.utils.SkyBlockUtils.noTradeMode
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.NeuItems.isVanillaItem
@@ -72,7 +72,7 @@ class ShoppingListItem(
     fun breakDownIntoSubitems() {
         if (recipe == null) {
             val success = decideRecipe()
-            if (success == false) {
+            if (!success) {
                 return
             }
         }
@@ -103,7 +103,7 @@ class ShoppingListItem(
     }
 
     fun decideRecipe(): Boolean {
-        if (possibleRecipes.isEmpty() != false) {
+        if (possibleRecipes.isEmpty()) {
             ChatUtils.chat("No recipes found for ${internalName.itemNameWithoutColor}")
             return false
         }
@@ -112,7 +112,7 @@ class ShoppingListItem(
             val lore = listOf("§8(From SkyHanni)")
             displayItem = ItemStack(Blocks.diamond_block).setLore(lore).setStackDisplayName("§bSelect Recipe")
             ShoppingList.displayItem = displayItem
-            viewRecipe(internalName.asString())
+            viewRecipe(internalName)
         } else {
             recipe = possibleRecipes[0]
         }
@@ -185,7 +185,7 @@ class ShoppingListItem(
                 craft()
             }
         } else {
-            viewRecipe(internalName.asString())
+            viewRecipe(internalName)
         }
     }
 
@@ -275,7 +275,7 @@ class ShoppingListItem(
             text += "§7${amount.displayAmount()}x "
         }
         text += "${internalName.repoItemName} §f${getCurrentAmount()}/${totalAmount.displayAmount()}"
-        text += if (hasItems()) " §a✓" else if (hasAllSubItems()) text += " §e✓" else ""
+        text += if (hasItems()) " §a✓" else if (hasAllSubItems()) " §e✓" else ""
         return text
     }
 
