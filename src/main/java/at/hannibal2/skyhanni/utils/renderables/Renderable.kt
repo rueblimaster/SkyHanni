@@ -78,6 +78,7 @@ interface Renderable {
      */
     fun render(posX: Int, posY: Int)
 
+    @Suppress("LargeClass")
     companion object {
 
         val logger = LorenzLogger("debug/renderable")
