@@ -27,7 +27,6 @@ import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.ItemUtils.repoItemName
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.LorenzColor
-import at.hannibal2.skyhanni.utils.LorenzUtils
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.PrimitiveIngredient
@@ -35,6 +34,7 @@ import at.hannibal2.skyhanni.utils.PrimitiveItemStack.Companion.toPrimitiveStack
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.RecipeType
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
+import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import net.minecraft.entity.player.InventoryPlayer
@@ -130,7 +130,7 @@ object ShoppingList {
         if (args.size == 1) {
             itemName = args[0]
         } else if (numberEntries.isEmpty()) {
-            if (args.last<String>().isCategory() || !args.joinToString(" ").toInternalName().isKnownItem()) {
+            if (args.last().isCategory() || !args.joinToString(" ").toInternalName().isKnownItem()) {
                 itemName = args.take(args.size - 1).joinToString(" ")
                 categoryName = args.last()
                 add(itemName.toInternalName(), categoryName = categoryName)
@@ -353,7 +353,7 @@ object ShoppingList {
     }
 
     // logic and related functions
-    fun isEnabled() = LorenzUtils.inSkyBlock && config.enabled
+    fun isEnabled() = SkyBlockUtils.inSkyBlock && config.enabled
 
     fun String.isCategory(): Boolean = categories.any { it.name == this }
 
@@ -482,36 +482,36 @@ object ShoppingList {
     fun InventoryFullyOpenedEvent.isRecipe() = inventoryName.contains("Recipe") && inventorySize == 54
 
     // all events come here
-    @HandleEvent(onlyOnSkyblock = true)
-    fun onOwnInventoryItemUpdate(event: OwnInventoryItemUpdateEvent) {
+    @HandleEvent(onlyOnSkyblock = true, eventType = OwnInventoryItemUpdateEvent::class)
+    fun onOwnInventoryItemUpdate() {
         update()
     }
 
-    @HandleEvent(onlyOnSkyblock = true)
-    fun onItemAddInInventoryEvent(event: ItemAddInInventoryEvent) {
+    @HandleEvent(onlyOnSkyblock = true, eventType = ItemAddInInventoryEvent::class)
+    fun onItemAddInInventoryEvent() {
         update()
     }
 
-    @HandleEvent(onlyOnSkyblock = true)
-    fun onSackUpdate(event: SackDataUpdateEvent) {
+    @HandleEvent(onlyOnSkyblock = true, eventType = SackDataUpdateEvent::class)
+    fun onSackUpdate() {
         update()
     }
 
-    @HandleEvent(onlyOnSkyblock = true)
-    fun onInventoryClose(event: InventoryCloseEvent) {
+    @HandleEvent(onlyOnSkyblock = true, eventType = InventoryCloseEvent::class)
+    fun onInventoryClose() {
         recheckInInventory()
         currentlyOpenRecipe = null
         update()
     }
 
-    @HandleEvent
-    fun onWorldChange(event: WorldChangeEvent) {
+    @HandleEvent(eventType = WorldChangeEvent::class)
+    fun onWorldChange() {
         recheckInInventory()
         update()
     }
 
-    @HandleEvent
-    fun onIslandChange(event: IslandChangeEvent) {
+    @HandleEvent(eventType = IslandChangeEvent::class)
+    fun onIslandChange() {
         recheckInInventory()
         update()
     }
@@ -525,9 +525,9 @@ object ShoppingList {
             return
         }
 
-        val ingredients = listOf(10, 11, 12, 13, 19, 20, 21, 28, 29, 30).mapNotNull {
+        val ingredients: Set<PrimitiveIngredient> = listOf(10, 11, 12, 13, 19, 20, 21, 28, 29, 30).mapNotNull {
             event.inventoryItems[it]?.toPrimitiveStackOrNull()?.toPrimitiveIngredient()
-        }.toSet<PrimitiveIngredient>()
+        }.toSet()
 
         val result = event.inventoryItems[25]?.toPrimitiveStackOrNull()?.toPrimitiveIngredient()
 
@@ -593,14 +593,14 @@ object ShoppingList {
         update()
     }
 
-    @HandleEvent(onlyOnSkyblock = true)
-    fun onRender(event: GuiRenderEvent.GuiOverlayRenderEvent) {
+    @HandleEvent(onlyOnSkyblock = true, eventType = GuiRenderEvent.GuiOverlayRenderEvent::class)
+    fun onRender() {
         if (!isEnabled()) return
         config.position.renderRenderables(display, posLabel = "Shopping List")
     }
 
-    @HandleEvent(onlyOnSkyblock = true)
-    fun onRender(event: GuiRenderEvent.ChestGuiOverlayRenderEvent) {
+    @HandleEvent(onlyOnSkyblock = true, eventType = GuiRenderEvent.ChestGuiOverlayRenderEvent::class)
+    fun onInsideChestRender() {
         if (!isEnabled()) return
         if (!inventoryOpen) {
             inventoryOpen = true

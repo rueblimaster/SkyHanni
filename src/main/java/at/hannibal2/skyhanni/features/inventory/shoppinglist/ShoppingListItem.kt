@@ -19,7 +19,7 @@ import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.MIDDLE_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
-import at.hannibal2.skyhanni.utils.LorenzUtils.noTradeMode
+import at.hannibal2.skyhanni.utils.SkyBlockUtils.noTradeMode
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.NeuItems.isVanillaItem
@@ -116,7 +116,7 @@ class ShoppingListItem(
 
         if (recipe == null) {
             val success = decideRecipe()
-            if (success == false) {
+            if (!success) {
                 return
             }
         }
@@ -151,7 +151,7 @@ class ShoppingListItem(
     }
 
     fun decideRecipe(): Boolean {
-        if (possibleRecipes.isEmpty() != false) {
+        if (possibleRecipes.isEmpty()) {
             ChatUtils.chat("No recipes found for ${internalName.itemNameWithoutColor}")
             return false
         }
@@ -168,7 +168,7 @@ class ShoppingListItem(
             displayItem = ItemStack(Blocks.diamond_block).setLore(lore).setStackDisplayName("§bSelect Recipe")
             ShoppingList.displayItem = displayItem
 
-            viewRecipe(internalName.asString())
+            viewRecipe(internalName)
         } else {
             recipe = possibleRecipes[0]
         }
@@ -280,7 +280,7 @@ class ShoppingListItem(
             }
 
         } else {
-            viewRecipe(internalName.asString())
+            viewRecipe(internalName)
         }
     }
 
