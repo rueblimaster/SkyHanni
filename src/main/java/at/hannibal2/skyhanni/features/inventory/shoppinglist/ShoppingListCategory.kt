@@ -71,7 +71,7 @@ class ShoppingListCategory(
             if (item.amount <= 0.0) {
                 items.remove(item)
             } else if (recipe != null) {
-                item.recipe = recipe
+                item.recipe.setRecipe(recipe)
                 item.breakDownIntoSubitems()
             }
         }
@@ -138,15 +138,6 @@ class ShoppingListCategory(
                 }
             }
         }
-    }
-
-    fun onItemClicked(clickedItem: ItemStack): Boolean {
-        items.forEach {
-            if (it.onItemClick(clickedItem)) {
-                return true
-            }
-        }
-        return false
     }
 
     fun toggleHide() {

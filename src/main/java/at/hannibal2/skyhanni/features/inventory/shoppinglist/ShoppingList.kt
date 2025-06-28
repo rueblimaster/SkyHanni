@@ -31,10 +31,7 @@ import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
-import at.hannibal2.skyhanni.utils.PrimitiveIngredient
-import at.hannibal2.skyhanni.utils.PrimitiveItemStack.Companion.toPrimitiveStackOrNull
-import at.hannibal2.skyhanni.utils.PrimitiveRecipe
-import at.hannibal2.skyhanni.utils.RecipeType
+import at.hannibal2.skyhanni.utils.RecipeInventory.currentlyOpenRecipe
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
@@ -105,7 +102,6 @@ object ShoppingList {
 
     private var inventoryOpen = false
 
-    var currentlyOpenRecipe: PrimitiveRecipe? = null
     var displayItem: ItemStack? = null
 
     private class CommandArguments(val itemName: String, val amount: Double?, val categoryName: String?)
@@ -482,8 +478,6 @@ object ShoppingList {
         println("test done")
     }
 
-    fun InventoryFullyOpenedEvent.isRecipe() = inventoryName.contains("Recipe") && inventorySize == 54
-
     // all events come here
     @HandleEvent(onlyOnSkyblock = true, eventType = OwnInventoryItemUpdateEvent::class)
     fun onOwnInventoryItemUpdate() {
@@ -523,18 +517,6 @@ object ShoppingList {
     @HandleEvent(onlyOnSkyblock = true)
     fun onInventorOpen(event: InventoryFullyOpenedEvent) {
         if (!isEnabled()) return
-        if (!event.isRecipe()) {
-            currentlyOpenRecipe = null
-            return
-        }
-
-        val ingredients: Set<PrimitiveIngredient> = listOf(10, 11, 12, 13, 19, 20, 21, 28, 29, 30).mapNotNull {
-            event.inventoryItems[it]?.toPrimitiveStackOrNull()?.toPrimitiveIngredient()
-        }.toSet()
-
-        val result = event.inventoryItems[25]?.toPrimitiveStackOrNull()?.toPrimitiveIngredient()
-
-        currentlyOpenRecipe = PrimitiveRecipe(ingredients, setOf(result ?: return), RecipeType.CRAFTING)
 
         createDisplayItem()
 
@@ -542,10 +524,12 @@ object ShoppingList {
         update()
     }
 
+    const val SLOT_ID = 51
+
     @HandleEvent(onlyOnSkyblock = true)
     fun replaceItem(event: ReplaceItemEvent) {
         if (!isEnabled() || currentlyOpenRecipe == null) return
-        if (event.inventory !is InventoryPlayer && event.slot == 51) {
+        if (event.inventory !is InventoryPlayer && event.slot == SLOT_ID) {
             displayItem?.let { event.replace(it) }
         }
     }
@@ -553,7 +537,7 @@ object ShoppingList {
     @HandleEvent(onlyOnSkyblock = true)
     fun onSlotClick(event: GuiContainerEvent.SlotClickEvent) {
         if (!isEnabled()) return
-        if (event.slotId != 51) return
+        if (event.slotId != SLOT_ID) return
         if (event.item == null) return
 
         if (!isConfigLoaded) return
@@ -564,15 +548,7 @@ object ShoppingList {
             return
         }
 
-        if (event.item.displayName == "§bSelect Recipe") {
-            event.cancel()
-            for (category in categories + items) {
-                if (category.onItemClicked(event.item)) {
-                    closeInventory()
-                    return
-                }
-            }
-        } else if (event.item.displayName == "§bAdd Recipe to shopping list") {
+        if (event.item.displayName == "§bAdd Recipe to shopping list") {
             event.cancel()
             val output = currentlyOpenRecipe.output
 

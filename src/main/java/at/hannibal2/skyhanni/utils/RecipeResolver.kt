@@ -12,8 +12,10 @@ import net.minecraft.item.ItemStack
 
 class RecipeResolver(
     val internalName: NeuInternalName,
-    var recipe: PrimitiveRecipe? = null,
+    inputRecipe: PrimitiveRecipe? = null,
 ) {
+    var recipe = inputRecipe
+        private set
     var resolved = recipe != null
 
     val possibleRecipes: List<PrimitiveRecipe> =
@@ -28,6 +30,15 @@ class RecipeResolver(
 
     private var currentCallback: ((Boolean) -> Unit)? = null
     private var displayItem: ItemStack? = null
+
+    /* To be used externaly to set the recipe */
+    fun setRecipe(recipe: PrimitiveRecipe) {
+        this.recipe = recipe
+        resolved = true
+        currentCallback?.invoke(true)
+        currentCallback = null
+        displayItem = null
+    }
 
     fun decideRecipe(callback: (Boolean) -> Unit) {
         if (possibleRecipes.isEmpty()) {
