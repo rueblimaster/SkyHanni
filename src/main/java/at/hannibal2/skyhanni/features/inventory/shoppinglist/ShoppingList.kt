@@ -4,6 +4,7 @@ import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
+import at.hannibal2.skyhanni.config.features.inventory.ShoppingListConfig
 import at.hannibal2.skyhanni.config.storage.ProfileSpecificStorage
 import at.hannibal2.skyhanni.data.ProfileStorageData
 import at.hannibal2.skyhanni.events.ConfigLoadEvent
@@ -18,6 +19,7 @@ import at.hannibal2.skyhanni.events.SackDataUpdateEvent
 import at.hannibal2.skyhanni.events.entity.ItemAddInInventoryEvent
 import at.hannibal2.skyhanni.events.minecraft.WorldChangeEvent
 import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
+import at.hannibal2.skyhanni.events.render.gui.ScreenDrawnEvent
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.CategoryTemplate.Companion.toCategoryTemplate
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
@@ -37,13 +39,14 @@ import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
 import at.hannibal2.skyhanni.utils.renderables.Renderable
+import net.minecraft.client.gui.inventory.GuiEditSign
 import net.minecraft.entity.player.InventoryPlayer
 import net.minecraft.init.Blocks
 import net.minecraft.item.ItemStack
 
 @SkyHanniModule
 object ShoppingList {
-    val config get() = SkyHanniMod.feature.inventory.shoppingList
+    val config: ShoppingListConfig get() = SkyHanniMod.feature.inventory.shoppingList
 
     private val storage: ProfileSpecificStorage.ShoppingListStorage? get() = ProfileStorageData.profileSpecific?.shoppingList
 
@@ -593,10 +596,18 @@ object ShoppingList {
         update()
     }
 
+    @HandleEvent
+    fun onScreenDrawn(event: ScreenDrawnEvent) {
+        if (!isEnabled()) return
+        val gui = event.gui
+        if (gui !is GuiEditSign) return
+        render()
+    }
+
     @HandleEvent(onlyOnSkyblock = true, eventType = GuiRenderEvent.GuiOverlayRenderEvent::class)
     fun onRender() {
         if (!isEnabled()) return
-        config.position.renderRenderables(display, posLabel = "Shopping List")
+        render()
     }
 
     @HandleEvent(onlyOnSkyblock = true, eventType = GuiRenderEvent.ChestGuiOverlayRenderEvent::class)
@@ -606,6 +617,10 @@ object ShoppingList {
             inventoryOpen = true
             update()
         }
+        render()
+    }
+
+    fun render() {
         config.position.renderRenderables(display, posLabel = "Shopping List")
     }
 
