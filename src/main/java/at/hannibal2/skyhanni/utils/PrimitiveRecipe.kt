@@ -11,8 +11,7 @@ data class PrimitiveRecipe(
     val recipeType: RecipeType,
     val shouldUseForCraftCost: Boolean = true,
 ) {
-
-    val output by lazy { outputs.firstOrNull() }
+    val output: PrimitiveIngredient? by lazy { outputs.firstOrNull() }
 
     companion object {
         fun loadRecipeFromJson(recipeJson: JsonObject, itemJson: JsonObject) {
