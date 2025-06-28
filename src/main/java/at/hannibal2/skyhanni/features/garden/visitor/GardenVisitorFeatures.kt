@@ -197,7 +197,7 @@ object GardenVisitorFeatures {
             val category = "Visitors".getCategory()
             if (category == null) return@buildList
 
-            for (item in category.items) {
+            for (item in category.items.toList()) {
                 if (!shoppingList.containsKey(item.internalName)) {
                     category.remove(item)
                 }
