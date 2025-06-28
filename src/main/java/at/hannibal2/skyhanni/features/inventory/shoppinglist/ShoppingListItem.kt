@@ -4,8 +4,6 @@ import at.hannibal2.skyhanni.api.GetFromSackApi
 import at.hannibal2.skyhanni.api.ItemBuyApi.buy
 import at.hannibal2.skyhanni.features.inventory.bazaar.BazaarApi.isBazaarItem
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.ItemsOverallEntry
-import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.currentlyOpenRecipe
-import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingList.resetDisplayItem
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ClipboardUtils
 import at.hannibal2.skyhanni.utils.HypixelCommands.craft
@@ -13,17 +11,15 @@ import at.hannibal2.skyhanni.utils.HypixelCommands.viewRecipe
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventory
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventoryAndSacks
 import at.hannibal2.skyhanni.utils.ItemPriceUtils.isAuctionHouseItem
-import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.ItemUtils.repoItemName
-import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.KeyboardManager.LEFT_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.MIDDLE_MOUSE
 import at.hannibal2.skyhanni.utils.KeyboardManager.RIGHT_MOUSE
 import at.hannibal2.skyhanni.utils.NeuInternalName
-import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.NeuItems.isVanillaItem
 import at.hannibal2.skyhanni.utils.PrimitiveIngredient
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
+import at.hannibal2.skyhanni.utils.RecipeResolver
 import at.hannibal2.skyhanni.utils.SignUtils
 import at.hannibal2.skyhanni.utils.SkyBlockUtils.noTradeMode
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
@@ -31,21 +27,20 @@ import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.Renderable.Companion.ClickTypeWithModifiers
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.inventory.GuiEditSign
-import net.minecraft.init.Blocks
 import net.minecraft.item.ItemStack
 import org.lwjgl.input.Keyboard
 import org.lwjgl.input.Keyboard.KEY_DOWN
 import org.lwjgl.input.Keyboard.KEY_UP
 
-@Suppress("TooManyFunctions")
 class ShoppingListItem(
     val internalName: NeuInternalName,
     var amount: Double = 1.0,
     val topLevelCategory: ShoppingListCategory,
     val topLevelItem: ShoppingListItem? = null,
-    var recipe: PrimitiveRecipe? = null,
+    recipe: PrimitiveRecipe? = null,
     var hidden: Boolean = false,
 ) {
+    var recipe = RecipeResolver(internalName, recipe)
 
     // TODO soon (probably): add a way to offset the amount of an item counted in the inventory etc.
 
@@ -63,10 +58,6 @@ class ShoppingListItem(
         }
 
     val subItems = mutableListOf<ShoppingListItem>()
-
-    init {
-        loadPossibleRecipes()
-    }
 
     /*
     TODO later: make this all configurable
@@ -112,13 +103,11 @@ class ShoppingListItem(
         }
     }
 
-    fun breakDownIntoSubitems() {
-
-        if (recipe == null) {
-            val success = decideRecipe()
-            if (!success) {
-                return
-            }
+    private fun actuallyBreakDownIntoSubitems(success: Boolean) {
+        if (!success) {
+            // TODO: give a more differentiated error message
+            ChatUtils.userError("Failed to resolve recipe for ${internalName.repoItemName}")
+            return
         }
 
         subItems.clear()
@@ -128,71 +117,19 @@ class ShoppingListItem(
         ShoppingList.update()
     }
 
-    fun PrimitiveRecipe.isRecursing(): Boolean {
-        return ingredients.any { it.internalName == topLevelItem?.internalName }
-    }
-
-    fun PrimitiveRecipe.isRecursingCompacting(): Boolean {
-        val firstIngredient = ingredients.firstOrNull() ?: return false
-        if (ingredients.any { it.internalName != firstIngredient.internalName }) {
-            return false
-        }
-
-        val recipes = NeuItems.getRecipes(firstIngredient.internalName).filter { it.isCraftingRecipe() }
-        return recipes.any { recipe -> recipe.ingredients.any { it.internalName == internalName } }
-    }
-
-    fun loadPossibleRecipes() {
-        if (recipe != null) return
-
-        possibleRecipes = NeuItems.getRecipes(internalName).filter { it.isCraftingRecipe() }.filter { recipe ->
-            !recipe.isRecursing() && !recipe.isRecursingCompacting()
-        }
-    }
-
-    fun decideRecipe(): Boolean {
-        if (possibleRecipes.isEmpty()) {
-            ChatUtils.chat("No recipes found for ${internalName.itemNameWithoutColor}")
-            return false
-        }
-
-        if (possibleRecipes.size > 1) {
-            ChatUtils.chat("Multiple recipes found for ${internalName.itemNameWithoutColor}\n§7Select one")
-
-            val lore = buildList {
-                add("§8(From SkyHanni)")
-
-                // TODO (maybe): add stuff
-            }
-
-            displayItem = ItemStack(Blocks.diamond_block).setLore(lore).setStackDisplayName("§bSelect Recipe")
-            ShoppingList.displayItem = displayItem
-
-            viewRecipe(internalName)
+    fun breakDownIntoSubitems() {
+        if (!recipe.resolved) {
+            recipe.decideRecipe(::actuallyBreakDownIntoSubitems)
+            return
         } else {
-            recipe = possibleRecipes[0]
+            actuallyBreakDownIntoSubitems(true)
         }
-        return true
-    }
-
-    fun onItemClick(clickedItem: ItemStack): Boolean {
-        if (displayItem != null && clickedItem == displayItem) {
-            recipe = currentlyOpenRecipe
-            displayItem = null
-            resetDisplayItem()
-            breakDownIntoSubitems()
-            return true
-        }
-        subItems.forEach {
-            if (it.onItemClick(clickedItem)) {
-                return true
-            }
-        }
-        return false
     }
 
     fun addRecipe() {
-        val usedRecipe: PrimitiveRecipe = recipe?.copy() ?: return
+        if (!recipe.resolved) return
+
+        val usedRecipe: PrimitiveRecipe = recipe.recipe ?: return
 
         for (ingredient: PrimitiveIngredient in usedRecipe.ingredients) {
             val item = subItems.firstOrNull { it.internalName == ingredient.internalName } as ShoppingListItem?
