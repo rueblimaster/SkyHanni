@@ -16,5 +16,5 @@ class ShoppingListConfig {
 
     @Expose
     @ConfigLink(owner = ShoppingListConfig::class, field = "enabled")
-    var position: Position = Position(10, 10, false, false)
+    val position: Position = Position(10, 10, false, false)
 }
