@@ -16,7 +16,7 @@ class ShoppingListConfig {
 
     @Expose
     @ConfigLink(owner = ShoppingListConfig::class, field = "enabled")
-    var position: Position = Position(10, 10, false, false)
+    val position: Position = Position(10, 10, false, false)
 
     @Expose
     @ConfigOption(name = "Show overall", desc = "For each item, show how many items are needed over the whole shopping list")
