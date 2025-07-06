@@ -33,6 +33,7 @@ import org.lwjgl.input.Keyboard.KEY_DOWN
 import org.lwjgl.input.Keyboard.KEY_UP
 import kotlin.collections.mutableListOf
 
+@Suppress("TooManyFunctions")
 class ShoppingListItem(
     val internalName: NeuInternalName,
     var amount: Double = 1.0,

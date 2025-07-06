@@ -10,7 +10,6 @@ import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.Renderable.Companion.ClickTypeWithModifiers
-import net.minecraft.item.ItemStack
 import org.lwjgl.input.Keyboard
 
 class ShoppingListCategory(
