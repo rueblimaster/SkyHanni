@@ -31,6 +31,7 @@ import net.minecraft.item.ItemStack
 import org.lwjgl.input.Keyboard
 import org.lwjgl.input.Keyboard.KEY_DOWN
 import org.lwjgl.input.Keyboard.KEY_UP
+import kotlin.collections.mutableListOf
 
 class ShoppingListItem(
     val internalName: NeuInternalName,
@@ -39,8 +40,9 @@ class ShoppingListItem(
     val topLevelItem: ShoppingListItem? = null,
     recipe: PrimitiveRecipe? = null,
     var hidden: Boolean = false,
+    recipeResolver: RecipeResolver? = null,
 ) {
-    var recipe = RecipeResolver(internalName, recipe)
+    var recipe = recipeResolver ?: RecipeResolver(internalName, recipe)
 
     // TODO soon (probably): add a way to offset the amount of an item counted in the inventory etc.
 
@@ -50,14 +52,14 @@ class ShoppingListItem(
     val remainingAmount: Double
         get() = if (getCurrentAmount() > totalAmount) 0.0 else totalAmount - getCurrentAmount()
 
-    var possibleRecipes: List<PrimitiveRecipe> = emptyList()
     var displayItem: ItemStack? = null
     val downBreakable: Boolean
         get() {
-            return subItems.isEmpty() && possibleRecipes.isNotEmpty()
+            return displayedSubItems.isEmpty() && recipe.possibleRecipes.isNotEmpty()
         }
 
-    val subItems = mutableListOf<ShoppingListItem>()
+    val backgroundSubItems: MutableList<ShoppingListItem> = mutableListOf<ShoppingListItem>()
+    val displayedSubItems: MutableList<ShoppingListItem> = mutableListOf<ShoppingListItem>()
 
     /*
     TODO later: make this all configurable
@@ -96,8 +98,8 @@ class ShoppingListItem(
      */
 
     override fun toString(): String {
-        return "${internalName.repoItemName} x$amount" + if (subItems.isNotEmpty()) {
-            " (${subItems.joinToString(", ")})"
+        return "${internalName.repoItemName} x$amount" + if (displayedSubItems.isNotEmpty()) {
+            " (${displayedSubItems.joinToString(", ")})"
         } else {
             ""
         }
@@ -110,9 +112,9 @@ class ShoppingListItem(
             return
         }
 
-        subItems.clear()
+        displayedSubItems.clear()
 
-        addRecipe()
+        displayRecipe()
 
         ShoppingList.update()
     }
@@ -126,22 +128,46 @@ class ShoppingListItem(
         }
     }
 
-    fun addRecipe() {
+    fun loadRecipeInBackground() {
+        if (!recipe.resolved) return
+        if (displayedSubItems.isNotEmpty()) return
+
+        val usedRecipe: PrimitiveRecipe = recipe.recipe ?: return
+
+        val ingredients: MutableMap<NeuInternalName, Double> = mutableMapOf()
+
+        for (ingredient: PrimitiveIngredient in usedRecipe.ingredients) {
+            val ingredientCount = ingredient.count / (usedRecipe.output?.count ?: 1.0)
+            if (ingredients.containsKey(ingredient.internalName)) {
+                ingredients[ingredient.internalName] = ingredients[ingredient.internalName]!! + ingredientCount
+            } else {
+                ingredients[ingredient.internalName] = ingredientCount
+            }
+        }
+
+        for ((ingredientInternalName, ingredientAmount) in ingredients) {
+            backgroundSubItems.add(ShoppingListItem(ingredientInternalName, ingredientAmount, topLevelCategory, this))
+        }
+    }
+
+    fun displayRecipe() {
         if (!recipe.resolved) return
 
         val usedRecipe: PrimitiveRecipe = recipe.recipe ?: return
 
         for (ingredient: PrimitiveIngredient in usedRecipe.ingredients) {
-            val item = subItems.firstOrNull { it.internalName == ingredient.internalName } as ShoppingListItem?
+            val item = displayedSubItems.firstOrNull { it.internalName == ingredient.internalName } as ShoppingListItem?
 
             val ingredientAmount = ingredient.count / (usedRecipe.output?.count ?: 1.0)
 
             if (item == null) {
-                subItems.add(ShoppingListItem(ingredient.internalName, ingredientAmount, topLevelCategory, this))
+                displayedSubItems.add(ShoppingListItem(ingredient.internalName, ingredientAmount, topLevelCategory, this))
             } else {
                 item.changeAmountBy(ingredientAmount)
             }
         }
+
+        backgroundSubItems.clear()
     }
 
     fun changeAmountBy(amount: Double) {
@@ -165,11 +191,14 @@ class ShoppingListItem(
         return totalAmount <= getCurrentAmount()
     }
 
-    fun hasAllSubItems(): Boolean {
-        return if (subItems.isEmpty()) {
-            hasItems()
+    fun hasAllItems(): Boolean {
+        return if (displayedSubItems.isEmpty()) {
+            if (backgroundSubItems.isEmpty()) {
+                loadRecipeInBackground()
+            }
+            backgroundSubItems.all { it.hasAllItems() }
         } else {
-            subItems.all { it.hasAllSubItems() }
+            displayedSubItems.all { it.hasAllItems() }
         }
     }
 
@@ -177,7 +206,7 @@ class ShoppingListItem(
         return buildMap {
             this[internalName] = ItemsOverallEntry(totalAmount, 1)
 
-            subItems.forEach { item ->
+            displayedSubItems.forEach { item ->
                 item.getItemsOverall().forEach { (name, itemEntry: ItemsOverallEntry) ->
                     if (this.containsKey(name)) {
                         this[name]?.let { this[name] = it.plus(itemEntry) }
@@ -211,7 +240,7 @@ class ShoppingListItem(
 
         if (internalName.isVanillaItem()) {
             ChatUtils.chat("Vanilla item, can't open recipe, opening the crafting table and getting all required items instead")
-            subItems.forEach {
+            displayedSubItems.forEach {
                 it.fetchItemFromAvailableStorage()
                 craft()
             }
@@ -235,8 +264,8 @@ class ShoppingListItem(
     }
 
     fun moveItemToTop(item: ShoppingListItem) {
-        subItems.remove(item)
-        subItems.add(0, item)
+        displayedSubItems.remove(item)
+        displayedSubItems.add(0, item)
         ShoppingList.update()
     }
 
@@ -251,7 +280,7 @@ class ShoppingListItem(
     fun toggleHide(hideTree: Boolean = false, forceSetTo: Boolean? = null) {
         hidden = forceSetTo ?: !hidden
         if (hideTree) {
-            subItems.forEach {
+            displayedSubItems.forEach {
                 it.toggleHide(true, forceSetTo ?: hidden)
             }
         }
@@ -326,7 +355,7 @@ class ShoppingListItem(
 
         if (hasItems()) {
             text += " §a✓"
-        } else if (hasAllSubItems()) {
+        } else if (hasAllItems()) {
             text += " §e✓"
         }
 
@@ -354,7 +383,7 @@ class ShoppingListItem(
             tooltip.add("§7left click to fetch from storage")
             clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
             tooltip.add("§7shift + left click to break down recipe")
-        } else if (hasAllSubItems()) {
+        } else if (hasAllItems()) {
             clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { openCraftingRecipe() }
             tooltip.add("§7left click to open crafting recipe")
             clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
@@ -487,8 +516,8 @@ class ShoppingListItem(
             )
         }
 
-        for (i in 0 until subItems.size) {
-            val isLastItem = i == subItems.size - 1
+        for (i in 0 until displayedSubItems.size) {
+            val isLastItem = i == displayedSubItems.size - 1
             var newContinuedIndent = continuedIndent ?: indent
 
             var newIndent = continuedIndent ?: indent
@@ -500,7 +529,7 @@ class ShoppingListItem(
                 newContinuedIndent += "  "
             }
 
-            subItems[i].getRenderables(newIndent, newContinuedIndent).forEach {
+            displayedSubItems[i].getRenderables(newIndent, newContinuedIndent).forEach {
                 renderables.add(it)
             }
         }

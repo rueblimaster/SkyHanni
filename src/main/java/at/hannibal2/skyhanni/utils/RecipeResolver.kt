@@ -6,14 +6,17 @@ import at.hannibal2.skyhanni.events.InventoryCloseEvent
 import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
+import com.google.gson.annotations.Expose
 import net.minecraft.entity.player.InventoryPlayer
 import net.minecraft.init.Blocks
 import net.minecraft.item.ItemStack
 
 class RecipeResolver(
+    @Expose
     val internalName: NeuInternalName,
     inputRecipe: PrimitiveRecipe? = null,
 ) {
+    @Expose
     var recipe = inputRecipe
         private set
     var resolved = recipe != null

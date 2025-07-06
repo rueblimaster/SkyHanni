@@ -1,14 +1,14 @@
 package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
-import at.hannibal2.skyhanni.features.inventory.shoppinglist.RecipeTemplate.Companion.toRecipeTemplate
 import at.hannibal2.skyhanni.utils.NeuInternalName
+import at.hannibal2.skyhanni.utils.RecipeResolver
 import com.google.gson.annotations.Expose
 
 class ItemTemplate(
     @Expose val internalName: String,
     @Expose val amount: Double,
     @Expose val hidden: Boolean,
-    @Expose val recipe: RecipeTemplate?,
+    @Expose val recipeResolver: RecipeResolver?,
     @Expose val subItems: List<ItemTemplate>,
 ) {
 
@@ -18,19 +18,20 @@ class ItemTemplate(
             this.amount,
             topLevelCategory,
             topLevelItem,
-            this.recipe?.toPrimitiveRecipe(),
-            this.hidden,
+            hidden = this.hidden,
+            recipeResolver = this.recipeResolver,
         )
         this.subItems.forEach {
-            result.subItems.add(it.toShoppingListItem(topLevelCategory, result))
+            result.displayedSubItems.add(it.toShoppingListItem(topLevelCategory, result))
         }
 
+        val recipe = result.recipe.recipe
         val ingredients: MutableMap<NeuInternalName, Double> = mutableMapOf()
-        result.recipe?.ingredients?.forEach {
-            ingredients[it.internalName] = it.count / (result.recipe?.output?.count ?: 1.0)
+        recipe?.ingredients?.forEach {
+            ingredients[it.internalName] = it.count / (recipe.output?.count ?: 1.0)
         }
 
-        result.subItems.forEach {
+        result.displayedSubItems.forEach {
             if (it.internalName in ingredients && ingredients[it.internalName] != null) {
                 it.amount = ingredients[it.internalName] ?: 1.0
             }
@@ -40,7 +41,7 @@ class ItemTemplate(
 
     companion object {
         fun ShoppingListItem.toItemTemplate(): ItemTemplate {
-            return ItemTemplate(internalName.asString(), amount, hidden, recipe?.toRecipeTemplate(), subItems.map { it.toItemTemplate() })
+            return ItemTemplate(internalName.asString(), amount, hidden, recipe, displayedSubItems.map { it.toItemTemplate() })
         }
     }
 }

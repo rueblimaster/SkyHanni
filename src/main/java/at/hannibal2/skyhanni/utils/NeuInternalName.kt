@@ -2,9 +2,10 @@ package at.hannibal2.skyhanni.utils
 
 import at.hannibal2.skyhanni.test.command.ErrorManager
 import at.hannibal2.skyhanni.utils.NeuItems.getItemStackOrNull
+import com.google.gson.annotations.Expose
 import net.minecraft.init.Items
 
-class NeuInternalName private constructor(private val internalName: String) {
+class NeuInternalName private constructor(@Expose private val internalName: String) {
 
     companion object {
 
