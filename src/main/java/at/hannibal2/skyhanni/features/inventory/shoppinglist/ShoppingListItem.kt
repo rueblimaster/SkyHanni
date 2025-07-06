@@ -192,6 +192,17 @@ class ShoppingListItem(
         return totalAmount <= getCurrentAmount()
     }
 
+    fun isCraftable(): Boolean {
+        return if (displayedSubItems.isEmpty()) {
+            if (backgroundSubItems.isEmpty()) {
+                loadRecipeInBackground()
+            }
+            backgroundSubItems.all { it.hasItems() }
+        } else {
+            displayedSubItems.all { it.hasItems() }
+        }
+    }
+
     fun hasAllItems(): Boolean {
         return if (displayedSubItems.isEmpty()) {
             if (backgroundSubItems.isEmpty()) {
@@ -356,8 +367,10 @@ class ShoppingListItem(
 
         if (hasItems()) {
             text += " §a✓"
-        } else if (hasAllItems()) {
+        } else if (isCraftable()) {
             text += " §e✓"
+        } else if (hasAllItems()) {
+            text += " §7✓"
         }
 
         return text
@@ -384,7 +397,7 @@ class ShoppingListItem(
             tooltip.add("§7left click to fetch from storage")
             clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
             tooltip.add("§7shift + left click to break down recipe")
-        } else if (hasAllItems()) {
+        } else if (isCraftable()) {
             clickLayout[ClickTypeWithModifiers(LEFT_MOUSE)] = { openCraftingRecipe() }
             tooltip.add("§7left click to open crafting recipe")
             clickLayout[ClickTypeWithModifiers(LEFT_MOUSE, setOf(Keyboard.KEY_LSHIFT))] = { breakDownIntoSubitems() }
