@@ -33,7 +33,6 @@ import at.hannibal2.skyhanni.mixins.hooks.RenderLivingEntityHelper
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.test.command.ErrorManager
 import at.hannibal2.skyhanni.utils.ChatUtils
-import at.hannibal2.skyhanni.utils.ConfigUtils
 import at.hannibal2.skyhanni.utils.EntityUtils
 import at.hannibal2.skyhanni.utils.HypixelCommands
 import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventory
@@ -49,12 +48,12 @@ import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.NeuItems.getItemStack
+import at.hannibal2.skyhanni.utils.NeuItems.getItemStackOrNull
 import at.hannibal2.skyhanni.utils.NumberUtil.addSeparators
 import at.hannibal2.skyhanni.utils.NumberUtil.formatInt
 import at.hannibal2.skyhanni.utils.NumberUtil.shortFormat
 import at.hannibal2.skyhanni.utils.PrimitiveIngredient.Companion.toPrimitiveItemStacks
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
-import at.hannibal2.skyhanni.utils.RenderUtils.drawString
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.SignUtils
 import at.hannibal2.skyhanni.utils.SignUtils.isBazaarSign
@@ -66,7 +65,10 @@ import at.hannibal2.skyhanni.utils.collection.CollectionUtils.addOrPut
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addItemStack
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
 import at.hannibal2.skyhanni.utils.getLorenzVec
+import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawString
 import at.hannibal2.skyhanni.utils.renderables.Renderable
+import at.hannibal2.skyhanni.utils.renderables.container.HorizontalContainerRenderable.Companion.horizontal
+import at.hannibal2.skyhanni.utils.renderables.primitives.text
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 import com.google.gson.JsonArray
 import com.google.gson.JsonPrimitive
@@ -322,7 +324,7 @@ object GardenVisitorFeatures {
             }
         }
 
-        add(Renderable.horizontalContainer(list))
+        add(Renderable.horizontal(list))
     }
 
     @HandleEvent
@@ -432,7 +434,7 @@ object GardenVisitorFeatures {
                 gardenExperiencePattern.matchMatcher(formattedLine) {
                     val gardenExp = group("amount").formatInt()
                     val pricePerCopper = (totalPrice / gardenExp).toInt().shortFormat()
-                    finalList.set(index, "$formattedLine §7(§6$pricePerCopper §7per)")
+                    finalList.set(index, "$formattedLine §7(paying §6$pricePerCopper §7per)")
                 }
             }
 
@@ -446,9 +448,9 @@ object GardenVisitorFeatures {
                 visitor.totalReward = copper * estimatedCopperValue
                 val timePerCopper = (farmingTimeRequired / copper).format()
                 var copperLine = formattedLine
-                if (config.inventory.copperPrice) copperLine += " §7(§6$pricePerCopper §7per)"
+                if (config.inventory.copperPrice) copperLine += " §7(paying §6$pricePerCopper §7per)"
                 if (config.inventory.copperTime) {
-                    copperLine += if (farmingTimeRequired != 0.seconds) " §7(§b$timePerCopper §7per)" else " §7(§cno speed data!§7)"
+                    copperLine += if (farmingTimeRequired != 0.seconds) " §7(paying §b$timePerCopper §7per)" else " §7(§cno speed data!§7)"
                 }
                 finalList.set(index, copperLine)
             }
@@ -498,6 +500,9 @@ object GardenVisitorFeatures {
         }
     }
 
+    val LEGENDARY_JERRY = "JERRY;4".toInternalName()
+    val SPACE_HELM = "DCTR_SPACE_HELM".toInternalName()
+
     @HandleEvent
     fun onVisitorArrival(event: VisitorArrivalEvent) {
         val visitor = event.visitor
@@ -519,11 +524,11 @@ object GardenVisitorFeatures {
 
         if (name.removeColor().contains("Jerry")) {
             logger.log("Jerry!")
-            ItemBlink.setBlink(NeuItems.getItemStackOrNull("JERRY;4"), 5_000)
+            ItemBlink.setBlink(LEGENDARY_JERRY.getItemStackOrNull(), 5_000)
         }
         if (name.removeColor().contains("Spaceman")) {
             logger.log("Spaceman!")
-            ItemBlink.setBlink(NeuItems.getItemStackOrNull("DCTR_SPACE_HELM"), 5_000)
+            ItemBlink.setBlink(SPACE_HELM.getItemStackOrNull(), 5_000)
         }
     }
 
@@ -624,6 +629,7 @@ object GardenVisitorFeatures {
         return ready
     }
 
+    // todo use RenderDisplayHelper
     private fun renderDisplay() {
         if (showGui() && shouldShowShoppingList()) {
             config.shoppingList.position.renderRenderables(display, posLabel = "Visitor Shopping List")
@@ -735,9 +741,7 @@ object GardenVisitorFeatures {
         event.move(3, "garden.visitorColoredName", "garden.visitors.coloredName")
         event.move(3, "garden.visitorHypixelArrivedMessage", "garden.visitors.hypixelArrivedMessage")
         event.move(3, "garden.visitorHideChat", "garden.visitors.hideChat")
-        event.transform(11, "garden.visitors.rewardWarning.drops") { element ->
-            ConfigUtils.migrateIntArrayListToEnumArrayList(element, VisitorReward::class.java)
-        }
+
         event.transform(12, "garden.visitors.rewardWarning.drops") { element ->
             val drops = JsonArray()
             for (jsonElement in element.asJsonArray) {
@@ -759,10 +763,6 @@ object GardenVisitorFeatures {
             }
             drops.add(JsonPrimitive(VisitorReward.COPPER_DYE.name))
             drops
-        }
-
-        event.transform(15, "garden.visitors.highlightStatus") { element ->
-            ConfigUtils.migrateIntToEnum(element, HighlightMode::class.java)
         }
 
         event.move(18, "garden.visitors.needs", "garden.visitors.shoppingList")

@@ -20,6 +20,7 @@ import at.hannibal2.skyhanni.features.event.diana.MythologicalCreatureTracker
 import at.hannibal2.skyhanni.features.event.hoppity.HoppityCollectionStats.LocationRabbit
 import at.hannibal2.skyhanni.features.event.hoppity.HoppityEggType
 import at.hannibal2.skyhanni.features.event.jerry.frozentreasure.FrozenTreasureTracker
+import at.hannibal2.skyhanni.features.event.yearofthepig.ShinyOrbTracker
 import at.hannibal2.skyhanni.features.fame.UpgradeReminder.CommunityShopUpgrade
 import at.hannibal2.skyhanni.features.fishing.tracker.FishingProfitTracker
 import at.hannibal2.skyhanni.features.fishing.tracker.SeaCreatureTracker
@@ -47,6 +48,7 @@ import at.hannibal2.skyhanni.features.mining.MineshaftPityDisplay.PityData
 import at.hannibal2.skyhanni.features.mining.crystalhollows.CrystalNucleusTracker
 import at.hannibal2.skyhanni.features.mining.fossilexcavator.ExcavatorProfitTracker
 import at.hannibal2.skyhanni.features.mining.glacitemineshaft.CorpseTracker
+import at.hannibal2.skyhanni.features.mining.glacitemineshaft.MineshaftDetection
 import at.hannibal2.skyhanni.features.mining.powdertracker.PowderTracker
 import at.hannibal2.skyhanni.features.misc.DraconicSacrificeTracker
 import at.hannibal2.skyhanni.features.misc.EnchantedClockHelper
@@ -193,6 +195,10 @@ class ProfileSpecificStorage(
     @Expose
     var giftProfitTracker: GiftProfitTracker.Data = GiftProfitTracker.Data()
 
+    // -- year of the [___]
+    @Expose
+    var shinyOrbTracker: ShinyOrbTracker.ShinyOrbData = ShinyOrbTracker.ShinyOrbData()
+
     // -- hoppity
     @Expose
     var chocolateFactory: CFStorage = CFStorage()
@@ -312,7 +318,7 @@ class ProfileSpecificStorage(
             @Expose var singleSlotCooldownMark: SimpleTimeMark? = null,
             @Expose var allSlotsCooldownMark: SimpleTimeMark? = null,
             @Expose var purchasedHitmanSlots: Int = 0,
-        ) : ResettableStorageSet()
+        ) : Resettable()
 
         @Expose
         var hitmanStats: HitmanStatsStorage = HitmanStatsStorage()
@@ -475,7 +481,7 @@ class ProfileSpecificStorage(
         var visitorDrops: VisitorDrops = VisitorDrops()
 
         // Todo: Move to a SkyhanniTracker (preferably bucketed by rarity)
-        class VisitorDrops {
+        class VisitorDrops : Resettable() {
             @Expose
             var acceptedVisitors: Int = 0
 
@@ -577,9 +583,8 @@ class ProfileSpecificStorage(
         var farmingWeight: FarmingWeightConfig = FarmingWeightConfig()
 
         class FarmingWeightConfig {
-            // TODO rename to lastLeaderboard
             @Expose
-            var lastFarmingWeightLeaderboard: Int = -1
+            var lastLeaderboard: Int = -1
         }
 
         @Expose
@@ -739,10 +744,19 @@ class ProfileSpecificStorage(
 
             @Expose
             var corpseProfitTracker: CorpseTracker.BucketData = CorpseTracker.BucketData()
+
+            @Expose
+            var mineshaftsEnteredSince: MutableMap<MineshaftDetection.MineshaftTypes, Int> = mutableMapOf()
+
+            @Expose
+            var lastMineshaftTime: MutableMap<MineshaftDetection.MineshaftTypes, SimpleTimeMark> = mutableMapOf()
         }
 
         @Expose
         var crystalNucleusTracker: CrystalNucleusTracker.Data = CrystalNucleusTracker.Data()
+
+        @Expose
+        var flowstatePersonalBest = 0
     }
 
     @Expose
@@ -924,6 +938,7 @@ class ProfileSpecificStorage(
 
     data class AttributeShardData(
         @Expose var amountSyphoned: Int = 0,
+        @Expose var amountInBox: Int = 0,
     )
 
     @Expose
