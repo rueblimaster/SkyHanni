@@ -55,6 +55,10 @@ class InventoryConfig {
     val chocolateFactory: CFConfig = CFConfig()
 
     @Expose
+    @Category(name = "Shopping List", desc = "General Shopping List")
+    val shoppingList: ShoppingListConfig = ShoppingListConfig()
+
+    @Expose
     @ConfigOption(name = "Improved SB Menus", desc = "")
     @Accordion
     val improvedSBMenus: ImprovedSBMenusConfig = ImprovedSBMenusConfig()
