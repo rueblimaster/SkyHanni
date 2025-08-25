@@ -31,7 +31,6 @@ import net.minecraft.item.ItemStack
 import org.lwjgl.input.Keyboard
 import org.lwjgl.input.Keyboard.KEY_DOWN
 import org.lwjgl.input.Keyboard.KEY_UP
-import kotlin.collections.mutableListOf
 
 @Suppress("TooManyFunctions")
 class ShoppingListItem(
@@ -140,7 +139,7 @@ class ShoppingListItem(
         for (ingredient: PrimitiveIngredient in usedRecipe.ingredients) {
             val ingredientCount = ingredient.count / (usedRecipe.output?.count ?: 1.0)
             if (ingredients.containsKey(ingredient.internalName)) {
-                ingredients[ingredient.internalName] = ingredients[ingredient.internalName]!! + ingredientCount
+                ingredients[ingredient.internalName] = ingredients[ingredient.internalName]?.plus(ingredientCount) ?: ingredientCount
             } else {
                 ingredients[ingredient.internalName] = ingredientCount
             }
@@ -157,7 +156,7 @@ class ShoppingListItem(
         val usedRecipe: PrimitiveRecipe = recipe.recipe ?: return
 
         for (ingredient: PrimitiveIngredient in usedRecipe.ingredients) {
-            val item = displayedSubItems.firstOrNull { it.internalName == ingredient.internalName } as ShoppingListItem?
+            val item = displayedSubItems.firstOrNull { it.internalName == ingredient.internalName }
 
             val ingredientAmount = ingredient.count / (usedRecipe.output?.count ?: 1.0)
 
