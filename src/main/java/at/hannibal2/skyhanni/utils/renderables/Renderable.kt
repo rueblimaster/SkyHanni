@@ -187,7 +187,7 @@ interface Renderable {
             condition: () -> Boolean = { true },
             tips: List<Any>? = null,
             onHover: () -> Unit = {},
-        ) = clickableWithModifiers(string(text), onAnyClick, bypassChecks, condition, tips, onHover)
+        ) = clickableWithModifiers(text(text), onAnyClick, bypassChecks, condition, tips, onHover)
 
         fun clickableWithModifiers(
             render: Renderable,
