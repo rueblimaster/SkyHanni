@@ -4,11 +4,16 @@ import at.hannibal2.skyhanni.api.enoughupdates.EnoughUpdatesManager
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.RecipeType.CRAFTING
 import com.google.gson.JsonObject
+import com.google.gson.annotations.Expose
 
 data class PrimitiveRecipe(
+    @Expose
     val ingredients: Set<PrimitiveIngredient>,
+    @Expose
     val outputs: Set<PrimitiveIngredient>,
+    @Expose
     val recipeType: RecipeType,
+    @Expose
     val shouldUseForCraftCost: Boolean = true,
 ) {
 

@@ -3,8 +3,9 @@ package at.hannibal2.skyhanni.utils
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.SKYBLOCK_COIN
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.NumberUtil.formatDouble
+import com.google.gson.annotations.Expose
 
-class PrimitiveIngredient(val internalName: NeuInternalName, val count: Double = 1.0) {
+class PrimitiveIngredient(@Expose val internalName: NeuInternalName, @Expose val count: Double = 1.0) {
 
     constructor(internalName: NeuInternalName, count: Int) : this(internalName, count.toDouble())
 
