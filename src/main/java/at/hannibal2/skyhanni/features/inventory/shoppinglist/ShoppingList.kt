@@ -13,13 +13,14 @@ import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.RenderDisplayHelper
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
+import at.hannibal2.skyhanni.utils.collection.CollectionUtils.add
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 
 @SkyHanniModule
 object ShoppingList {
     val config = SkyHanniMod.feature.inventory.shoppingList
 
-    val items = mutableListOf<ShoppingListItem>()
+    val items = mutableMapOf<NeuInternalName, ShoppingListItem>()
 
     private var display = listOf<Renderable>()
 
@@ -27,12 +28,12 @@ object ShoppingList {
         buildDisplay()
     }
 
-    private fun getItemOrNull(internalName: NeuInternalName) = items.firstOrNull { it.internalName == internalName }
+    private fun getItemOrNull(internalName: NeuInternalName) = items.getOrDefault(internalName, null)
 
     fun add(internalName: NeuInternalName, amount: Int) {
         val item = getItemOrNull(internalName)
         if (item == null) {
-            items.add(ShoppingListItem(internalName, amount))
+            items.add(internalName to ShoppingListItem(internalName, amount))
             ChatUtils.chat("Added item '${internalName.itemNameWithoutColor}' with amount $amount.")
         } else {
             item.amount += amount
@@ -50,13 +51,13 @@ object ShoppingList {
         if (amount != null) {
             item.amount -= amount
             if (item.amount <= 0) {
-                items.remove(item)
+                items.remove(internalName)
                 ChatUtils.chat("Removed item '${internalName.itemNameWithoutColor}' from Shopping List.")
             } else {
                 ChatUtils.chat("Reduced amount of item '${internalName.itemNameWithoutColor}' by $amount.")
             }
         } else {
-            items.remove(item)
+            items.remove(internalName)
             ChatUtils.chat("Removed item '${internalName.itemNameWithoutColor}' from Shopping List.")
         }
         update()
@@ -98,7 +99,7 @@ object ShoppingList {
 
     private fun buildDisplay() {
         display = buildList {
-            items.forEach { addAll(it.buildDisplay()) }
+            items.forEach { (_, item) -> addAll(item.buildDisplay()) }
         }
     }
 
