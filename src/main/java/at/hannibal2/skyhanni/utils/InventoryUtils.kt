@@ -18,8 +18,11 @@ import at.hannibal2.skyhanni.utils.compat.slotUnderCursor
 import at.hannibal2.skyhanni.utils.system.PlatformUtils
 import io.github.moulberry.notenoughupdates.NotEnoughUpdates
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiChat
+import net.minecraft.client.gui.GuiIngameMenu
 import net.minecraft.client.gui.inventory.GuiChest
 import net.minecraft.client.gui.inventory.GuiContainer
+import net.minecraft.client.gui.inventory.GuiEditSign
 import net.minecraft.client.gui.inventory.GuiInventory
 import net.minecraft.client.player.inventory.ContainerLocalMenu
 import net.minecraft.client.resources.I18n
@@ -68,6 +71,12 @@ object InventoryUtils {
     fun inOwnInventory() = Minecraft.getMinecraft().currentScreen is GuiInventory
 
     fun inAnyInventory() = inInventory() || inOwnInventory()
+
+    fun inSign() = Minecraft.getMinecraft().currentScreen is GuiEditSign
+
+    fun inChat() = Minecraft.getMinecraft().currentScreen is GuiChat
+
+    fun inIngameMenu() = Minecraft.getMinecraft().currentScreen is GuiIngameMenu
 
     fun inContainer() = Minecraft.getMinecraft().currentScreen is GuiContainer
 
