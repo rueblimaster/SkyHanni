@@ -80,6 +80,8 @@ object InventoryUtils {
 
     fun inContainer() = Minecraft.getMinecraft().currentScreen is GuiContainer
 
+    fun inAnyScreen() = Minecraft.getMinecraft().currentScreen != null
+
     fun getItemsInOwnInventory(): List<ItemStack> =
         getItemsInOwnInventoryWithNull()?.filterNotNullOrEmpty().orEmpty()
 
