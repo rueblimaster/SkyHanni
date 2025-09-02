@@ -11,11 +11,14 @@ import net.minecraft.client.gui.inventory.GuiInventory
 /**
  * RenderDisplayHelper determines when to render displays based on
  * conditions and context, such as whether the player is in their inventory or
- * outside of an inventory GUI, or in a inventory defined by InventoryDetector.
+ * outside of an inventory GUI, or in an inventory defined by InventoryDetector.
  *
  * @property inventory set a InventoryDetector the display should be rendered in.
  * @property outsideInventory Specifies if the display should render when not inside any inventory.
  * @property inOwnInventory Specifies if the display should render when the player is in their own inventory.
+ * @property inSign Specifies if the display should render when in a sign.
+ * @property inChat Specifies if the display should render when in chat.
+ * @property inIngameMenu Specifies if the display should render when in the Ingame Menu aka "Escape Menu".
  * @property condition Should the display be rendered at all? Insert the isEnabled() function here.
  * @property onRender This is getting called when the render should happen.
  */
@@ -23,6 +26,9 @@ class RenderDisplayHelper(
     private val inventory: InventoryDetector = NO_INVENTORY,
     private val outsideInventory: Boolean = false,
     private val inOwnInventory: Boolean = false,
+    private val inSign: Boolean = false,
+    private val inChat: Boolean = false,
+    private val inIngameMenu: Boolean = false,
     private val condition: () -> Boolean,
     private val onlyOnIsland: IslandType? = null,
     private val onRender: () -> Unit,
