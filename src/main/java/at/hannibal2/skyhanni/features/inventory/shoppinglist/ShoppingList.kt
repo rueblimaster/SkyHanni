@@ -11,16 +11,34 @@ import at.hannibal2.skyhanni.utils.NeuInternalName
 @SkyHanniModule
 object ShoppingList {
 
+    val items = mutableListOf<ShoppingListItem>()
+
+    private fun getItemOrNull(internalName: NeuInternalName) = items.firstOrNull { it.internalName == internalName }
+
     fun add(internalName: NeuInternalName, amount: Int) {
         println("adding: $internalName $amount")
+        val item = getItemOrNull(internalName)
+        if (item == null) {
+            items.add(ShoppingListItem(internalName, amount))
+        } else {
+            item.amount += amount
+        }
     }
 
     fun remove(internalName: NeuInternalName, amount: Int?) {
         println("removing: $internalName $amount")
+        val item = getItemOrNull(internalName) ?: return
+        if (amount != null) {
+            item.amount -= amount
+        }
+        if (amount == null || item.amount <= 0) {
+            items.remove(item)
+        }
     }
 
     fun clear() {
         println("clearing")
+        items.clear()
     }
 
     @HandleEvent
@@ -35,6 +53,7 @@ object ShoppingList {
                     arg("amount", BrigadierArguments.integer()) {
                         callback { add(getArgByName("item"), getArgByName("amount")) }
                     }
+                    callback { add(getArgByName("item"), 1) }
                 }
             }
             literal("remove") {
