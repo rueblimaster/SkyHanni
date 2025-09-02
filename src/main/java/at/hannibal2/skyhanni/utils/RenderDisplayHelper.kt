@@ -3,10 +3,9 @@ package at.hannibal2.skyhanni.utils
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.events.GuiRenderEvent
+import at.hannibal2.skyhanni.events.render.gui.ScreenDrawnEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.test.command.ErrorManager
-import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.inventory.GuiInventory
 
 /**
  * RenderDisplayHelper determines when to render displays based on
@@ -39,10 +38,6 @@ class RenderDisplayHelper(
         allDisplays.add(this)
     }
 
-    private fun renderIn(inOwnInventory: Boolean): Boolean {
-        return (this.inOwnInventory && inOwnInventory) || inventory.isInside()
-    }
-
     @SkyHanniModule
     companion object {
         val NO_INVENTORY = InventoryDetector { false }
@@ -55,24 +50,30 @@ class RenderDisplayHelper(
             currentlyVisibleDisplays = allDisplays.filter { it.checkCondition() }
         }
 
-        @HandleEvent
-        fun onBackgroundDraw(event: GuiRenderEvent.ChestGuiOverlayRenderEvent) {
-            val isInOwnInventory = Minecraft.getMinecraft().currentScreen is GuiInventory
-            for (display in currentlyVisibleDisplays) {
-                if (display.renderIn(isInOwnInventory)) {
-                    display.render()
-                }
-            }
+        @HandleEvent(eventType = GuiRenderEvent.GuiOverlayRenderEvent::class)
+        fun onOutsideRender() {
+            if (InventoryUtils.inAnyScreen()) return // if we're inside an inventory etc. don't render anything
+            currentlyVisibleDisplays.filter { it.outsideInventory }.map { it.render() }
         }
 
-        @HandleEvent
-        fun onRenderOverlay(event: GuiRenderEvent.GuiOverlayRenderEvent) {
-            if (Minecraft.getMinecraft().currentScreen != null) return // if we're inside an inventory don't render anything
-            for (display in currentlyVisibleDisplays) {
-                if (display.outsideInventory) {
-                    display.render()
-                }
-            }
+        @HandleEvent(eventType = GuiRenderEvent.ChestGuiOverlayRenderEvent::class)
+        fun onInventoryRender() {
+            if (InventoryUtils.inOwnInventory()) {
+                currentlyVisibleDisplays.filter { it.inOwnInventory }.map { it.render() }
+            } else if (InventoryUtils.inInventory()) {
+                currentlyVisibleDisplays.filter { it.inventory.isInside() }.map { it.render() }
+            } else return // not in an inventory
+        }
+
+        @HandleEvent(eventType = ScreenDrawnEvent::class)
+        fun onOtherRender() {
+            if (InventoryUtils.inSign()) {
+                currentlyVisibleDisplays.filter { it.inSign }.map { it.render() }
+            } else if (InventoryUtils.inChat()) {
+                currentlyVisibleDisplays.filter { it.inChat }.map { it.render() }
+            } else if (InventoryUtils.inIngameMenu()) {
+                currentlyVisibleDisplays.filter { it.inIngameMenu }.map { it.render() }
+            } else return // unknown screen type
         }
     }
 
