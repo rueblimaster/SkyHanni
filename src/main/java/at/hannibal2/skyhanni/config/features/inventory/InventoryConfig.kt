@@ -178,7 +178,6 @@ class InventoryConfig {
     @Accordion
     val trade: TradeConfig = TradeConfig()
 
-    // TODO: move this inside EvolvingItemsConfig
     @Expose
     @ConfigOption(name = "Item Number", desc = "Showing the item number as a stack size for these items.")
     @ConfigEditorDraggableList
