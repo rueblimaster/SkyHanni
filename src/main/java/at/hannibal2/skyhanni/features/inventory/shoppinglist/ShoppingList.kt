@@ -28,10 +28,8 @@ object ShoppingList {
         buildDisplay()
     }
 
-    private fun getItemOrNull(internalName: NeuInternalName) = items.getOrDefault(internalName, null)
-
     fun add(internalName: NeuInternalName, amount: Int) {
-        val item = getItemOrNull(internalName)
+        val item = items[internalName]
         if (item == null) {
             items.add(internalName to ShoppingListItem(internalName, amount))
             ChatUtils.chat("Added item '${internalName.itemNameWithoutColor}' with amount $amount.")
@@ -43,7 +41,7 @@ object ShoppingList {
     }
 
     fun remove(internalName: NeuInternalName, amount: Int?) {
-        val item = getItemOrNull(internalName)
+        val item = items[internalName]
         if (item == null) {
             ChatUtils.chat("Item '${internalName.itemNameWithoutColor}' not found.")
             return
