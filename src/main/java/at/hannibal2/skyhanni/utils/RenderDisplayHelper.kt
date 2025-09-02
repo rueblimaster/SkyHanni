@@ -40,6 +40,7 @@ class RenderDisplayHelper(
     @SkyHanniModule
     companion object {
         val NO_INVENTORY = InventoryDetector { false }
+        val ANY_INVENTORY = InventoryDetector { true }
         private val allDisplays = mutableListOf<RenderDisplayHelper>()
         private var currentlyVisibleDisplays = emptyList<RenderDisplayHelper>()
 
