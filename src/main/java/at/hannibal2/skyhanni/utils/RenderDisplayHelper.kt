@@ -61,9 +61,9 @@ class RenderDisplayHelper(
 
         @HandleEvent
         fun onRenderOverlay(event: GuiRenderEvent.GuiOverlayRenderEvent) {
-            val isInOwnInventory = Minecraft.getMinecraft().currentScreen is GuiInventory
+            if (Minecraft.getMinecraft().currentScreen != null) return // if we're inside an inventory don't render anything
             for (display in currentlyVisibleDisplays) {
-                if (display.outsideInventory && !display.renderIn(isInOwnInventory)) {
+                if (display.outsideInventory) {
                     display.render()
                 }
             }
