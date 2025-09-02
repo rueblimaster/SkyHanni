@@ -163,6 +163,11 @@ class InventoryConfig {
     val attributeShards: AttributeShardsConfig = AttributeShardsConfig()
 
     @Expose
+    @ConfigOption(name = "Shopping List", desc = "")
+    @Accordion
+    val shoppingList: ShoppingListConfig = ShoppingListConfig()
+
+    @Expose
     @ConfigOption(name = "Evolving Items", desc = "")
     @Accordion
     @SearchTag("Time Pocket, Bottle of Jyrre, Dark Cacao Truffle, Discrite, Moby-Duck")
@@ -173,6 +178,7 @@ class InventoryConfig {
     @Accordion
     val trade: TradeConfig = TradeConfig()
 
+    // TODO: move this inside EvolvingItemsConfig
     @Expose
     @ConfigOption(name = "Item Number", desc = "Showing the item number as a stack size for these items.")
     @ConfigEditorDraggableList

@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
+import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
@@ -9,11 +10,22 @@ import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.NeuInternalName
+import at.hannibal2.skyhanni.utils.RenderDisplayHelper
+import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
+import at.hannibal2.skyhanni.utils.SkyBlockUtils
+import at.hannibal2.skyhanni.utils.renderables.Renderable
 
 @SkyHanniModule
 object ShoppingList {
+    val config = SkyHanniMod.feature.inventory.shoppingList
 
     val items = mutableListOf<ShoppingListItem>()
+
+    private var display = listOf<Renderable>()
+
+    fun update() {
+        buildDisplay()
+    }
 
     private fun getItemOrNull(internalName: NeuInternalName) = items.firstOrNull { it.internalName == internalName }
 
@@ -26,6 +38,7 @@ object ShoppingList {
             item.amount += amount
             ChatUtils.chat("Increased amount of item '${internalName.itemNameWithoutColor}' by $amount.")
         }
+        update()
     }
 
     fun remove(internalName: NeuInternalName, amount: Int?) {
@@ -46,11 +59,13 @@ object ShoppingList {
             items.remove(item)
             ChatUtils.chat("Removed item '${internalName.itemNameWithoutColor}' from Shopping List.")
         }
+        update()
     }
 
     fun clear() {
         items.clear()
         ChatUtils.chat("Cleared Shopping List.")
+        update()
     }
 
     @HandleEvent
@@ -80,4 +95,22 @@ object ShoppingList {
             literalCallback("clear") { clear() }
         }
     }
+
+    private fun buildDisplay() {
+        display = buildList {
+            items.forEach { addAll(it.buildDisplay()) }
+        }
+    }
+
+    init {
+        RenderDisplayHelper(
+            outsideInventory = true,
+            inOwnInventory = true,
+            condition = ::isEnabled,
+        ) {
+            config.position.renderRenderables(display, posLabel = "Shopping List")
+        }
+    }
+
+    private fun isEnabled(): Boolean = SkyBlockUtils.inSkyBlock && config.enabled
 }
