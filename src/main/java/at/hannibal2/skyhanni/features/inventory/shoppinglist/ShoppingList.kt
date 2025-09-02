@@ -21,30 +21,30 @@ object ShoppingList {
         val item = getItemOrNull(internalName)
         if (item == null) {
             items.add(ShoppingListItem(internalName, amount))
-            ChatUtils.chat("Added item ${internalName.itemNameWithoutColor} with amount $amount.")
+            ChatUtils.chat("Added item '${internalName.itemNameWithoutColor}' with amount $amount.")
         } else {
             item.amount += amount
-            ChatUtils.chat("Increased amount of item ${internalName.itemNameWithoutColor} by $amount.")
+            ChatUtils.chat("Increased amount of item '${internalName.itemNameWithoutColor}' by $amount.")
         }
     }
 
     fun remove(internalName: NeuInternalName, amount: Int?) {
         val item = getItemOrNull(internalName)
         if (item == null) {
-            ChatUtils.chat("Item ${internalName.itemNameWithoutColor} not found.")
+            ChatUtils.chat("Item '${internalName.itemNameWithoutColor}' not found.")
             return
         }
         if (amount != null) {
             item.amount -= amount
             if (item.amount <= 0) {
                 items.remove(item)
-                ChatUtils.chat("Removed item ${internalName.itemNameWithoutColor} from Shopping List.")
+                ChatUtils.chat("Removed item '${internalName.itemNameWithoutColor}' from Shopping List.")
             } else {
-                ChatUtils.chat("Reduced amount of item ${internalName.itemNameWithoutColor} by $amount.")
+                ChatUtils.chat("Reduced amount of item '${internalName.itemNameWithoutColor}' by $amount.")
             }
         } else {
             items.remove(item)
-            ChatUtils.chat("Removed item ${internalName.itemNameWithoutColor} from Shopping List.")
+            ChatUtils.chat("Removed item '${internalName.itemNameWithoutColor}' from Shopping List.")
         }
     }
 
