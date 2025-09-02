@@ -3,7 +3,9 @@ package at.hannibal2.skyhanni.utils
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.InventoryCloseEvent
+import at.hannibal2.skyhanni.events.InventoryFullyOpenedEvent
 import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
+import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import com.google.gson.annotations.Expose
@@ -31,7 +33,7 @@ class RecipeResolver(
             }
         }
 
-    private var currentCallback: ((Boolean) -> Unit)? = null
+    private var currentCallback: (() -> Unit)? = null
     private var displayItem: ItemStack? = null
 
     override fun toString(): String {
@@ -42,32 +44,37 @@ class RecipeResolver(
     fun setRecipe(recipe: PrimitiveRecipe) {
         this.recipe = recipe
         resolved = true
-        currentCallback?.invoke(true)
+        currentCallback?.invoke()
         currentCallback = null
         displayItem = null
     }
 
-    fun decideRecipe(callback: (Boolean) -> Unit) {
+    fun resolveRecipe(callback: () -> Unit) {
+        if (resolved) {
+            callback()
+            return
+        }
+
         if (possibleRecipes.isEmpty()) {
             ChatUtils.chat("No recipes found for ${internalName.itemNameWithoutColor}")
-            callback(false)
+            callback()
             return
         }
 
         if (possibleRecipes.size > 1) {
-            ChatUtils.chat("Multiple recipes found for ${internalName.itemNameWithoutColor}\n§7Select one")
+            ChatUtils.chat("Multiple recipes found for ${internalName.itemNameWithoutColor}\n§fSelect one")
 
             launchResolving(callback)
         } else {
             recipe = possibleRecipes[0]
             resolved = true
-            callback(true)
+            callback()
         }
     }
 
-    private fun launchResolving(callback: (Boolean) -> Unit) {
+    private fun launchResolving(callback: () -> Unit) {
         if (resolved) {
-            callback(true)
+            callback()
             return
         }
 
@@ -87,32 +94,44 @@ class RecipeResolver(
     private fun resolveToRecipe(recipe: PrimitiveRecipe) {
         this.recipe = recipe
         resolved = true
-        currentCallback?.invoke(true)
+        currentCallback?.invoke()
         currentCallback = null
         displayItem = null
     }
 
     private fun cancelResolving() {
-        currentCallback?.invoke(false)
+        println("cancelResolving")
+        currentCallback?.invoke()
         currentCallback = null
         displayItem = null
     }
 
+    @SkyHanniModule
     companion object {
         const val SLOT_ID = 43
 
+        var resetBlock = false
+
         var currentlyDecidingRecipe: RecipeResolver? = null
             set(value) {
+                if (value != null) resetBlock = true
+                println("canceling $field, ${field == value}")
                 field?.cancelResolving() // Cancel the previous recipe resolving
+                println("setting $field to $value")
                 field = value
             }
 
         @HandleEvent(onlyOnSkyblock = true)
         fun replaceItem(event: ReplaceItemEvent) {
+//             println("$currentlyDecidingRecipe ${currentlyDecidingRecipe?.displayItem}")
             val displayItem = currentlyDecidingRecipe?.displayItem ?: return
+            println("it 1")
             if (RecipeInventory.currentlyOpenRecipe == null) return
+            println("it 2")
             if (event.inventory is InventoryPlayer) return
+            println("it 3")
             if (event.slot != SLOT_ID) return
+            println("it 4")
 
             event.replace(displayItem)
         }
@@ -126,9 +145,16 @@ class RecipeResolver(
             currentlyDecidingRecipe.resolveToRecipe(RecipeInventory.currentlyOpenRecipe ?: return)
         }
 
-        @HandleEvent(onlyOnSkyblock = true, eventType = InventoryCloseEvent::class)
-        fun onInventoryClose() {
+        @HandleEvent(onlyOnSkyblock = true)
+        fun onInventoryClose(event: InventoryCloseEvent) {
+            if (resetBlock) return
+            if (event.reopenSameName) return
             currentlyDecidingRecipe = null
+        }
+
+        @HandleEvent(onlyOnSkyblock = true, eventType = InventoryFullyOpenedEvent::class)
+        fun onInventoryOpen() {
+            resetBlock = false
         }
     }
 
@@ -145,6 +171,6 @@ class RecipeResolver(
         }
 
         val recipes = NeuItems.getRecipes(firstIngredient.internalName).filter { it.isCraftingRecipe() }
-        return recipes.any { recipe -> recipe.ingredients.any { it.internalName == internalName } }
+        return recipes.any { it.isRecursing() }
     }
 }
