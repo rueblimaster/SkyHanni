@@ -98,9 +98,7 @@ object ShoppingList {
     }
 
     private fun buildDisplay() {
-        display = buildList {
-            items.forEach { (_, item) -> addAll(item.buildDisplay()) }
-        }
+        display = items.values.flatMap(ShoppingListItem::buildDisplay)
     }
 
     init {
