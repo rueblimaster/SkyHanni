@@ -104,7 +104,6 @@ class RecipeResolver(
     }
 
     private fun cancelResolving() {
-        println("cancelResolving")
         currentCallback?.invoke()
         currentCallback = null
         displayItem = null
@@ -119,9 +118,7 @@ class RecipeResolver(
         var currentlyDecidingRecipe: RecipeResolver? = null
             set(value) {
                 if (value != null) resetBlock = true
-                println("canceling $field, ${field == value}")
                 field?.cancelResolving() // Cancel the previous recipe resolving
-                println("setting $field to $value")
                 field = value
             }
 
