@@ -28,7 +28,7 @@ object ShoppingList {
         buildDisplay()
     }
 
-    fun add(internalName: NeuInternalName, amount: Int) {
+    fun add(internalName: NeuInternalName, amount: Double) {
         val item = items[internalName]
         if (item == null) {
             items.add(internalName to ShoppingListItem(internalName, amount))
@@ -40,7 +40,7 @@ object ShoppingList {
         update()
     }
 
-    fun remove(internalName: NeuInternalName, amount: Int?) {
+    fun remove(internalName: NeuInternalName, amount: Double?) {
         val item = items[internalName]
         if (item == null) {
             ChatUtils.chat("Item '${internalName.itemNameWithoutColor}' not found.")
@@ -79,7 +79,7 @@ object ShoppingList {
                     arg("amount", BrigadierArguments.integer()) {
                         callback { add(getArgByName("item"), getArgByName("amount")) }
                     }
-                    callback { add(getArgByName("item"), 1) }
+                    callback { add(getArgByName("item"), 1.0) }
                 }
             }
             literal("remove") {
