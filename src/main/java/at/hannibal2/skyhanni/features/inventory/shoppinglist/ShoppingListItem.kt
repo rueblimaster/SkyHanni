@@ -57,7 +57,7 @@ class ShoppingListItem(
         if (this % 1.0 == 0.0) this.toInt().toString() else this.roundTo(2).toString()
 
     private fun getDisplayRepresentation(indent: String): String {
-        var displayString = "§8${indent}"
+        var displayString = "§8$indent"
 
         if (parentItem != null) {
             displayString += "§7${amount.clean()}x "
