@@ -7,7 +7,6 @@ import at.hannibal2.skyhanni.events.InventoryFullyOpenedEvent
 import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
-import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.compat.MinecraftCompat
 import com.google.gson.annotations.Expose
 import net.minecraft.entity.player.InventoryPlayer
@@ -85,7 +84,11 @@ class RecipeResolver(
             add("§8(From SkyHanni)")
         }
 
-        displayItem = ItemStack(Blocks.diamond_block).setLore(lore).setStackDisplayName("§bSelect Recipe")
+        displayItem = ItemUtils.createItemStack(
+            ItemStack(Blocks.diamond_block).item,
+            "§bSelect Recipe",
+            lore,
+        )
 
         currentlyDecidingRecipe = this
 
