@@ -8,6 +8,7 @@ import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.ItemUtils.setLore
+import at.hannibal2.skyhanni.utils.compat.MinecraftCompat
 import com.google.gson.annotations.Expose
 import net.minecraft.entity.player.InventoryPlayer
 import net.minecraft.init.Blocks
@@ -23,7 +24,7 @@ class RecipeResolver(
         private set
     var resolved = recipe != null
 
-    val possibleRecipes: List<PrimitiveRecipe> =
+    private val possibleRecipes: List<PrimitiveRecipe> =
         NeuItems.getRecipes(internalName).filter { it.isCraftingRecipe() }.filter { recipe ->
             !recipe.isRecursing() && !recipe.isRecursingCompacting()
         }.also {
@@ -62,7 +63,7 @@ class RecipeResolver(
         }
 
         if (possibleRecipes.size > 1) {
-            ChatUtils.chat("Multiple recipes found for ${internalName.itemNameWithoutColor}\n§fSelect one")
+            ChatUtils.chat("Multiple recipes found for ${internalName.itemNameWithoutColor}\nSelect one")
 
             launchResolving(callback)
         } else {
@@ -108,9 +109,9 @@ class RecipeResolver(
 
     @SkyHanniModule
     companion object {
-        const val SLOT_ID = 43
+        private const val SLOT_ID = 43
 
-        var resetBlock = false
+        private var resetBlock = false
 
         var currentlyDecidingRecipe: RecipeResolver? = null
             set(value) {
@@ -123,15 +124,10 @@ class RecipeResolver(
 
         @HandleEvent(onlyOnSkyblock = true)
         fun replaceItem(event: ReplaceItemEvent) {
-//             println("$currentlyDecidingRecipe ${currentlyDecidingRecipe?.displayItem}")
             val displayItem = currentlyDecidingRecipe?.displayItem ?: return
-            println("it 1")
             if (RecipeInventory.currentlyOpenRecipe == null) return
-            println("it 2")
             if (event.inventory is InventoryPlayer) return
-            println("it 3")
             if (event.slot != SLOT_ID) return
-            println("it 4")
 
             event.replace(displayItem)
         }
@@ -143,6 +139,8 @@ class RecipeResolver(
             if (event.item == null) return
 
             currentlyDecidingRecipe.resolveToRecipe(RecipeInventory.currentlyOpenRecipe ?: return)
+
+            MinecraftCompat.localPlayer.closeScreen()
         }
 
         @HandleEvent(onlyOnSkyblock = true)
