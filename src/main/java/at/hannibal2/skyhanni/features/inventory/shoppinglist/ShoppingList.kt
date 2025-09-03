@@ -92,6 +92,7 @@ object ShoppingList {
                 }
             }
             literalCallback("clear") { clear() }
+            literalCallback("update") { update() }
         }
     }
 
