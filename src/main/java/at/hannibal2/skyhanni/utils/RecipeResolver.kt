@@ -23,6 +23,8 @@ class RecipeResolver(
         private set
     var resolved = recipe != null
 
+    val hasValidRecipes get() = possibleRecipes.isNotEmpty()
+
     private val possibleRecipes: List<PrimitiveRecipe> =
         NeuItems.getRecipes(internalName).filter { it.isCraftingRecipe() }.filter { recipe ->
             !recipe.isRecursing() && !recipe.isRecursingCompacting()
