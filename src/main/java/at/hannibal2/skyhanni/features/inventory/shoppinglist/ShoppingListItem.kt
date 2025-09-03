@@ -53,8 +53,8 @@ class ShoppingListItem(
     private fun Double.clean(): String =
         if (this % 1.0 == 0.0) this.toInt().toString() else this.roundTo(2).toString()
 
-    private fun getDisplayString(indent: Int): String {
-        var displayString = "§8${"-".repeat(indent)}"
+    private fun getDisplayRepresentation(indent: String): String {
+        var displayString = "§8${indent}"
 
         if (parentItem != null) {
             displayString += "§7${amount.clean()}x "
@@ -67,15 +67,25 @@ class ShoppingListItem(
         return displayString
     }
 
-    fun buildDisplay(indent: Int = 0): List<Renderable> {
+    fun buildDisplay(indent: String = "", indentForSubitems: String? = null): List<Renderable> {
         return buildList {
             add(
                 Renderable.clickable(
-                    getDisplayString(indent),
+                    getDisplayRepresentation(indent),
                     onLeftClick = ::triggerBreakDown,
                 ),
             )
-            addAll(subitems.flatMap { it.buildDisplay(indent + 1) })
+            val actualIndentForSubitems: String = indentForSubitems ?: indent
+
+            subitems.forEachIndexed { index, item ->
+                val isLastItem = index == subitems.size - 1
+
+                val newIndent = actualIndentForSubitems + if (!isLastItem) "|·" else "`·"
+
+                val newIndentForSubitems = actualIndentForSubitems + if (!isLastItem) "| " else "  "
+
+                addAll(item.buildDisplay(newIndent, newIndentForSubitems))
+            }
         }
     }
 }
