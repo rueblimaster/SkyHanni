@@ -7,6 +7,7 @@ import at.hannibal2.skyhanni.utils.NumberUtil.roundTo
 import at.hannibal2.skyhanni.utils.PrimitiveRecipe
 import at.hannibal2.skyhanni.utils.RecipeResolver
 import at.hannibal2.skyhanni.utils.renderables.Renderable
+import at.hannibal2.skyhanni.utils.renderables.primitives.text
 import com.google.gson.annotations.Expose
 
 class ShoppingListItem(
@@ -30,6 +31,8 @@ class ShoppingListItem(
     override fun toString(): String {
         return "${internalName.itemNameWithoutColor} x$amount: $recipeResolver"
     }
+
+    private val breakDownPossible get() = recipeResolver.hasValidRecipes && subitems.isEmpty()
 
     private fun triggerBreakDown() {
         recipeResolver.resolveRecipe { breakDown() }
@@ -70,9 +73,12 @@ class ShoppingListItem(
     fun buildDisplay(indent: String = "", indentForSubitems: String? = null): List<Renderable> {
         return buildList {
             add(
-                Renderable.clickable(
+                if (breakDownPossible) Renderable.clickable(
                     getDisplayRepresentation(indent),
                     onLeftClick = ::triggerBreakDown,
+                    tips = listOf("§7left-click to expand recipe"),
+                ) else Renderable.text(
+                    getDisplayRepresentation(indent),
                 ),
             )
             val actualIndentForSubitems: String = indentForSubitems ?: indent
