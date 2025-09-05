@@ -17,6 +17,8 @@ class RecipeResolver(
     @Expose
     val internalName: NeuInternalName,
     inputRecipe: PrimitiveRecipe? = null,
+    @Expose
+    val ignoreBlocksOfOres: Boolean = true,
 ) {
     @Expose
     var recipe = inputRecipe
@@ -26,8 +28,10 @@ class RecipeResolver(
     val hasValidRecipes get() = possibleRecipes.isNotEmpty()
 
     private val possibleRecipes: List<PrimitiveRecipe> =
-        NeuItems.getRecipes(internalName).filter { it.isCraftingRecipe() }.filter { recipe ->
-            !recipe.isRecursing() && !recipe.isRecursingCompacting()
+        NeuItems.getRecipes(internalName).filter { recipe ->
+            recipe.isCraftingRecipe()
+                && !recipe.isRecursing() && !recipe.isRecursingCompacting()
+                && !(ignoreBlocksOfOres && recipe.comesFromBlockOfOre())
         }.also {
             if (it.size == 1) {
                 recipe = it[0]
@@ -158,8 +162,6 @@ class RecipeResolver(
         }
     }
 
-    // TODO: not make these extensions
-    // TODO: make this work
     private fun PrimitiveRecipe.isRecursing(): Boolean {
         return ingredients.any { it.internalName == internalName }
     }
@@ -172,5 +174,37 @@ class RecipeResolver(
 
         val recipes = NeuItems.getRecipes(firstIngredient.internalName).filter { it.isCraftingRecipe() }
         return recipes.any { it.isRecursing() }
+    }
+
+    private fun PrimitiveRecipe.comesFromBlockOfOre(): Boolean {
+        val firstIngredient = ingredients.firstOrNull() ?: return false
+        if (!ingredients.all { it.isSameAs(firstIngredient) }) {
+            return false
+        }
+        return firstIngredient.internalName.isBlockOfOre()
+    }
+
+    private fun PrimitiveIngredient.isSameAs(other: PrimitiveIngredient) = this.internalName == other.internalName && this.count == other.count
+
+    private fun NeuInternalName.isBlockOfOre(): Boolean {
+        val recipes = NeuItems.getRecipes(this).filter { it.isCraftingRecipe() }
+        if (recipes.size != 1) {
+            return false
+        }
+
+        val firstIngredient = recipes.first().ingredients.firstOrNull() ?: return false
+        if (recipes.first().ingredients.size != 9) {
+            return false
+        }
+        if (!recipes.first().ingredients.all { it.isSameAs(firstIngredient) }) {
+            return false
+        }
+
+        val recipesOfIngredient = NeuItems.getRecipes(firstIngredient.internalName).filter { it.isCraftingRecipe() }
+        return recipesOfIngredient.any { recipe ->
+            recipe.ingredients.any { ingredient ->
+                ingredient.internalName == this
+            }
+        }
     }
 }

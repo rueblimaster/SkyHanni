@@ -20,7 +20,7 @@ class ShoppingListItem(
     val parentItem: ShoppingListItem? = null,
 ) {
     @Expose
-    val recipeResolver: RecipeResolver = RecipeResolver(internalName, recipe)
+    val recipeResolver: RecipeResolver = RecipeResolver(internalName, recipe, ignoreBlocksOfOres = ShoppingList.config.ignoreBlocksOfOres)
 
     @Expose
     var subitems = listOf<ShoppingListItem>()

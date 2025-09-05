@@ -15,6 +15,11 @@ class ShoppingListConfig {
     var enabled: Boolean = true
 
     @Expose
+    @ConfigOption(name = "Ignore Blocks of Ores", desc = "Ignores Blocks of Ores like a Block of Diamond when resolving recipes.")
+    @ConfigEditorBoolean
+    var ignoreBlocksOfOres: Boolean = true
+
+    @Expose
     @ConfigLink(owner = ShoppingListConfig::class, field = "enabled")
     val position: Position = Position(144, 139)
 }
