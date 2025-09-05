@@ -44,7 +44,10 @@ class ShoppingListItem(
         val numOutputPerCraft = recipeResolver.recipe?.output?.count ?: return
 
         val ingredients: Map<NeuInternalName, Double> =
-            recipeResolver.recipe?.ingredients?.groupingBy { it.internalName }?.fold(0.0) { acc, ing -> acc + ing.count } ?: return
+            recipeResolver.recipe?.ingredients
+                ?.groupBy { it.internalName }
+                ?.mapValues { (_, list) -> list.sumOf { it.count } }
+                ?: return
 
         subitems = ingredients.map { (internalName, amount) ->
             ShoppingListItem(internalName, amount / numOutputPerCraft, parentItem = this)
