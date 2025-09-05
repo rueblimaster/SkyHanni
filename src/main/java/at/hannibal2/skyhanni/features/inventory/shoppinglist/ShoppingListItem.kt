@@ -109,9 +109,18 @@ class ShoppingListItem(
 
             private val displayEntries: Map<ShoppingListConfig.ItemDisplayEntry, DisplayEntryResolver> = mapOf(
                 // special characters
-                ShoppingListConfig.ItemDisplayEntry.SLASH_YELLOW_1 to DisplayEntryResolver.NonAdaptive(ShoppingListConfig.ItemDisplayEntry.SLASH_YELLOW_1.toString(), replacesSpace = true),
-                ShoppingListConfig.ItemDisplayEntry.X_GRAY_1 to DisplayEntryResolver.NonAdaptive(ShoppingListConfig.ItemDisplayEntry.X_GRAY_1.toString(), replacesSpace = true),
-                ShoppingListConfig.ItemDisplayEntry.X_YELLOW_1 to DisplayEntryResolver.NonAdaptive(ShoppingListConfig.ItemDisplayEntry.X_YELLOW_1.toString(), replacesSpace = true),
+                ShoppingListConfig.ItemDisplayEntry.SLASH_YELLOW_1 to DisplayEntryResolver.NonAdaptive(
+                    ShoppingListConfig.ItemDisplayEntry.SLASH_YELLOW_1.toString(),
+                    replacesSpace = true,
+                ),
+                ShoppingListConfig.ItemDisplayEntry.X_GRAY_1 to DisplayEntryResolver.NonAdaptive(
+                    ShoppingListConfig.ItemDisplayEntry.X_GRAY_1.toString(),
+                    replacesSpace = true,
+                ),
+                ShoppingListConfig.ItemDisplayEntry.X_YELLOW_1 to DisplayEntryResolver.NonAdaptive(
+                    ShoppingListConfig.ItemDisplayEntry.X_YELLOW_1.toString(),
+                    replacesSpace = true,
+                ),
                 // stuff with values
                 ShoppingListConfig.ItemDisplayEntry.ITEM_NAME to DisplayEntryResolver.Adaptive { it.internalName.repoItemName },
                 ShoppingListConfig.ItemDisplayEntry.ITEM_NAME_WITHOUT_RARITY_COLOR to DisplayEntryResolver.Adaptive { "§f${it.internalName.itemNameWithoutColor}" },
