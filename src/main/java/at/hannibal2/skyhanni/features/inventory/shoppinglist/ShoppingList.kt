@@ -6,8 +6,10 @@ import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
 import at.hannibal2.skyhanni.config.commands.brigadier.BrigadierArguments
 import at.hannibal2.skyhanni.config.commands.brigadier.arguments.InternalNameArgumentType
+import at.hannibal2.skyhanni.events.ConfigLoadEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
+import at.hannibal2.skyhanni.utils.ConditionalUtils.afterChange
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.RenderDisplayHelper
@@ -18,7 +20,7 @@ import at.hannibal2.skyhanni.utils.renderables.Renderable
 
 @SkyHanniModule
 object ShoppingList {
-    val config = SkyHanniMod.feature.inventory.shoppingList
+    val config get() = SkyHanniMod.feature.inventory.shoppingList
 
     val items = mutableMapOf<NeuInternalName, ShoppingListItem>()
 
@@ -28,14 +30,17 @@ object ShoppingList {
         buildDisplay()
     }
 
+    private fun Double.clean(): String =
+        if (this % 1.0 == 0.0) this.toInt().toString() else this.toString()
+
     fun add(internalName: NeuInternalName, amount: Double) {
         val item = items[internalName]
         if (item == null) {
             items.add(internalName to ShoppingListItem(internalName, amount))
-            ChatUtils.chat("Added item '${internalName.itemNameWithoutColor}' with amount $amount.")
+            ChatUtils.chat("Added item '${internalName.itemNameWithoutColor}' with amount ${amount.clean()}.")
         } else {
             item.amount += amount
-            ChatUtils.chat("Increased amount of item '${internalName.itemNameWithoutColor}' by $amount.")
+            ChatUtils.chat("Increased amount of item '${internalName.itemNameWithoutColor}' by ${amount.clean()}.")
         }
         update()
     }
@@ -52,7 +57,7 @@ object ShoppingList {
                 items.remove(internalName)
                 ChatUtils.chat("Removed item '${internalName.itemNameWithoutColor}' from Shopping List.")
             } else {
-                ChatUtils.chat("Reduced amount of item '${internalName.itemNameWithoutColor}' by $amount.")
+                ChatUtils.chat("Reduced amount of item '${internalName.itemNameWithoutColor}' by ${amount.clean()}.")
             }
         } else {
             items.remove(internalName)
@@ -76,8 +81,8 @@ object ShoppingList {
             literal("add") {
                 description = "Add items to the Shopping List."
                 arg("item", InternalNameArgumentType.internalName(false)) {
-                    arg("amount", BrigadierArguments.integer()) {
-                        callback { add(getArgByName("item"), getArgByName("amount")) }
+                    arg("amount", BrigadierArguments.double()) {
+                        callback { add(getArgByName("item"), getArgByName<Double>("amount")) }
                     }
                     callback { add(getArgByName("item"), 1.0) }
                 }
@@ -85,8 +90,8 @@ object ShoppingList {
             literal("remove") {
                 description = "Remove items from the Shopping List."
                 arg("item", InternalNameArgumentType.internalName(false)) {
-                    arg("amount", BrigadierArguments.integer()) {
-                        callback { remove(getArgByName("item"), getArgByName("amount")) }
+                    arg("amount", BrigadierArguments.double()) {
+                        callback { remove(getArgByName("item"), getArgByName<Double>("amount")) }
                     }
                     callback { remove(getArgByName("item"), null) }
                 }
@@ -111,4 +116,12 @@ object ShoppingList {
     }
 
     private fun isEnabled(): Boolean = SkyBlockUtils.inSkyBlock && config.enabled
+
+    @HandleEvent(eventType = ConfigLoadEvent::class)
+    fun onConfigLoad() {
+        config.itemFormat.afterChange {
+            update()
+        }
+        update()
+    }
 }
