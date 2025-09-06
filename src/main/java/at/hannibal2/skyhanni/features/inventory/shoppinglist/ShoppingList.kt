@@ -75,8 +75,8 @@ object ShoppingList {
             aliases = listOf("shsl")
             literal("add") {
                 description = "Add items to the Shopping List."
-                arg("item", InternalNameArgumentType.internalName(false)) {
                     arg("amount", BrigadierArguments.integer()) {
+                arg("item", InternalNameArgumentType.itemName(false)) {
                         callback { add(getArgByName("item"), getArgByName("amount")) }
                     }
                     callback { add(getArgByName("item"), 1) }
@@ -84,8 +84,8 @@ object ShoppingList {
             }
             literal("remove") {
                 description = "Remove items from the Shopping List."
-                arg("item", InternalNameArgumentType.internalName(false)) {
                     arg("amount", BrigadierArguments.integer()) {
+                arg("item", InternalNameArgumentType.itemName(false)) {
                         callback { remove(getArgByName("item"), getArgByName("amount")) }
                     }
                     callback { remove(getArgByName("item"), null) }
