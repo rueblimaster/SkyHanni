@@ -74,7 +74,6 @@ object ShoppingList {
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        // TODO: make the autocomplete somewhat work
         event.registerBrigadier("shshoppinglist") {
             description = "Shopping List commands."
             category = CommandCategory.USERS_ACTIVE
