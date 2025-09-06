@@ -74,13 +74,14 @@ object ShoppingList {
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
+        // TODO: make the autocomplete somewhat work
         event.registerBrigadier("shshoppinglist") {
             description = "Shopping List commands."
             category = CommandCategory.USERS_ACTIVE
             aliases = listOf("shsl")
             literal("add") {
                 description = "Add items to the Shopping List."
-                arg("item", InternalNameArgumentType.items(isGreedy = false)) {
+                arg("item", InternalNameArgumentType.itemName(isGreedy = false)) {
                     arg("amount", BrigadierArguments.double()) {
                         callback { add(getArgByName("item"), getArgByName<Double>("amount")) }
                     }
@@ -89,7 +90,7 @@ object ShoppingList {
             }
             literal("remove") {
                 description = "Remove items from the Shopping List."
-                arg("item", InternalNameArgumentType.items(isGreedy = false)) {
+                arg("item", InternalNameArgumentType.itemName(isGreedy = false)) {
                     arg("amount", BrigadierArguments.double()) {
                         callback { remove(getArgByName("item"), getArgByName<Double>("amount")) }
                     }

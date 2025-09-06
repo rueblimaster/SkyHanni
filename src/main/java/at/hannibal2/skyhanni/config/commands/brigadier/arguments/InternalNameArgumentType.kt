@@ -118,8 +118,5 @@ sealed class InternalNameArgumentType(
             val set = allowed.toSet()
             return internalName(showWhenEmpty, isGreedy) { it in set }
         }
-
-        fun items(showWhenEmpty: Boolean = false, isGreedy: Boolean = false): InternalNameArgumentType =
-            internalName(showWhenEmpty, isGreedy) { it.isKnownItem() }
     }
 }
