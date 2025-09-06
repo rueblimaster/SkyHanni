@@ -7,6 +7,7 @@ import at.hannibal2.skyhanni.events.InventoryFullyOpenedEvent
 import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
+import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.compat.MinecraftCompat
 import com.google.gson.annotations.Expose
 import net.minecraft.entity.player.InventoryPlayer
@@ -29,9 +30,8 @@ class RecipeResolver(
 
     private val possibleRecipes: List<PrimitiveRecipe> = getAllPossibleRecipes()
 
-    private fun PrimitiveRecipe.isValid(): Boolean =
-        isCraftingRecipe() && !isRecursing() && !isRecursingCompacting() && !(ignoreBlocksOfOres && comesFromBlockOfOre())
-
+    private fun PrimitiveRecipe.isValid(): Boolean = (recipeType == RecipeType.CRAFTING || recipeType == RecipeType.KAT_UPGRADE)
+        && !isRecursing() && !isRecursingCompacting() && !(ignoreBlocksOfOres && comesFromBlockOfOre())
 
     private fun getAllPossibleRecipes(): List<PrimitiveRecipe> {
         val recipes = NeuItems.getRecipes(internalName).filter { recipe -> recipe.isValid() }
