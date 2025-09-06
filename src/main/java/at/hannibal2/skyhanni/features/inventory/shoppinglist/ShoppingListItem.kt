@@ -10,7 +10,7 @@ class ShoppingListItem(
     @Expose
     val internalName: NeuInternalName,
     @Expose
-    var amount: Int,
+    var amount: Double,
 ) {
     override fun toString(): String {
         return "$internalName x$amount"
