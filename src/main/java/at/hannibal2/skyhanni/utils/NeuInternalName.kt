@@ -67,9 +67,7 @@ class NeuInternalName private constructor(private val internalName: String) {
 
     fun asString() = internalName
 
-    override fun equals(other: Any?) = this === other
-
-    fun equals(other: NeuInternalName) = this.hashCode() == other.hashCode()
+    override fun equals(other: Any?) = if (other is NeuInternalName) this.hashCode() == other.hashCode() else false
 
     override fun toString(): String = "internalName:$internalName"
 
