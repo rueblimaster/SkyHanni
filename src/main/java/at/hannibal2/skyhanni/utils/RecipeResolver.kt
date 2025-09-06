@@ -26,8 +26,8 @@ class RecipeResolver(
     val hasValidRecipes get() = possibleRecipes.isNotEmpty()
 
     private val possibleRecipes: List<PrimitiveRecipe> =
-        NeuItems.getRecipes(internalName).filter { it.isCraftingRecipe() }.filter { recipe ->
-            !recipe.isRecursing() && !recipe.isRecursingCompacting()
+        NeuItems.getRecipes(internalName).filter { recipe ->
+            (recipe.recipeType == RecipeType.CRAFTING || recipe.recipeType == RecipeType.KAT_UPGRADE) && !recipe.isRecursing() && !recipe.isRecursingCompacting()
         }.also {
             if (it.size == 1) {
                 recipe = it[0]
@@ -158,8 +158,6 @@ class RecipeResolver(
         }
     }
 
-    // TODO: not make these extensions
-    // TODO: make this work
     private fun PrimitiveRecipe.isRecursing(): Boolean {
         return ingredients.any { it.internalName == internalName }
     }
