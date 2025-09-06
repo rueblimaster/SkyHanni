@@ -27,17 +27,21 @@ class RecipeResolver(
 
     val hasValidRecipes get() = possibleRecipes.isNotEmpty()
 
-    private val possibleRecipes: List<PrimitiveRecipe> =
-        NeuItems.getRecipes(internalName).filter { recipe ->
-            recipe.isCraftingRecipe()
-                && !recipe.isRecursing() && !recipe.isRecursingCompacting()
-                && !(ignoreBlocksOfOres && recipe.comesFromBlockOfOre())
-        }.also {
-            if (it.size == 1) {
-                recipe = it[0]
-                resolved = true
-            }
+    private val possibleRecipes: List<PrimitiveRecipe> = getAllPossibleRecipes()
+
+    private fun PrimitiveRecipe.isValid(): Boolean =
+        isCraftingRecipe() && !isRecursing() && !isRecursingCompacting() && !(ignoreBlocksOfOres && comesFromBlockOfOre())
+
+
+    private fun getAllPossibleRecipes(): List<PrimitiveRecipe> {
+        val recipes = NeuItems.getRecipes(internalName).filter { recipe -> recipe.isValid() }
+        if (recipes.size == 1) {
+            recipe = recipes[0]
+            resolved = true
         }
+        return recipes
+    }
+
 
     private var currentCallback: (() -> Unit)? = null
     private var displayItem: ItemStack? = null
@@ -184,7 +188,8 @@ class RecipeResolver(
         return firstIngredient.internalName.isBlockOfOre()
     }
 
-    private fun PrimitiveIngredient.isSameAs(other: PrimitiveIngredient) = this.internalName == other.internalName && this.count == other.count
+    private fun PrimitiveIngredient.isSameAs(other: PrimitiveIngredient) =
+        this.internalName == other.internalName && this.count == other.count
 
     private fun NeuInternalName.isBlockOfOre(): Boolean {
         val recipes = NeuItems.getRecipes(this).filter { it.isCraftingRecipe() }
