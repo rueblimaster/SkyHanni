@@ -29,11 +29,17 @@ class RecipeResolver(
 
     private val possibleRecipes: List<PrimitiveRecipe> = getAllPossibleRecipes()
 
-    private fun PrimitiveRecipe.isValid(): Boolean = (recipeType == RecipeType.CRAFTING || recipeType == RecipeType.KAT_UPGRADE)
-        && !isRecursing() && !isRecursingCompacting() && !(ignoreBlocksOfOres && comesFromBlockOfOre())
-
     private fun getAllPossibleRecipes(): List<PrimitiveRecipe> {
-        val recipes = NeuItems.getRecipes(internalName).filter { recipe -> recipe.isValid() }
+        var recipes = NeuItems.getRecipes(internalName)
+            .filter { recipe -> recipe.recipeType == RecipeType.CRAFTING || recipe.recipeType == RecipeType.KAT_UPGRADE }
+            .filter { !it.isRecursing() && !it.isRecursingCompacting() }
+        if (ignoreBlocksOfOres && recipes.size > 1) {
+            val recipesWithoutBlocksOfOres = recipes.filter { it.comesFromBlockOfOre() }
+            if (recipesWithoutBlocksOfOres.isNotEmpty() && recipesWithoutBlocksOfOres.size != recipes.size) {
+                recipes = recipesWithoutBlocksOfOres
+            }
+        }
+
         if (recipes.size == 1) {
             recipe = recipes[0]
             resolved = true
