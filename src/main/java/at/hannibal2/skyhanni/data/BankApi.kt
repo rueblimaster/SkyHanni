@@ -5,7 +5,6 @@ import at.hannibal2.skyhanni.data.model.TabWidget
 import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.InventoryFullyOpenedEvent
 import at.hannibal2.skyhanni.events.WidgetUpdateEvent
-import at.hannibal2.skyhanni.events.item.ItemHoverEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.InventoryDetector
 import at.hannibal2.skyhanni.utils.ItemUtils.getLore
@@ -132,7 +131,7 @@ object BankApi {
      */
     private val balancePattern by patternGroup.pattern(
         "balance",
-        "§7(Balance|Current balance): §6(?<amount>[^§]+)",
+        "§7(?:Balance|Current balance): §6(?<amount>[^§]+)",
     )
 
     /**
@@ -158,7 +157,7 @@ object BankApi {
      */
     private val coopAccountPattern by patternGroup.pattern(
         "account.coop",
-        "(Co-op Bank Account)",
+        "Co-op Bank Account",
     )
 
     /**
@@ -166,6 +165,6 @@ object BankApi {
      */
     private val personalAccountPattern by patternGroup.pattern(
         "account.personal",
-        "(Personal Bank Account)",
+        "Personal Bank Account",
     )
 }
