@@ -7,7 +7,6 @@ import at.hannibal2.skyhanni.events.InventoryFullyOpenedEvent
 import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
-import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.compat.MinecraftCompat
 import com.google.gson.annotations.Expose
 import net.minecraft.entity.player.InventoryPlayer
@@ -41,7 +40,6 @@ class RecipeResolver(
         }
         return recipes
     }
-
 
     private var currentCallback: (() -> Unit)? = null
     private var displayItem: ItemStack? = null
