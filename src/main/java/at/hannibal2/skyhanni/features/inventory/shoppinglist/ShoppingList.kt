@@ -72,6 +72,22 @@ object ShoppingList {
         update()
     }
 
+    private fun buildDisplay() {
+        display = items.values.flatMap(ShoppingListItem::buildDisplay)
+    }
+
+    init {
+        RenderDisplayHelper(
+            outsideInventory = true,
+            inOwnInventory = true,
+            condition = ::isEnabled,
+        ) {
+            config.position.renderRenderables(display, posLabel = "Shopping List")
+        }
+    }
+
+    private fun isEnabled(): Boolean = SkyBlockUtils.inSkyBlock && config.enabled
+
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
         event.registerBrigadier("shshoppinglist") {
@@ -101,23 +117,12 @@ object ShoppingList {
         }
     }
 
-    private fun buildDisplay() {
-        display = items.values.flatMap(ShoppingListItem::buildDisplay)
+    @HandleEvent
+    fun onSecondPassed() {
+        update()
     }
 
-    init {
-        RenderDisplayHelper(
-            outsideInventory = true,
-            inOwnInventory = true,
-            condition = ::isEnabled,
-        ) {
-            config.position.renderRenderables(display, posLabel = "Shopping List")
-        }
-    }
-
-    private fun isEnabled(): Boolean = SkyBlockUtils.inSkyBlock && config.enabled
-
-    @HandleEvent(eventType = ConfigLoadEvent::class)
+    @HandleEvent
     fun onConfigLoad() {
         config.itemFormat.afterChange {
             update()

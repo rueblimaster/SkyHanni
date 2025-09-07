@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.features.inventory.shoppinglist
 
+import at.hannibal2.skyhanni.api.StorageApi.getTotalAmount
 import at.hannibal2.skyhanni.config.features.inventory.ShoppingListConfig
 import at.hannibal2.skyhanni.features.inventory.shoppinglist.ShoppingListItem.Companion.ItemDisplayRepresentationManager.getDisplayRepresentation
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
@@ -29,6 +30,10 @@ class ShoppingListItem(
 
     val totalAmount: Double
         get() = if (parentItem == null) amount else amount * parentItem.totalAmount
+
+    fun getPossessedAmount(): Double {
+        return internalName.getTotalAmount()
+    }
 
     override fun toString(): String {
         return "${internalName.itemNameWithoutColor} x$amount: $recipeResolver"
@@ -100,8 +105,8 @@ class ShoppingListItem(
 
                 class NonAdaptive(
                     private val value: String,
-                    override val condition: (ShoppingListItem) -> Boolean = { true },
                     override val replacesSpace: Boolean = false,
+                    override val condition: (ShoppingListItem) -> Boolean = { true },
                 ) : DisplayEntryResolver() {
                     override fun getRepresentation(item: ShoppingListItem): String = value
                 }
@@ -110,27 +115,31 @@ class ShoppingListItem(
             private fun Double.clean(): String =
                 if (this % 1.0 == 0.0) this.toInt().toString() else this.roundTo(2).toString()
 
+            private fun isInRecipe(item: ShoppingListItem) = item.parentItem != null
+
+            private fun ShoppingListConfig.ItemDisplayEntry.toNonAdaptive(condition: (ShoppingListItem) -> Boolean = { true }) =
+                DisplayEntryResolver.NonAdaptive(this.asString(), replacesSpace = true, condition = condition)
+
             private val displayEntries: Map<ShoppingListConfig.ItemDisplayEntry, DisplayEntryResolver> = mapOf(
                 // special characters
-                ShoppingListConfig.ItemDisplayEntry.SLASH_YELLOW_1 to DisplayEntryResolver.NonAdaptive(
-                    ShoppingListConfig.ItemDisplayEntry.SLASH_YELLOW_1.toString(),
-                    replacesSpace = true,
-                ),
-                ShoppingListConfig.ItemDisplayEntry.X_GRAY_1 to DisplayEntryResolver.NonAdaptive(
-                    ShoppingListConfig.ItemDisplayEntry.X_GRAY_1.toString(),
-                    replacesSpace = true,
-                ),
-                ShoppingListConfig.ItemDisplayEntry.X_YELLOW_1 to DisplayEntryResolver.NonAdaptive(
-                    ShoppingListConfig.ItemDisplayEntry.X_YELLOW_1.toString(),
-                    replacesSpace = true,
-                ),
+                ShoppingListConfig.ItemDisplayEntry.SPACE_1 to ShoppingListConfig.ItemDisplayEntry.SPACE_1.toNonAdaptive(),
+                ShoppingListConfig.ItemDisplayEntry.SPACE_RECIPE_1
+                    to ShoppingListConfig.ItemDisplayEntry.SPACE_RECIPE_1.toNonAdaptive(condition = ::isInRecipe),
+                ShoppingListConfig.ItemDisplayEntry.SLASH_YELLOW_1 to ShoppingListConfig.ItemDisplayEntry.SLASH_YELLOW_1.toNonAdaptive(),
+                ShoppingListConfig.ItemDisplayEntry.X_GRAY_RECIPE_1
+                    to ShoppingListConfig.ItemDisplayEntry.X_GRAY_RECIPE_1.toNonAdaptive(condition = ::isInRecipe),
+                ShoppingListConfig.ItemDisplayEntry.X_YELLOW_1 to ShoppingListConfig.ItemDisplayEntry.X_YELLOW_1.toNonAdaptive(),
                 // stuff with values
-                ShoppingListConfig.ItemDisplayEntry.ITEM_NAME to DisplayEntryResolver.Adaptive { it.internalName.repoItemName },
+                ShoppingListConfig.ItemDisplayEntry.ITEM_NAME
+                    to DisplayEntryResolver.Adaptive { it.internalName.repoItemName },
                 ShoppingListConfig.ItemDisplayEntry.ITEM_NAME_WITHOUT_RARITY_COLOR
                     to DisplayEntryResolver.Adaptive { "§f${it.internalName.itemNameWithoutColor}" },
                 ShoppingListConfig.ItemDisplayEntry.AMOUNT_IN_RECIPE
-                    to DisplayEntryResolver.Adaptive(condition = { it.parentItem != null }) { "§7${it.amount.clean()}x" },
-                ShoppingListConfig.ItemDisplayEntry.AMOUNT_TOTAL to DisplayEntryResolver.Adaptive { "§e${it.totalAmount.clean()}" },
+                    to DisplayEntryResolver.Adaptive(condition = ::isInRecipe) { "§7${it.amount.clean()}" },
+                ShoppingListConfig.ItemDisplayEntry.AMOUNT_TOTAL
+                    to DisplayEntryResolver.Adaptive { "§e${it.totalAmount.clean()}" },
+                ShoppingListConfig.ItemDisplayEntry.AMOUNT_POSSESSED
+                    to DisplayEntryResolver.Adaptive { "§e${it.getPossessedAmount().clean()}" },
             )
 
             init {
