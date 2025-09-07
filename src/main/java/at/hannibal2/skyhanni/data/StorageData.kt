@@ -1,11 +1,8 @@
-package at.hannibal2.skyhanni.api
+package at.hannibal2.skyhanni.data
 
 import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.ConfigFileType
-import at.hannibal2.skyhanni.data.ClickType
-import at.hannibal2.skyhanni.data.IslandType
-import at.hannibal2.skyhanni.data.ProfileStorageData
 import at.hannibal2.skyhanni.data.model.SkyHanniInventoryContainer
 import at.hannibal2.skyhanni.events.BlockClickEvent
 import at.hannibal2.skyhanni.events.DebugDataCollectEvent
@@ -30,7 +27,7 @@ import java.util.NavigableMap
 import java.util.TreeMap
 
 @SkyHanniModule
-object StorageApi {
+object StorageData {
 
     private val storage: NavigableMap<String, SkyHanniInventoryContainer>
         get() = ProfileStorageData.storageProfiles?.data ?: TreeMap()
