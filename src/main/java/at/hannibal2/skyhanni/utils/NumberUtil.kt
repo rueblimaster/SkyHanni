@@ -42,8 +42,8 @@ object NumberUtil {
     )
 
     // 1234 -> 1.2k
-    fun Number.shortFormat(preciseBillions: Boolean = false): String {
-        return compactFormat(this, preciseBillions)
+    fun Number.shortFormat(preciseBillions: Boolean = false, round: Boolean = false): String {
+        return compactFormat(this, preciseBillions, round)
     }
 
     /**
@@ -51,7 +51,7 @@ object NumberUtil {
      * @link https://stackoverflow.com/a/30661479
      * @author assylias
      */
-    private fun compactFormat(input: Number, preciseBillions: Boolean = false): String {
+    private fun compactFormat(input: Number, preciseBillions: Boolean = false, round: Boolean = false): String {
         val absDoubleValue = input.toDouble().absoluteValue
         if (absDoubleValue < 1) return input.toString()
 
@@ -64,7 +64,8 @@ object NumberUtil {
 
         val (divideBy, suffix) = suffixes.floorEntry(value)
 
-        val truncated = value / (divideBy / 10) // the number part of the output times 10
+        val truncatedAsDouble = value.toDouble() / (divideBy / 10) // the number part of the output times 10
+        val truncated = if (round) truncatedAsDouble.roundTo(0).toInt() else truncatedAsDouble.toInt()
 
         val truncatedAt = if (suffix == "M") 1000 else if (suffix == "B") 1000000 else 100
 
