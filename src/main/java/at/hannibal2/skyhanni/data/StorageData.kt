@@ -1,6 +1,7 @@
 package at.hannibal2.skyhanni.data
 
 import at.hannibal2.skyhanni.SkyHanniMod
+import at.hannibal2.skyhanni.api.StorageApi
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.ConfigFileType
 import at.hannibal2.skyhanni.data.model.SkyHanniInventoryContainer
@@ -26,10 +27,13 @@ import net.minecraft.item.ItemStack
 import java.util.NavigableMap
 import java.util.TreeMap
 
+/**
+ * Do not use this object directly, use [StorageApi] instead
+ */
 @SkyHanniModule
 object StorageData {
 
-    private val storage: NavigableMap<String, SkyHanniInventoryContainer>
+    internal val storage: NavigableMap<String, SkyHanniInventoryContainer>
         get() = ProfileStorageData.storageProfiles?.data ?: TreeMap()
 
     /**
@@ -58,18 +62,13 @@ object StorageData {
         "Rift Storage(?: \\((?<page>\\d+)/\\d+\\))?",
     )
 
-    val accessStorage: Map<String, SkyHanniInventoryContainer> get() = storage
-    val enderchest: Map<String, SkyHanniInventoryContainer> get() = subMapOfStringsStartingWith("Ender Chest", storage)
-    val backpack: Map<String, SkyHanniInventoryContainer> get() = subMapOfStringsStartingWith("Backpack", storage)
-    val riftStorage: Map<String, SkyHanniInventoryContainer> get() = subMapOfStringsStartingWith("Rift Storage", storage)
     private val mutableIslandChest: MutableMap<String, SkyHanniInventoryContainer>
         get() = subMapOfStringsStartingWith(
             "Private Island Chest",
             storage,
         )
-    val islandChest: Map<String, SkyHanniInventoryContainer> get() = mutableIslandChest
 
-    var currentStorage: SkyHanniInventoryContainer? = null
+    internal var currentStorage: SkyHanniInventoryContainer? = null
         private set
 
     @HandleEvent(onlyOnSkyblock = true)
@@ -130,7 +129,7 @@ object StorageData {
                     "Something went wrong during Private Island cleanup",
                     "Tried to remove a container that isn't a chest",
                     "Chest" to chest,
-                    "Storage" to accessStorage,
+                    "Storage" to storage,
                 )
                 return@removeIf false
             }
