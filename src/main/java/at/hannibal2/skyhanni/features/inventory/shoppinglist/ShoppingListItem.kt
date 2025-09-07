@@ -126,15 +126,20 @@ class ShoppingListItem(
                 ),
                 // stuff with values
                 ShoppingListConfig.ItemDisplayEntry.ITEM_NAME to DisplayEntryResolver.Adaptive { it.internalName.repoItemName },
-                ShoppingListConfig.ItemDisplayEntry.ITEM_NAME_WITHOUT_RARITY_COLOR to DisplayEntryResolver.Adaptive { "§f${it.internalName.itemNameWithoutColor}" },
-                ShoppingListConfig.ItemDisplayEntry.AMOUNT_IN_RECIPE to DisplayEntryResolver.Adaptive(condition = { it.parentItem != null }) { "§7${it.amount.clean()}x" },
+                ShoppingListConfig.ItemDisplayEntry.ITEM_NAME_WITHOUT_RARITY_COLOR
+                    to DisplayEntryResolver.Adaptive { "§f${it.internalName.itemNameWithoutColor}" },
+                ShoppingListConfig.ItemDisplayEntry.AMOUNT_IN_RECIPE
+                    to DisplayEntryResolver.Adaptive(condition = { it.parentItem != null }) { "§7${it.amount.clean()}x" },
                 ShoppingListConfig.ItemDisplayEntry.AMOUNT_TOTAL to DisplayEntryResolver.Adaptive { "§e${it.totalAmount.clean()}" },
             )
 
             init {
                 val missingEntries = ShoppingListConfig.ItemDisplayEntry.entries.filter { !displayEntries.containsKey(it) }
                 if (missingEntries.isNotEmpty()) {
-                    error("not all ShoppingListConfig.ItemDisplayEntry entries are present in displayEntries. Missing entries: $missingEntries")
+                    error(
+                        "not all ShoppingListConfig.ItemDisplayEntry entries are present in displayEntries. " +
+                            "Missing entries: $missingEntries",
+                    )
                 }
             }
 
@@ -153,7 +158,7 @@ class ShoppingListItem(
                 val resolvers = getResolvers(item)
 
                 return buildString {
-                    append("§8${indent}")
+                    append("§8$indent")
 
                     resolvers.zipWithNext { current, next ->
                         append(current.getRepresentation(item))
