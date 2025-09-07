@@ -112,6 +112,7 @@ class ShoppingListItem(
                 }
             }
 
+            // make this clean with millions and seperators etc
             private fun Double.clean(): String =
                 if (this % 1.0 == 0.0) this.toInt().toString() else this.roundTo(2).toString()
 
