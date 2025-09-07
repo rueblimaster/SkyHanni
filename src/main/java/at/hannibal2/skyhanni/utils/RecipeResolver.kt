@@ -34,7 +34,7 @@ class RecipeResolver(
             .filter { recipe -> recipe.recipeType == RecipeType.CRAFTING || recipe.recipeType == RecipeType.KAT_UPGRADE }
             .filter { !it.isRecursing() && !it.isRecursingCompacting() }
         if (ignoreBlocksOfOres && recipes.size > 1) {
-            val recipesWithoutBlocksOfOres = recipes.filter { it.comesFromBlockOfOre() }
+            val recipesWithoutBlocksOfOres = recipes.filter { !it.comesFromBlockOfOre() }
             if (recipesWithoutBlocksOfOres.isNotEmpty() && recipesWithoutBlocksOfOres.size != recipes.size) {
                 recipes = recipesWithoutBlocksOfOres
             }
