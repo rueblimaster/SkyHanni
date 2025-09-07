@@ -27,8 +27,8 @@ class RecipeResolver(
 
     private val possibleRecipes: List<PrimitiveRecipe> =
         NeuItems.getRecipes(internalName).filter { recipe ->
-            (recipe.recipeType == RecipeType.CRAFTING || recipe.recipeType == RecipeType.KAT_UPGRADE)
-                && !recipe.isRecursing() && !recipe.isRecursingCompacting()
+            (recipe.recipeType == RecipeType.CRAFTING || recipe.recipeType == RecipeType.KAT_UPGRADE) &&
+                !recipe.isRecursing() && !recipe.isRecursingCompacting()
         }.also {
             if (it.size == 1) {
                 recipe = it[0]
