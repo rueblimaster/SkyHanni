@@ -12,8 +12,8 @@ import at.hannibal2.skyhanni.data.SackItem
 import at.hannibal2.skyhanni.data.StorageData
 import at.hannibal2.skyhanni.data.model.SkyHanniInventoryContainer
 import at.hannibal2.skyhanni.utils.InventoryUtils
-import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventory
 import at.hannibal2.skyhanni.utils.NeuInternalName
+import at.hannibal2.skyhanni.utils.PrimitiveItemStack
 import at.hannibal2.skyhanni.utils.PrimitiveItemStack.Companion.toPrimitiveStackOrNull
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.StringUtils.subMapOfStringsStartingWith
@@ -25,65 +25,18 @@ object StorageApi {
     @Suppress("unused")
     val currentStorage: SkyHanniInventoryContainer? get() = StorageData.currentStorage
 
-    enum class StorageType(private val cache: StorageDataProvider) {
-        Inventory(
-            object : CachedProvider(itemProvider = { InventoryUtils.getItemsInOwnInventory() }) {
-                override fun getTotal(name: NeuInternalName): Double = name.getAmountInInventory().toDouble()
-            },
-        ),
+    enum class StorageType(private val cache: StorageDataHolder) {
+        Inventory(ItemStackHolder { InventoryUtils.getItemsInOwnInventory() }),
         Enderchest(InventoryTotalsCache { subMapOfStringsStartingWith("Ender Chest", StorageData.storage) }),
         Backpack(InventoryTotalsCache { subMapOfStringsStartingWith("Backpack", StorageData.storage) }),
         RiftStorage(InventoryTotalsCache { subMapOfStringsStartingWith("Rift Storage", StorageData.storage) }),
-        IslandChest(
-            InventoryTotalsCache(
-                { if (IslandType.PRIVATE_ISLAND.isCurrent()) 0.2.seconds else 5.seconds },
-            ) { subMapOfStringsStartingWith("Private Island Chest", StorageData.storage) },
-        ),
-        Sack(
-            object : StorageDataProvider {
-                override fun getTotal(name: NeuInternalName): Double {
-                    val sackItem: SackItem = SackApi.sackData[name] ?: return 0.0
-                    if (!sackItem.statusIsCorrectOrAlright()) return 0.0
-                    return sackItem.amount.toDouble()
-                }
-
-                override fun getAllTotals(): Map<NeuInternalName, Double> =
-                    SackApi.sackData.filterValues { it.statusIsCorrectOrAlright() }.mapValues { it.value.amount.toDouble() }
-            },
-        ),
-        Quiver(
-            object : StorageDataProvider {
-                override fun getTotal(name: NeuInternalName): Double = QuiverApi.getArrowByNameOrNull(name)?.amount?.toDouble() ?: 0.0
-
-                override fun getAllTotals(): Map<NeuInternalName, Double> =
-                    QuiverApi.arrowTypes.associate { it.internalName to it.amount.toDouble() }
-            },
-        ),
-        Pets(
-            object : SimpleProvider {
-                override fun getAllTotals(): Map<NeuInternalName, Double> {
-                    val pets = PetStorageApi.petStorage?.pets ?: return mapOf()
-                    return pets.groupBy { it.petInternalName }.mapValues { it.value.size.toDouble() }
-                }
-            },
-        ),
-        Purse(
-            object : SimpleProvider {
-                override fun getAllTotals(): Map<NeuInternalName, Double> =
-                    mapOf(NeuInternalName.SKYBLOCK_COIN to PurseApi.currentPurse)
-            },
-        ),
-        Bank(
-            object : SimpleProvider {
-                override fun getAllTotals(): Map<NeuInternalName, Double> = mapOf(NeuInternalName.SKYBLOCK_COIN to BankApi.totalCoins)
-            },
-        ),
-        Bits(
-            object : SimpleProvider {
-                override fun getAllTotals(): Map<NeuInternalName, Double> =
-                    mapOf(NeuInternalName.SKYBLOCK_BIT to BitsApi.bitsAvailable.toDouble())
-            },
-        ),
+        IslandChest(IslandChestHolder),
+        Sack(SackHolder),
+        Quiver(QuiverHolder),
+        Pets(ItemStackHolder { PetStorageApi.petStorage?.pets?.map { it.getItemStackOrNull() } ?: listOf() }),
+        Purse(SimpleHolder { mapOf(NeuInternalName.SKYBLOCK_COIN to PurseApi.currentPurse) }),
+        Bank(SimpleHolder { mapOf(NeuInternalName.SKYBLOCK_COIN to BankApi.totalCoins) }),
+        Bits(SimpleHolder { mapOf(NeuInternalName.SKYBLOCK_BIT to BitsApi.bitsAvailable.toDouble()) }),
         // TODO: add wardrobe
         // TODO: add equipment
         // TODO: add fishing bag
@@ -97,6 +50,32 @@ object StorageApi {
         fun getAllTotals(): Map<NeuInternalName, Double> = cache.getAllTotals()
     }
 
+    // <editor-fold desc="All individual holders">
+    private object IslandChestHolder :
+        InventoryTotalsCache(storageProvider = { subMapOfStringsStartingWith("Private Island Chest", StorageData.storage) }) {
+        override fun getCacheDuration(): Duration =
+            if (IslandType.PRIVATE_ISLAND.isCurrent()) super.getCacheDuration() else 5.seconds
+    }
+
+    private object SackHolder : StorageDataHolder {
+        override fun getTotal(name: NeuInternalName): Double {
+            val sackItem: SackItem = SackApi.sackData[name] ?: return 0.0
+            if (!sackItem.statusIsCorrectOrAlright()) return 0.0
+            return sackItem.amount.toDouble()
+        }
+
+        override fun getAllTotals(): Map<NeuInternalName, Double> =
+            SackApi.sackData.filterValues { it.statusIsCorrectOrAlright() }.mapValues { it.value.amount.toDouble() }
+    }
+
+    private object QuiverHolder : StorageDataHolder {
+        override fun getTotal(name: NeuInternalName): Double = QuiverApi.getArrowByNameOrNull(name)?.amount?.toDouble() ?: 0.0
+
+        override fun getAllTotals(): Map<NeuInternalName, Double> =
+            QuiverApi.arrowTypes.associate { it.internalName to it.amount.toDouble() }
+    }
+    // </editor-fold>
+
     fun NeuInternalName.getAmountIn(storageType: StorageType): Double = storageType.getTotal(this)
     fun NeuInternalName.getAmountIn(storageTypes: Collection<StorageType>): Double = storageTypes.sumOf { it.getTotal(this) }
     fun NeuInternalName.getAmountNotIn(storageType: StorageType): Double = getAmountIn(StorageType.entries.minus(storageType))
@@ -107,29 +86,34 @@ object StorageApi {
 
     fun NeuInternalName.getAllAmounts(): Map<StorageType, Double> = StorageType.entries.associateWith { it.getTotal(this) }
 
-    private interface StorageDataProvider {
+    private interface StorageDataHolder {
         fun getTotal(name: NeuInternalName): Double
         fun getAllTotals(): Map<NeuInternalName, Double>
     }
 
-    private interface SimpleProvider : StorageDataProvider {
+    private class SimpleHolder(
+        val getAllAmounts: () -> Map<NeuInternalName, Double>,
+    ) : StorageDataHolder {
         override fun getTotal(name: NeuInternalName): Double = getAllTotals().getOrDefault(name, 0.0)
+        override fun getAllTotals(): Map<NeuInternalName, Double> = getAllAmounts()
     }
 
-    private abstract class CachedProvider(
-        private val cacheDurationProvider: () -> Duration = { 0.2.seconds },
-        private val itemProvider: () -> Collection<ItemStack>,
-    ) : StorageDataProvider {
+    private abstract class SimpleCachedHolder(
+        private val fixedCacheDuration: Duration = 0.2.seconds,
+    ) : StorageDataHolder {
+        // override this function for adaptive cache duration
+        open fun getCacheDuration(): Duration {
+            return fixedCacheDuration
+        }
+
+        abstract fun loadAllTotals(): Map<NeuInternalName, Double>
 
         private var totalsCache: Map<NeuInternalName, Double> = emptyMap()
         private var lastCacheTime: SimpleTimeMark = SimpleTimeMark.farPast()
 
         private fun refreshIfNeeded() {
-            if (lastCacheTime.passedSince() > cacheDurationProvider()) {
-                totalsCache =
-                    itemProvider().mapNotNull { it.toPrimitiveStackOrNull() }.groupingBy { it.internalName }
-                        .fold(0.0) { acc, stack -> acc + stack.amount }
-
+            if (lastCacheTime.passedSince() > getCacheDuration()) {
+                totalsCache = loadAllTotals()
                 lastCacheTime = SimpleTimeMark.now()
             }
         }
@@ -145,8 +129,18 @@ object StorageApi {
         }
     }
 
-    private class InventoryTotalsCache(
-        cacheDurationProvider: () -> Duration = { 0.2.seconds },
+    private open class ItemStackHolder(
+        fixedCacheDuration: Duration = 0.2.seconds,
+        private val itemStacksProvider: () -> Collection<ItemStack?>,
+    ) : SimpleCachedHolder(fixedCacheDuration) {
+        override fun loadAllTotals(): Map<NeuInternalName, Double> {
+            return itemStacksProvider().mapNotNull { it?.toPrimitiveStackOrNull() }.groupingBy { it.internalName }
+                .fold(0.0) { accumulator: Double, element: PrimitiveItemStack -> accumulator + element.amount }
+        }
+    }
+
+    private open class InventoryTotalsCache(
+        fixedCacheDuration: Duration = 0.2.seconds,
         private val storageProvider: () -> Map<String, SkyHanniInventoryContainer>,
-    ) : CachedProvider(cacheDurationProvider, { storageProvider().values.flatMap { it.items }.filterNotNull() })
+    ) : ItemStackHolder(fixedCacheDuration, { storageProvider().values.flatMap { it.items } })
 }
