@@ -31,6 +31,7 @@ class ShoppingListItem(
     val totalAmount: Double
         get() = if (parentItem == null) amount else amount * parentItem.totalAmount
 
+    // TODO: also count blocks as times 9 or 4 if applicable and ShoppingList.config.ignoreBlocksOfOres
     fun getPossessedAmount(): Double {
         return internalName.getTotalAmount()
     }
@@ -164,6 +165,7 @@ class ShoppingListItem(
 
             }
 
+            // TODO: add hover info such as where the item is possessed
             fun getDisplayRepresentation(item: ShoppingListItem, indent: String): String {
                 val resolvers = getResolvers(item)
 
