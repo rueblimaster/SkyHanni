@@ -37,6 +37,8 @@ object EquipmentApi {
 
     private val equipment get() = if (RiftApi.inRift()) storage?.riftSlots else storage?.slots
 
+    fun getAllEquipments(): List<ItemStack?> = EquipmentSlot.entries.map { getEquipment(it) }
+
     fun getEquipment(slot: EquipmentSlot): ItemStack? = equipment?.get(slot.ordinal)
     private fun setEquipment(slot: EquipmentSlot, itemStack: ItemStack?) = equipment?.set(slot.ordinal, itemStack)
 

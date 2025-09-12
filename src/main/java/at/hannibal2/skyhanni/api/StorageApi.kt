@@ -11,6 +11,7 @@ import at.hannibal2.skyhanni.data.SackApi
 import at.hannibal2.skyhanni.data.SackItem
 import at.hannibal2.skyhanni.data.StorageData
 import at.hannibal2.skyhanni.data.model.SkyHanniInventoryContainer
+import at.hannibal2.skyhanni.features.inventory.EquipmentApi
 import at.hannibal2.skyhanni.features.inventory.wardrobe.WardrobeApi
 import at.hannibal2.skyhanni.utils.InventoryUtils
 import at.hannibal2.skyhanni.utils.NeuInternalName
@@ -33,13 +34,17 @@ object StorageApi {
         RiftStorage(InventoryTotalsCache { subMapOfStringsStartingWith("Rift Storage", StorageData.storage) }),
         IslandChest(IslandChestHolder),
         Sack(SackHolder),
-        Wardrobe(ItemStackHolder { WardrobeApi.storage?.data?.values?.flatMap { it.armor } ?: listOf() }),
+        Wardrobe(
+            ItemStackHolder {
+                ((WardrobeApi.storage?.data?.values?.flatMap { it.armor } ?: listOf<ItemStack>()) + InventoryUtils.getArmor()).toSet()
+            },
+        ),
+        Equipment(ItemStackHolder { EquipmentApi.getAllEquipments() }),
         Pets(ItemStackHolder { PetStorageApi.petStorage?.pets?.map { it.getItemStackOrNull() } ?: listOf() }),
         Quiver(QuiverHolder),
         Purse(SimpleHolder { mapOf(NeuInternalName.SKYBLOCK_COIN to PurseApi.currentPurse) }),
         Bank(SimpleHolder { mapOf(NeuInternalName.SKYBLOCK_COIN to BankApi.totalCoins) }),
         Bits(SimpleHolder { mapOf(NeuInternalName.SKYBLOCK_BIT to BitsApi.bitsAvailable.toDouble()) }),
-        // TODO: add equipment
         // TODO: add fishing bag
         // TODO: add potion bag
         // TODO: add accessory bag
