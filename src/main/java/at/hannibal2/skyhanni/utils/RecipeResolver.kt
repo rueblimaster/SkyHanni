@@ -202,7 +202,7 @@ class RecipeResolver(
         }
 
         val firstIngredient = recipes.first().ingredients.firstOrNull() ?: return false
-        if (recipes.first().ingredients.size != 9) {
+        if (recipes.first().ingredients.size != 9 || recipes.first().ingredients.size != 4) {
             return false
         }
         if (!recipes.first().ingredients.all { it.isSameAs(firstIngredient) }) {
