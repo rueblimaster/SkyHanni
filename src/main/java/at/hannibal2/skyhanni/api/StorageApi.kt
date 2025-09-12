@@ -4,6 +4,8 @@ import at.hannibal2.skyhanni.data.BankApi
 import at.hannibal2.skyhanni.data.BitsApi
 import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.data.PurseApi
+import at.hannibal2.skyhanni.data.SackApi
+import at.hannibal2.skyhanni.data.SackItem
 import at.hannibal2.skyhanni.data.StorageData
 import at.hannibal2.skyhanni.data.model.SkyHanniInventoryContainer
 import at.hannibal2.skyhanni.utils.InventoryUtils
@@ -33,6 +35,18 @@ object StorageApi {
             InventoryTotalsCache(
                 { if (IslandType.PRIVATE_ISLAND.isCurrent()) 0.2.seconds else 5.seconds },
             ) { subMapOfStringsStartingWith("Private Island Chest", StorageData.storage) },
+        ),
+        Sack(
+            object : StorageDataProvider {
+                override fun getTotal(name: NeuInternalName): Double {
+                    val sackItem: SackItem = SackApi.sackData[name] ?: return 0.0
+                    if (!sackItem.statusIsCorrectOrAlright()) return 0.0
+                    return sackItem.amount.toDouble()
+                }
+
+                override fun getAllTotals(): Map<NeuInternalName, Double> =
+                    SackApi.sackData.filterValues { it.statusIsCorrectOrAlright() }.mapValues { it.value.amount.toDouble() }
+            },
         ),
         Purse(
             object : SimpleProvider {
