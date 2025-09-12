@@ -6,6 +6,8 @@ import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.data.PurseApi
 import at.hannibal2.skyhanni.data.StorageData
 import at.hannibal2.skyhanni.data.model.SkyHanniInventoryContainer
+import at.hannibal2.skyhanni.utils.InventoryUtils
+import at.hannibal2.skyhanni.utils.InventoryUtils.getAmountInInventory
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.PrimitiveItemStack.Companion.toPrimitiveStackOrNull
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
@@ -18,6 +20,11 @@ object StorageApi {
     val currentStorage: SkyHanniInventoryContainer? get() = StorageData.currentStorage
 
     enum class StorageType(private val cache: StorageDataProvider) {
+        Inventory(
+            object : CachedProvider(itemProvider = { InventoryUtils.getItemsInOwnInventory() }) {
+                override fun getTotal(name: NeuInternalName): Double = name.getAmountInInventory().toDouble()
+            },
+        ),
         Enderchest(InventoryTotalsCache { subMapOfStringsStartingWith("Ender Chest", StorageData.storage) }),
         Backpack(InventoryTotalsCache { subMapOfStringsStartingWith("Backpack", StorageData.storage) }),
         RiftStorage(InventoryTotalsCache { subMapOfStringsStartingWith("Rift Storage", StorageData.storage) }),
@@ -61,7 +68,7 @@ object StorageApi {
     fun NeuInternalName.getAllAmounts(): Map<StorageType, Double> =
         StorageType.entries.associateWith { it.getTotal(this) }
 
-    private sealed interface StorageDataProvider {
+    private interface StorageDataProvider {
         fun getTotal(name: NeuInternalName): Double
         fun getAllTotals(): Map<NeuInternalName, Double>
     }
@@ -70,20 +77,19 @@ object StorageApi {
         override fun getTotal(name: NeuInternalName): Double = getAllTotals().getOrDefault(name, 0.0)
     }
 
-    private class InventoryTotalsCache(
+    private abstract class CachedProvider(
         private val cacheDurationProvider: () -> Duration = { 0.2.seconds },
-        private val storageProvider: () -> Map<String, SkyHanniInventoryContainer>,
+        private val itemProvider: () -> Collection<ItemStack>,
     ) : StorageDataProvider {
+
         private var totalsCache: Map<NeuInternalName, Double> = emptyMap()
         private var lastCacheTime: SimpleTimeMark = SimpleTimeMark.farPast()
 
         private fun refreshIfNeeded() {
             if (lastCacheTime.passedSince() > cacheDurationProvider()) {
-                totalsCache = storageProvider().values
-                    .flatMap { it.items }
-                    .mapNotNull { it?.toPrimitiveStackOrNull() }
-                    .groupingBy { it.internalName }
-                    .fold(0.0) { acc, stack -> acc + stack.amount }
+                totalsCache =
+                    itemProvider().mapNotNull { it.toPrimitiveStackOrNull() }.groupingBy { it.internalName }
+                        .fold(0.0) { acc, stack -> acc + stack.amount }
 
                 lastCacheTime = SimpleTimeMark.now()
             }
@@ -99,4 +105,9 @@ object StorageApi {
             return totalsCache
         }
     }
+
+    private class InventoryTotalsCache(
+        cacheDurationProvider: () -> Duration = { 0.2.seconds },
+        private val storageProvider: () -> Map<String, SkyHanniInventoryContainer>,
+    ) : CachedProvider(cacheDurationProvider, { storageProvider().values.flatMap { it.items }.filterNotNull() })
 }
