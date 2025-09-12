@@ -69,7 +69,8 @@ object StorageApi {
         ),
         Purse(
             object : SimpleProvider {
-                override fun getAllTotals(): Map<NeuInternalName, Double> = mapOf(NeuInternalName.SKYBLOCK_COIN to PurseApi.currentPurse)
+                override fun getAllTotals(): Map<NeuInternalName, Double> =
+                    mapOf(NeuInternalName.SKYBLOCK_COIN to PurseApi.currentPurse)
             },
         ),
         Bank(
@@ -83,8 +84,13 @@ object StorageApi {
                     mapOf(NeuInternalName.SKYBLOCK_BIT to BitsApi.bitsAvailable.toDouble())
             },
         ),
-        // TODO: add sacks and other kind of bags
-        // TODO: add waredrobe
+        // TODO: add wardrobe
+        // TODO: add equipment
+        // TODO: add fishing bag
+        // TODO: add potion bag
+        // TODO: add accessory bag
+        // TODO: add time pocket
+        // TODO: add event rewards?
         ;
 
         fun getTotal(name: NeuInternalName): Double = cache.getTotal(name)
@@ -99,8 +105,7 @@ object StorageApi {
 
     fun NeuInternalName.getTotalAmount(): Double = getAmountIn(StorageType.entries)
 
-    fun NeuInternalName.getAllAmounts(): Map<StorageType, Double> =
-        StorageType.entries.associateWith { it.getTotal(this) }
+    fun NeuInternalName.getAllAmounts(): Map<StorageType, Double> = StorageType.entries.associateWith { it.getTotal(this) }
 
     private interface StorageDataProvider {
         fun getTotal(name: NeuInternalName): Double
