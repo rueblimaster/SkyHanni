@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.api
 
+import at.hannibal2.skyhanni.api.pet.PetStorageApi
 import at.hannibal2.skyhanni.data.BankApi
 import at.hannibal2.skyhanni.data.BitsApi
 import at.hannibal2.skyhanni.data.IslandType
@@ -56,6 +57,14 @@ object StorageApi {
 
                 override fun getAllTotals(): Map<NeuInternalName, Double> =
                     QuiverApi.arrowTypes.associate { it.internalName to it.amount.toDouble() }
+            },
+        ),
+        Pets(
+            object : SimpleProvider {
+                override fun getAllTotals(): Map<NeuInternalName, Double> {
+                    val pets = PetStorageApi.petStorage?.pets ?: return mapOf()
+                    return pets.groupBy { it.petInternalName }.mapValues { it.value.size.toDouble() }
+                }
             },
         ),
         Purse(
