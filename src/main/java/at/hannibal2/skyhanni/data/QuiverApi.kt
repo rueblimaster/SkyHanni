@@ -51,7 +51,7 @@ object QuiverApi {
             arrowAmount[this.internalName] = value
         }
 
-    private var arrows: List<ArrowType> = listOf()
+    var arrowTypes: List<ArrowType> = listOf()
 
     var wearingSkeletonMasterChestplate = false
         private set
@@ -240,13 +240,13 @@ object QuiverApi {
                     val type = group("type")
                     val amount = group("amount").formatInt()
                     val currentArrowType = getArrowByNameOrNull(type) ?: run {
-                        if (arrows.isEmpty()) {
+                        if (arrowTypes.isEmpty()) {
                             ErrorManager.skyHanniError("Quiver arrows list is empty! Type /shupdaterepo to try to fix it.")
                         }
                         ErrorManager.logErrorWithData(
                             UnknownArrowType("Unknown arrow type: $type"),
                             "Unknown arrow type: $type",
-                            "arrows" to arrows,
+                            "arrowTypes" to arrowTypes,
                             "line" to line,
                         )
                         return
@@ -272,11 +272,11 @@ object QuiverApi {
     }
 
     fun getArrowByNameOrNull(name: String): ArrowType? {
-        return arrows.firstOrNull { it.arrow == name }
+        return arrowTypes.firstOrNull { it.arrow == name }
     }
 
     fun getArrowByNameOrNull(internalName: NeuInternalName): ArrowType? {
-        return arrows.firstOrNull { it.internalName == internalName }
+        return arrowTypes.firstOrNull { it.internalName == internalName }
     }
 
     private fun NeuInternalName.asArrowTypeOrNull() = getArrowByNameOrNull(this)
@@ -315,7 +315,7 @@ object QuiverApi {
     @HandleEvent
     fun onRepoReload(event: RepositoryReloadEvent) {
         val arrowData = event.getConstant<ArrowTypeJson>("ArrowTypes")
-        arrows = arrowData.arrows.map { ArrowType(it.value.arrow, it.key.toInternalName()) }
+        arrowTypes = arrowData.arrows.map { ArrowType(it.value.arrow, it.key.toInternalName()) }
 
         NONE_ARROW_TYPE = getArrowByNameOrNull("NONE".toInternalName())
         FLINT_ARROW_TYPE = getArrowByNameOrNull("ARROW".toInternalName())

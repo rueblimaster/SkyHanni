@@ -4,6 +4,8 @@ import at.hannibal2.skyhanni.data.BankApi
 import at.hannibal2.skyhanni.data.BitsApi
 import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.data.PurseApi
+import at.hannibal2.skyhanni.data.QuiverApi
+import at.hannibal2.skyhanni.data.QuiverApi.amount
 import at.hannibal2.skyhanni.data.SackApi
 import at.hannibal2.skyhanni.data.SackItem
 import at.hannibal2.skyhanni.data.StorageData
@@ -46,6 +48,14 @@ object StorageApi {
 
                 override fun getAllTotals(): Map<NeuInternalName, Double> =
                     SackApi.sackData.filterValues { it.statusIsCorrectOrAlright() }.mapValues { it.value.amount.toDouble() }
+            },
+        ),
+        Quiver(
+            object : StorageDataProvider {
+                override fun getTotal(name: NeuInternalName): Double = QuiverApi.getArrowByNameOrNull(name)?.amount?.toDouble() ?: 0.0
+
+                override fun getAllTotals(): Map<NeuInternalName, Double> =
+                    QuiverApi.arrowTypes.associate { it.internalName to it.amount.toDouble() }
             },
         ),
         Purse(
