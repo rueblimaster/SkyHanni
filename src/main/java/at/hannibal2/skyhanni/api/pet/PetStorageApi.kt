@@ -52,7 +52,7 @@ import kotlin.time.Duration.Companion.seconds
 object PetStorageApi {
 
     private val config get() = SkyHanniMod.feature.misc.pets
-    private val petStorage get() = ProfileStorageData.petProfiles
+    val petStorage get() = ProfileStorageData.petProfiles
     private val patternGroup = RepoPattern.group("misc.pet.storage")
     private const val PET_MENU_CURRENT_PET_SLOT = 4
     private const val SB_MENU_CURRENT_PET_SLOT = 30
