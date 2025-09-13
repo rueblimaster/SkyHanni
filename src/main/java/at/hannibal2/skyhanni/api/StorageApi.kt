@@ -36,11 +36,11 @@ object StorageApi {
         Sack(SackHolder),
         Wardrobe(
             ItemStackHolder {
-                ((WardrobeApi.storage?.data?.values?.flatMap { it.armor } ?: listOf<ItemStack>()) + InventoryUtils.getArmor()).toSet()
+                ((WardrobeApi.storage?.data?.values?.flatMap { it.armor }.orEmpty()) + InventoryUtils.getArmor()).toSet()
             },
         ),
         Equipment(ItemStackHolder { EquipmentApi.getAllEquipments() }),
-        Pets(ItemStackHolder { PetStorageApi.petStorage?.pets?.map { it.getItemStackOrNull() } ?: listOf() }),
+        Pets(ItemStackHolder { PetStorageApi.petStorage?.pets?.map { it.getItemStackOrNull() }.orEmpty()}),
         Quiver(QuiverHolder),
         Purse(SimpleHolder { mapOf(NeuInternalName.SKYBLOCK_COIN to PurseApi.currentPurse) }),
         Bank(SimpleHolder { mapOf(NeuInternalName.SKYBLOCK_COIN to BankApi.totalCoins) }),
