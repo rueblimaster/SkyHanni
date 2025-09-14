@@ -1,8 +1,11 @@
 package at.hannibal2.skyhanni.config.commands.brigadier
 
 import at.hannibal2.skyhanni.config.commands.brigadier.arguments.InternalNameArgumentType
+import at.hannibal2.skyhanni.utils.LorenzRarity
 import at.hannibal2.skyhanni.utils.NeuInternalName
+import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
+import at.hannibal2.skyhanni.utils.PetUtils
 import at.hannibal2.skyhanni.utils.StringUtils.hasWhitespace
 import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.arguments.ArgumentType
@@ -97,6 +100,40 @@ object BrigadierUtils {
         EMPTY,
     }
 
+    private fun isPet(rawInput: String) = rawInput.replace(" ", "_").lowercase().let { input ->
+        (input.contains("pet") && (input.contains("_pet_") || input.startsWith("pet_") || input.endsWith("_pet")))
+    }
+
+    private fun parsePetFromString(input: String): NeuInternalName? {
+        if (!isPet(input)) {
+            println("is not a pet: $input")
+            println(PetUtils.getAllPetNames())
+            return null
+        }
+
+        var cleanInput = input.lowercase().replace("_", " ")
+
+        val rarityByName =
+            LorenzRarity.entries.sortedByDescending { it.rawName.length }.firstOrNull { cleanInput.contains(it.rawName, ignoreCase = true) }
+
+        val rarity = if (rarityByName != null) {
+            cleanInput = cleanInput.replace(rarityByName.rawName, "", ignoreCase = true)
+            rarityByName
+        } else {
+            cleanInput.split(" ").last().toIntOrNull()?.let { id ->
+                LorenzRarity.getById(id)?.let {
+                    cleanInput = cleanInput.removeSuffix(id.toString())
+                    it
+                }
+            } ?: LorenzRarity.COMMON
+        }
+
+        cleanInput = cleanInput.trim().removeSuffix(" pet")
+
+        return PetUtils.petWithRarityToInternalName(cleanInput, rarity)
+    }
+
+    // TODO: fix this not working with pets in the PetUtils.displayNameMap (but idk where)
     /** Parses an item (both internal name and item name) into an NeuInternalName. If it fails, it returns an ItemParsingFail instead */
     fun parseItem(
         input: String,
@@ -106,11 +143,16 @@ object BrigadierUtils {
         if (input.isBlank()) return ItemParsingFail.EMPTY
         val withSpaces = input.replace("_", " ")
 
-        fun NeuInternalName.handleItem(): Any = when {
-            !isKnownItem() -> ItemParsingFail.UNKNOWN_ITEM
-            !isValidItem(this) -> ItemParsingFail.DISALLOWED_ITEM
-            else -> this
+        fun NeuInternalName.handleItem(): Any {
+            println("$this ${isKnownItem()}")
+            return when {
+                !isKnownItem() -> ItemParsingFail.UNKNOWN_ITEM
+                !isValidItem(this) -> ItemParsingFail.DISALLOWED_ITEM
+                else -> this
+            }
         }
+
+        parsePetFromString(input)?.let { return it.handleItem() }
 
         return aliases[withSpaces]?.handleItem()
             ?: NeuInternalName.fromItemNameOrInternalName(withSpaces).handleItem()
@@ -205,7 +247,10 @@ object BrigadierUtils {
         if (unEscaped.isBlank() && !showWhenEmpty) return builder.buildFuture()
 
         val lowercaseStart = unEscaped.replace("_", " ")
-        val items = NeuItems.findItemNameStartingWithWithoutNPCs(lowercaseStart, isValidItem).take(limit).map { it.replace(" ", "_") }
+        val items = (
+            NeuItems.findItemNameStartingWithWithoutNPCs(lowercaseStart, isValidItem)
+                + PetUtils.findPetNamesStartingWith(lowercaseStart, isValidItem)
+            ).toSet().take(limit).map { it.replace(" ", "_") }
 
         if (isGreedy) builder.addUnescaped(items) else builder.addOptionalEscaped(items)
         return builder.buildFuture()

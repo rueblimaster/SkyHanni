@@ -18,6 +18,7 @@ import at.hannibal2.skyhanni.features.nether.reputationhelper.CrimsonIsleReputat
 import at.hannibal2.skyhanni.features.nether.reputationhelper.FactionType
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.test.command.ErrorManager
+import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.RegexUtils.firstMatcher
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
@@ -125,6 +126,12 @@ object PetUtils {
         val rarity = LorenzRarity.getById(rarityId) ?: return null
         return name to rarity
     }
+
+    fun findPetNamesStartingWith(prefix: String, valid: (NeuInternalName) -> Boolean = { true }): Set<String> =
+        petInternalNames.filter { valid(it) }.map { it.itemNameWithoutColor.lowercase() }
+            .filter { it.startsWith(prefix) }.toSet()
+
+    fun getAllPetNames(): Set<String> = petInternalNames.map { it.itemNameWithoutColor.lowercase() }.toSet()
 
     private fun NeuInternalName.getProperName() = splitInternalName(this)?.first
     fun getPetProperName(petInternalName: NeuInternalName): String? = splitInternalName(petInternalName)?.first
