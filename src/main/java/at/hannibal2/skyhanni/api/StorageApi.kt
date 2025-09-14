@@ -15,7 +15,6 @@ import at.hannibal2.skyhanni.features.inventory.EquipmentApi
 import at.hannibal2.skyhanni.features.inventory.wardrobe.WardrobeApi
 import at.hannibal2.skyhanni.utils.InventoryUtils
 import at.hannibal2.skyhanni.utils.NeuInternalName
-import at.hannibal2.skyhanni.utils.PrimitiveItemStack
 import at.hannibal2.skyhanni.utils.PrimitiveItemStack.Companion.toPrimitiveStackOrNull
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.StringUtils.subMapOfStringsStartingWith
@@ -40,7 +39,7 @@ object StorageApi {
             },
         ),
         Equipment(ItemStackHolder { EquipmentApi.getAllEquipments() }),
-        Pets(ItemStackHolder { PetStorageApi.petStorage?.pets?.map { it.getItemStackOrNull() }.orEmpty()}),
+        Pets(ItemStackHolder { PetStorageApi.petStorage?.pets?.map { it.getItemStackOrNull() }.orEmpty() }),
         Quiver(QuiverHolder),
         Purse(SimpleHolder { mapOf(NeuInternalName.SKYBLOCK_COIN to PurseApi.currentPurse) }),
         Bank(SimpleHolder { mapOf(NeuInternalName.SKYBLOCK_COIN to BankApi.totalCoins) }),
@@ -140,8 +139,8 @@ object StorageApi {
         private val itemStacksProvider: () -> Collection<ItemStack?>,
     ) : SimpleCachedHolder(fixedCacheDuration) {
         override fun loadAllTotals(): Map<NeuInternalName, Double> {
-            return itemStacksProvider().mapNotNull { it?.toPrimitiveStackOrNull() }.groupingBy { it.internalName }
-                .fold(0.0) { accumulator: Double, element: PrimitiveItemStack -> accumulator + element.amount }
+            return itemStacksProvider().mapNotNull { it?.toPrimitiveStackOrNull() }.groupBy { it.internalName }
+                .mapValues { (_, itemStacks) -> itemStacks.sumOf { it.amount }.toDouble() }
         }
     }
 
