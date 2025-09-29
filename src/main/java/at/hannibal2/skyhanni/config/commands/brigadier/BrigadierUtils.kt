@@ -3,7 +3,6 @@ package at.hannibal2.skyhanni.config.commands.brigadier
 import at.hannibal2.skyhanni.config.commands.brigadier.arguments.InternalNameArgumentType
 import at.hannibal2.skyhanni.utils.LorenzRarity
 import at.hannibal2.skyhanni.utils.NeuInternalName
-import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.PetUtils
 import at.hannibal2.skyhanni.utils.StringUtils.hasWhitespace
@@ -248,8 +247,10 @@ object BrigadierUtils {
 
         val lowercaseStart = unEscaped.replace("_", " ")
         val items = (
-            NeuItems.findItemNameStartingWithWithoutNPCs(lowercaseStart, isValidItem)
-                + PetUtils.findPetNamesStartingWith(lowercaseStart, isValidItem)
+            NeuItems.findItemNameStartingWithWithoutNPCs(lowercaseStart, isValidItem) + PetUtils.findPetNamesStartingWith(
+                lowercaseStart,
+                isValidItem,
+            )
             ).toSet().take(limit).map { it.replace(" ", "_") }
 
         if (isGreedy) builder.addUnescaped(items) else builder.addOptionalEscaped(items)
