@@ -14,6 +14,7 @@ import at.hannibal2.skyhanni.utils.RegexUtils.firstMatcher
 import at.hannibal2.skyhanni.utils.RegexUtils.groupOrNull
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
+import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 
 @SkyHanniModule
@@ -49,12 +50,17 @@ object BankApi {
         when {
             event.inventoryName == "Bank" -> {
                 event.inventoryItems.values.forEach {
-                    if (it.displayName == " ") return@forEach
+                    if (it.displayName.formattedTextCompatLeadingWhiteLessResets() == " ") return@forEach
                     balancePattern.firstMatcher(it.getLore()) {
                         val balance: Double = group("amount").formatDouble()
                         when {
-                            coopAccountPattern.matches(it.displayName.removeColor()) -> coopCoins = balance
-                            personalAccountPattern.matches(it.displayName.removeColor()) -> personalCoins = balance
+                            coopAccountPattern.matches(
+                                it.displayName.formattedTextCompatLeadingWhiteLessResets().removeColor(),
+                            ) -> coopCoins = balance
+
+                            personalAccountPattern.matches(
+                                it.displayName.formattedTextCompatLeadingWhiteLessResets().removeColor(),
+                            ) -> personalCoins = balance
                         }
                     }
                 }
