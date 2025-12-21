@@ -6,6 +6,8 @@ import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.render.gui.ScreenDrawnEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.test.command.ErrorManager
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.inventory.InventoryScreen
 
 /**
  * RenderDisplayHelper determines when to render displays based on
@@ -65,16 +67,17 @@ class RenderDisplayHelper(
             } else return // not in an inventory
         }
 
-        @HandleEvent(eventType = ScreenDrawnEvent::class)
-        fun onOtherRender() {
-            if (InventoryUtils.inSign()) {
-                currentlyVisibleDisplays.filter { it.inSign }.map { it.render() }
-            } else if (InventoryUtils.inChat()) {
-                currentlyVisibleDisplays.filter { it.inChat }.map { it.render() }
-            } else if (InventoryUtils.inIngameMenu()) {
-                currentlyVisibleDisplays.filter { it.inIngameMenu }.map { it.render() }
-            } else return // unknown screen type
-        }
+        // TODO: fix
+//         @HandleEvent(eventType = ScreenDrawnEvent::class)
+//         fun onOtherRender() {
+//             if (InventoryUtils.inSign()) {
+//                 currentlyVisibleDisplays.filter { it.inSign }.map { it.render() }
+//             } else if (InventoryUtils.inChat()) {
+//                 currentlyVisibleDisplays.filter { it.inChat }.map { it.render() }
+//             } else if (InventoryUtils.inIngameMenu()) {
+//                 currentlyVisibleDisplays.filter { it.inIngameMenu }.map { it.render() }
+//             } else return // unknown screen type
+//         }
     }
 
     private fun checkCondition(): Boolean = try {
