@@ -44,6 +44,7 @@ class RenderDisplayHelper(
     companion object {
         val NO_INVENTORY = InventoryDetector { false }
         val ANY_INVENTORY = InventoryDetector { true }
+
         private val allDisplays = mutableListOf<RenderDisplayHelper>()
         private var currentlyVisibleDisplays = emptyList<RenderDisplayHelper>()
 
@@ -67,17 +68,16 @@ class RenderDisplayHelper(
             } else return // not in an inventory
         }
 
-        // TODO: fix
-//         @HandleEvent(eventType = ScreenDrawnEvent::class)
-//         fun onOtherRender() {
-//             if (InventoryUtils.inSign()) {
-//                 currentlyVisibleDisplays.filter { it.inSign }.map { it.render() }
-//             } else if (InventoryUtils.inChat()) {
-//                 currentlyVisibleDisplays.filter { it.inChat }.map { it.render() }
-//             } else if (InventoryUtils.inIngameMenu()) {
-//                 currentlyVisibleDisplays.filter { it.inIngameMenu }.map { it.render() }
-//             } else return // unknown screen type
-//         }
+        @HandleEvent(eventType = ScreenDrawnEvent::class)
+        fun onOtherRender() {
+            if (InventoryUtils.inSign()) {
+                currentlyVisibleDisplays.filter { it.inSign }.map { it.render() }
+            } else if (InventoryUtils.inChat()) {
+                currentlyVisibleDisplays.filter { it.inChat }.map { it.render() }
+            } else if (InventoryUtils.inIngameMenu()) {
+                currentlyVisibleDisplays.filter { it.inIngameMenu }.map { it.render() }
+            } else return // unknown screen type
+        }
     }
 
     private fun checkCondition(): Boolean = try {

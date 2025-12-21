@@ -18,9 +18,11 @@ import at.hannibal2.skyhanni.utils.compat.SkyHanniGuiContainer
 import at.hannibal2.skyhanni.utils.compat.normalizeAsArray
 import at.hannibal2.skyhanni.utils.compat.slotUnderCursor
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.inventory.GuiContainer
+import net.minecraft.client.gui.screens.ChatScreen
+import net.minecraft.client.gui.screens.PauseScreen
 import net.minecraft.client.gui.screens.inventory.ContainerScreen
 import net.minecraft.client.gui.screens.inventory.InventoryScreen
+import net.minecraft.client.gui.screens.inventory.SignEditScreen
 import net.minecraft.client.resources.language.I18n
 import net.minecraft.world.Container
 import net.minecraft.world.SimpleContainer
@@ -74,10 +76,11 @@ object InventoryUtils {
 
     fun inAnyInventory() = inInventory() || inOwnInventory()
 
-    // TODO: fix
-//     fun inSign() = Minecraft.getMinecraft().currentScreen is GuiEditSign
+    fun inSign() = Minecraft.getInstance().screen is SignEditScreen
 
-//     fun inChat() = Minecraft.getMinecraft().currentScreen is GuiChat
+    fun inChat() = Minecraft.getInstance().screen is ChatScreen
+
+    fun inIngameMenu() = Minecraft.getInstance().screen is PauseScreen
 
     fun inContainer() = Minecraft.getInstance().screen is SkyHanniGuiContainer
 
