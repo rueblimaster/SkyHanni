@@ -18,7 +18,7 @@ import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.PrimitiveItemStack.Companion.toPrimitiveStackOrNull
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.StringUtils.subMapOfStringsStartingWith
-import net.minecraft.item.ItemStack
+import net.minecraft.world.item.ItemStack
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
