@@ -25,12 +25,12 @@ object BankApi {
 
     val totalCoins: Double get() = coopCoins + personalCoins
     var coopCoins: Double = 0.0
-        set(value) {
+        private set(value) {
             field = value
             dirty = false
         }
     var personalCoins: Double = 0.0
-        set(value) {
+        private set(value) {
             field = value
             dirty = false
         }
@@ -42,90 +42,7 @@ object BankApi {
 
     private var lastVisitedAccount: Account? = null
 
-    init {
-        InventoryDetector(::onBankOpen) { it.contains("Bank") }
-    }
-
-    private fun onBankOpen(event: InventoryFullyOpenedEvent) {
-        when {
-            event.inventoryName == "Bank" -> {
-                event.inventoryItems.values.forEach {
-                    if (it.displayName.formattedTextCompatLeadingWhiteLessResets() == " ") return@forEach
-                    balancePattern.firstMatcher(it.getLore()) {
-                        val balance: Double = group("amount").formatDouble()
-                        when {
-                            coopAccountPattern.matches(
-                                it.displayName.formattedTextCompatLeadingWhiteLessResets().removeColor(),
-                            ) -> coopCoins = balance
-
-                            personalAccountPattern.matches(
-                                it.displayName.formattedTextCompatLeadingWhiteLessResets().removeColor(),
-                            ) -> personalCoins = balance
-                        }
-                    }
-                }
-            }
-
-            coopAccountPattern.matches(event.inventoryName) -> {
-                lastVisitedAccount = Account.Coop
-                loop@ for (it in event.inventoryItems.values) {
-                    balancePattern.firstMatcher(it.getLore()) {
-                        coopCoins = group("amount").formatDouble()
-                        break@loop
-                    }
-                }
-            }
-
-            personalAccountPattern.matches(event.inventoryName) -> {
-                lastVisitedAccount = Account.Personal
-                loop@ for (it in event.inventoryItems.values) {
-                    balancePattern.firstMatcher(it.getLore()) {
-                        personalCoins = group("amount").formatDouble()
-                        break@loop
-                    }
-                }
-            }
-        }
-    }
-
-    @HandleEvent(onlyOnSkyblock = true)
-    fun onSlotClick(event: GuiContainerEvent.SlotClickEvent) {
-        if (event.item == null) return
-        val lore = event.item.getLore()
-        var change = 0.0
-        depositPattern.firstMatcher(lore) {
-            change += group("amount").formatDouble()
-        }
-        withdrawPattern.firstMatcher(lore) {
-            if (change != 0.0) error("deposit pattern already matched but withdraw pattern did also match.")
-            change -= group("amount").formatDouble()
-        }
-        if (change == 0.0) return
-        when (lastVisitedAccount) {
-            Account.Coop -> coopCoins += change
-            Account.Personal -> personalCoins += change
-            null -> {}
-        }
-    }
-
-    private fun Number.shortFormatLikeSkyblock() = toInt().shortFormat(round = true)
-
-    @HandleEvent
-    fun onWidgetUpdate(event: WidgetUpdateEvent) {
-        if (!event.isWidget(TabWidget.BANK)) return
-
-        event.widget.matchMatcherFirstLine {
-            if (group("amount") == "...") return
-            if (groupOrNull("personal") != null) {
-                // in a coop
-                if (group("amount") != coopCoins.shortFormatLikeSkyblock()) dirty = true
-                if (groupOrNull("personal") != personalCoins.shortFormatLikeSkyblock()) dirty = true
-            } else {
-                // not in a coop
-                if (group("amount") != personalCoins.toInt().shortFormat(round = true)) dirty = true
-            }
-        }
-    }
+    // <editor-fold desc="Patterns">
 
     private val patternGroup = RepoPattern.group("inventory.bank")
 
@@ -173,4 +90,99 @@ object BankApi {
         "account.personal",
         "Personal Bank Account",
     )
+    // </editor-fold>
+
+    init {
+        InventoryDetector(::onBankOpen) { it.contains("Bank") }
+    }
+
+    private fun onBankOpen(event: InventoryFullyOpenedEvent) {
+        when {
+            event.inventoryName == "Bank" -> parseInventoryBank(event)
+            coopAccountPattern.matches(event.inventoryName) -> parseInventoryCoopAccount(event)
+            personalAccountPattern.matches(event.inventoryName) -> parseInventoryPersonalAccount(event)
+        }
+    }
+
+    private fun parseInventoryBank(event: InventoryFullyOpenedEvent) {
+        event.inventoryItems.values.forEach {
+            if (it.displayName.formattedTextCompatLeadingWhiteLessResets() == " ") return@forEach
+
+            balancePattern.firstMatcher(it.getLore()) {
+                val balance: Double = group("amount").formatDouble()
+                when {
+                    coopAccountPattern.matches(
+                        it.displayName.formattedTextCompatLeadingWhiteLessResets().removeColor(),
+                    ) -> coopCoins = balance
+
+                    personalAccountPattern.matches(
+                        it.displayName.formattedTextCompatLeadingWhiteLessResets().removeColor(),
+                    ) -> personalCoins = balance
+                }
+            }
+        }
+    }
+
+    private fun parseInventoryCoopAccount(event: InventoryFullyOpenedEvent) {
+        lastVisitedAccount = Account.Coop
+        for (it in event.inventoryItems.values) {
+            balancePattern.firstMatcher(it.getLore()) {
+                coopCoins = group("amount").formatDouble()
+                return
+            }
+        }
+    }
+
+    private fun parseInventoryPersonalAccount(event: InventoryFullyOpenedEvent) {
+        lastVisitedAccount = Account.Personal
+        for (it in event.inventoryItems.values) {
+            balancePattern.firstMatcher(it.getLore()) {
+                personalCoins = group("amount").formatDouble()
+                return
+            }
+        }
+    }
+
+    private fun parseChangeUponClick(lore: List<String>): Double? {
+        var change: Double? = null
+        depositPattern.firstMatcher(lore) {
+            change = group("amount").formatDouble()
+        }
+        withdrawPattern.firstMatcher(lore) {
+            if (change != null) error("deposit pattern already matched but withdraw pattern did also match.")
+            change = -group("amount").formatDouble()
+        }
+        return change
+    }
+
+    @HandleEvent(onlyOnSkyblock = true)
+    fun onSlotClick(event: GuiContainerEvent.SlotClickEvent) {
+        if (event.item == null) return
+        val change = parseChangeUponClick(event.item.getLore()) ?: return
+
+        when (lastVisitedAccount) {
+            Account.Coop -> coopCoins += change
+            Account.Personal -> personalCoins += change
+            null -> {}
+        }
+    }
+
+    private fun Number.shortFormatLikeSkyblock() = toInt().shortFormat(round = true)
+
+    @HandleEvent
+    fun onWidgetUpdate(event: WidgetUpdateEvent) {
+        if (!event.isWidget(TabWidget.BANK)) return
+
+        event.widget.matchMatcherFirstLine {
+            if (group("amount") == "...") return
+            if (groupOrNull("personal") != null) {
+                // in a coop
+                if (group("amount") != coopCoins.shortFormatLikeSkyblock()) dirty = true
+                if (groupOrNull("personal") != personalCoins.shortFormatLikeSkyblock()) dirty = true
+            } else {
+                // not in a coop
+                if (group("amount") != personalCoins.toInt().shortFormat(round = true)) dirty = true
+            }
+        }
+    }
 }
