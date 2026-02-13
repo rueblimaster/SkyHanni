@@ -1,6 +1,7 @@
 package at.hannibal2.skyhanni.utils
 
 import at.hannibal2.skyhanni.api.event.HandleEvent
+import at.hannibal2.skyhanni.data.OtherInventoryData.Inventory
 import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.InventoryCloseEvent
 import at.hannibal2.skyhanni.events.InventoryFullyOpenedEvent
@@ -9,9 +10,8 @@ import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ItemUtils.itemNameWithoutColor
 import at.hannibal2.skyhanni.utils.compat.MinecraftCompat
 import com.google.gson.annotations.Expose
-import net.minecraft.entity.player.InventoryPlayer
-import net.minecraft.init.Blocks
-import net.minecraft.item.ItemStack
+import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.item.ItemStack
 
 class RecipeResolver(
     @Expose
@@ -88,7 +88,7 @@ class RecipeResolver(
         }
 
         displayItem = ItemUtils.createItemStack(
-            ItemStack(Blocks.diamond_block).item,
+            ItemStack(Blocks.DIAMOND_BLOCK).item,
             "§bSelect Recipe",
             lore,
         )
@@ -129,7 +129,6 @@ class RecipeResolver(
         fun replaceItem(event: ReplaceItemEvent) {
             val displayItem = currentlyDecidingRecipe?.displayItem ?: return
             if (RecipeInventory.currentlyOpenRecipe == null) return
-            if (event.inventory is InventoryPlayer) return
             if (event.slot != SLOT_ID) return
 
             event.replace(displayItem)
@@ -143,7 +142,7 @@ class RecipeResolver(
 
             currentlyDecidingRecipe.resolveToRecipe(RecipeInventory.currentlyOpenRecipe ?: return)
 
-            MinecraftCompat.localPlayer.closeScreen()
+            MinecraftCompat.localPlayer.closeContainer()
         }
 
         @HandleEvent(onlyOnSkyblock = true)
