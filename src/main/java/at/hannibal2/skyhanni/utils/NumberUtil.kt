@@ -258,6 +258,8 @@ object NumberUtil {
 
     fun String.formatIntOrNull(): Int? = formatDoubleOrNull()?.toInt()
 
+    fun String.formatLongOrNull(): Long? = formatDoubleOrNull()?.toLong()
+
     fun String.formatDoubleOrNull(): Double? {
         var text = lowercase().replace(",", "")
 
