@@ -159,7 +159,7 @@ object BrigadierUtils {
         if (unEscaped.isBlank() && !showWhenEmpty) return builder.buildFuture()
 
         val lowercaseStart = unEscaped.replace("_", " ")
-        val items = NeuItems.findItemNameStartingWithWithoutNPCs(lowercaseStart, isValidItem).take(limit)
+        val items = NeuItems.findItemNameStartingWithWithoutNPCs(lowercaseStart, isValidItem).take(limit).map { it.replace(" ", "_") }
 
         if (isGreedy) builder.addUnescaped(items) else builder.addOptionalEscaped(items)
         return builder.buildFuture()
