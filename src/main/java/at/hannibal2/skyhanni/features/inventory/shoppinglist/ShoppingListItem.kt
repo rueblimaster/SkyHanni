@@ -16,7 +16,7 @@ class ShoppingListItem(
     @Expose
     val internalName: NeuInternalName,
     @Expose
-    var amount: Double,
+    var amount: Double, // Double for coins
     recipe: PrimitiveRecipe? = null,
     @Expose
     val parentItem: ShoppingListItem? = null,
