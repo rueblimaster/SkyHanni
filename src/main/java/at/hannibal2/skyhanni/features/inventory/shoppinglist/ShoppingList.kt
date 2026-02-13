@@ -82,22 +82,22 @@ object ShoppingList {
                 description = "Add items to the Shopping List."
                 arg("item", InternalNameArgumentType.itemName(isGreedy = false)) {
                     arg("amount", BrigadierArguments.double()) {
-                        callback { add(getArgByName("item"), getArgByName<Double>("amount")) }
+                        callback { checkEnabledWrapper { add(getArgByName("item"), getArgByName<Double>("amount")) } }
                     }
-                    callback { add(getArgByName("item"), 1.0) }
+                    callback { checkEnabledWrapper { add(getArgByName("item"), 1.0) } }
                 }
             }
             literal("remove") {
                 description = "Remove items from the Shopping List."
                 arg("item", InternalNameArgumentType.itemName(isGreedy = false)) {
                     arg("amount", BrigadierArguments.double()) {
-                        callback { remove(getArgByName("item"), getArgByName<Double>("amount")) }
+                        callback { checkEnabledWrapper { remove(getArgByName("item"), getArgByName<Double>("amount")) } }
                     }
-                    callback { remove(getArgByName("item"), null) }
+                    callback { checkEnabledWrapper { remove(getArgByName("item"), null) } }
                 }
             }
-            literalCallback("clear") { clear() }
-            literalCallback("update") { update() }
+            literalCallback("clear") { checkEnabledWrapper { clear() } }
+            literalCallback("update") { checkEnabledWrapper { update() } }
         }
     }
 
@@ -112,6 +112,14 @@ object ShoppingList {
             condition = ::isEnabled,
         ) {
             config.position.renderRenderables(display, posLabel = "Shopping List")
+        }
+    }
+
+    private fun checkEnabledWrapper(function: () -> Unit) {
+        if (isEnabled()) {
+            function()
+        } else {
+            ChatUtils.clickableChat("Click to enable the Shopping List", { config.enabled = true })
         }
     }
 
