@@ -3,14 +3,12 @@ package at.hannibal2.skyhanni.features.inventory
 import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.ConfigUpdaterMigrator
-import at.hannibal2.skyhanni.data.HypixelData
 import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.data.jsonobjects.repo.HideNotClickableItemsJson
 import at.hannibal2.skyhanni.data.jsonobjects.repo.SalvageFilter
 import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.RepositoryReloadEvent
-import at.hannibal2.skyhanni.events.minecraft.ToolTipTextEvent
-import at.hannibal2.skyhanni.events.minecraft.add
+import at.hannibal2.skyhanni.events.minecraft.ToolTipEvent
 import at.hannibal2.skyhanni.features.garden.composter.ComposterOverlay
 import at.hannibal2.skyhanni.features.garden.visitor.VisitorApi
 import at.hannibal2.skyhanni.features.inventory.bazaar.BazaarApi
@@ -22,26 +20,24 @@ import at.hannibal2.skyhanni.test.command.ErrorManager
 import at.hannibal2.skyhanni.utils.InventoryUtils
 import at.hannibal2.skyhanni.utils.InventoryUtils.getLowerItems
 import at.hannibal2.skyhanni.utils.ItemCategory
-import at.hannibal2.skyhanni.utils.ItemPriceUtils.getNpcPriceOrNull
 import at.hannibal2.skyhanni.utils.ItemUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.cleanName
 import at.hannibal2.skyhanni.utils.ItemUtils.getInternalName
 import at.hannibal2.skyhanni.utils.ItemUtils.getInternalNameOrNull
 import at.hannibal2.skyhanni.utils.ItemUtils.getItemCategoryOrNull
 import at.hannibal2.skyhanni.utils.ItemUtils.getLore
-import at.hannibal2.skyhanni.utils.ItemUtils.isAnySoulbound
-import at.hannibal2.skyhanni.utils.ItemUtils.isSoulbound
+import at.hannibal2.skyhanni.utils.ItemUtils.isCoopSoulBound
+import at.hannibal2.skyhanni.utils.ItemUtils.isEnchanted
+import at.hannibal2.skyhanni.utils.ItemUtils.isSoulBound
 import at.hannibal2.skyhanni.utils.ItemUtils.isVanilla
 import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.MultiFilter
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
-import at.hannibal2.skyhanni.utils.RegexUtils.anyMatches
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.RenderUtils.drawBorder
 import at.hannibal2.skyhanni.utils.RenderUtils.highlight
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
-import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.getItemId
 import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.hasAttributes
 import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.isMuseumDonated
 import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.isRiftExportable
@@ -52,9 +48,9 @@ import at.hannibal2.skyhanni.utils.collection.CollectionUtils.equalsOneOf
 import at.hannibal2.skyhanni.utils.compat.InventoryCompat.orNull
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.screens.inventory.ContainerScreen
-import net.minecraft.world.inventory.ChestMenu
-import net.minecraft.world.item.ItemStack
+import net.minecraft.client.gui.inventory.GuiChest
+import net.minecraft.inventory.ContainerChest
+import net.minecraft.item.ItemStack
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -73,13 +69,6 @@ object HideNotClickableItems {
     private val hidePlayerTradeFilter = MultiFilter()
     private val notAuctionableFilter = MultiFilter()
 
-    private val patternGroup = RepoPattern.group("inventory.hidenotclickable")
-
-    private val clickToSellPattern by patternGroup.pattern(
-        "clicktosell",
-        "§eClick to sell!",
-    )
-
     /**
      * REGEX-TEST: SEEDS
      * REGEX-TEST: CARROT_ITEM
@@ -90,9 +79,9 @@ object HideNotClickableItems {
      * REGEX-TEST: CACTUS
      * REGEX-TEST: INK_SACK-3
      */
-    private val seedsPattern by patternGroup.pattern(
+    private val seedsPattern by RepoPattern.pattern(
         "inventory.hidenotclickable.seeds",
-        "SEEDS|CARROT_ITEM|POTATO_ITEM|PUMPKIN_SEEDS|SUGAR_CANE|MELON_SEEDS|CACTUS|INK_SACK-3|DOUBLE_PLANT|MOONFLOWER|WILD_ROSE",
+        "SEEDS|CARROT_ITEM|POTATO_ITEM|PUMPKIN_SEEDS|SUGAR_CANE|MELON_SEEDS|CACTUS|INK_SACK-3",
     )
 
     private val netherWart = "NETHER_STALK".toInternalName()
@@ -123,8 +112,8 @@ object HideNotClickableItems {
     fun onForegroundDrawn(event: GuiContainerEvent.ForegroundDrawnEvent) {
         if (!isEnabled()) return
         if (bypassActive()) return
-        if (event.gui !is ContainerScreen) return
-        val chest = event.container as ChestMenu
+        if (event.gui !is GuiChest) return
+        val chest = event.container as ContainerChest
         val chestName = InventoryUtils.openInventoryName()
 
         for ((slot, stack) in chest.getLowerItems()) {
@@ -137,22 +126,22 @@ object HideNotClickableItems {
     }
 
     @HandleEvent(priority = HandleEvent.LOWEST)
-    fun onTooltip(event: ToolTipTextEvent) {
+    fun onTooltip(event: ToolTipEvent) {
         if (!isEnabled()) return
         if (bypassActive()) return
 
-        val guiChest = Minecraft.getInstance().screen
-        if (guiChest !is ContainerScreen) return
+        val guiChest = Minecraft.getMinecraft().currentScreen
+        if (guiChest !is GuiChest) return
         val chestName = InventoryUtils.openInventoryName()
 
         val stack = event.itemStack
-        if (InventoryUtils.getItemsInOpenChest().map { it.item }.contains(stack)) return
+        if (InventoryUtils.getItemsInOpenChest().map { it.stack }.contains(stack)) return
         if (!ItemUtils.getItemsInInventory().contains(stack)) return
 
         if (hide(chestName, stack)) {
             val first = event.toolTip[0]
             event.toolTip.clear()
-            event.toolTip.add("§7" + first.string)
+            event.toolTip.add("§7" + first.removeColor())
             event.toolTip.add("")
             if (hideReason == "") {
                 event.toolTip.add("§4No hide reason!")
@@ -171,13 +160,13 @@ object HideNotClickableItems {
         if (!isEnabled()) return
         if (!config.itemsBlockClicks) return
         if (bypassActive()) return
-        if (event.gui !is ContainerScreen) return
+        if (event.gui !is GuiChest) return
         val chestName = InventoryUtils.openInventoryName()
 
         val slot = event.slot ?: return
 
-        if (slot.index == slot.containerSlot) return
-        val stack = slot.item.orNull() ?: return
+        if (slot.slotNumber == slot.slotIndex) return
+        val stack = slot.stack.orNull() ?: return
 
         if (hide(chestName, stack)) {
             event.cancel()
@@ -211,7 +200,7 @@ object HideNotClickableItems {
             hidePrivateIslandChest(stack) -> true
             hideAttributeFusion(chestName, stack) -> true
             hideYourEquipment(chestName, stack) -> true
-            hideComposter(stack) -> true
+            hideComposter(chestName, stack) -> true
             hideRiftMotesGrubber(chestName, stack) -> true
             hideRiftTransferChest(chestName, stack) -> true
             hideFossilExcavator(stack) -> true
@@ -286,8 +275,9 @@ object HideNotClickableItems {
         return true
     }
 
-    private fun hideComposter(stack: ItemStack): Boolean {
-        if (!ComposterOverlay.isEnabled() || !ComposterOverlay.inInventory) return false
+    @Suppress("UnusedParameter")
+    private fun hideComposter(chestName: String, stack: ItemStack): Boolean {
+        if (!ComposterOverlay.inInventory) return false
 
         showGreenLine = true
 
@@ -349,7 +339,7 @@ object HideNotClickableItems {
     private fun hidePrivateIslandChest(stack: ItemStack): Boolean {
         if (!InventoryUtils.isInNormalChest()) return false
         if (!IslandType.PRIVATE_ISLAND.isCurrent()) return false
-        if (!stack.isSoulbound()) return false
+        if (!stack.isSoulBound()) return false
 
         hideReason = "This item cannot be stored into a chest!"
         return true
@@ -456,7 +446,7 @@ object HideNotClickableItems {
     private fun hidePlayerTrade(chestName: String, stack: ItemStack): Boolean {
         if (!chestName.startsWith("You    ")) return false
 
-        if ((HypixelData.noTrade && stack.isSoulbound()) || (!HypixelData.noTrade && stack.isAnySoulbound())) {
+        if (stack.isCoopSoulBound()) {
             hideReason = "Soulbound items cannot be traded!"
             return true
         }
@@ -479,42 +469,35 @@ object HideNotClickableItems {
         return result
     }
 
-    @Suppress("ReturnCount")
     private fun hideNpcSell(stack: ItemStack): Boolean {
         if (RiftApi.inRift()) return false
         if (!ShiftClickNpcSell.inInventory) return false
         if (VisitorApi.inInventory) return false
-
         showGreenLine = true
 
         var name = stack.cleanName()
-        val size = stack.count
+        val size = stack.stackSize
         val amountText = " x$size"
         if (name.endsWith(amountText)) {
             name = name.substring(0, name.length - amountText.length)
         }
 
-        val sellable = clickToSellPattern.anyMatches(stack.getLore()) ||
-            (stack.getItemId() != "PET" && (stack.getInternalNameOrNull()?.getNpcPriceOrNull() ?: 0.0) > 0)
-        if (!sellable) {
-            hideReason = "This item cannot be sold at the NPC!"
+        if (ItemUtils.isSkyBlockMenuItem(stack)) {
+            hideReason = "The SkyBlock Menu cannot be sold at the NPC!"
             return true
         }
 
-        if (stack.isMuseumDonated()) {
-            hideReason = "This item cannot be sold at the NPC! (Donated to Museum)"
-            return true
-        }
+        if (!ItemUtils.isRecombobulated(stack)) {
+            if (SkyBlockUtils.noTradeMode && BazaarApi.isBazaarItem(stack)) {
+                return false
+            }
 
-        if (ItemUtils.isRecombobulated(stack)) {
-            hideReason = "This item should not be sold at the NPC! (Recombobulated)"
-            return true
-        }
+            if (hideNpcSellFilter.match(name)) return false
 
-        if (!config.protectRarelySoldItems) return false
-        if (stack.isVanilla() && !stack.isEnchanted) return false
-        if (SkyBlockUtils.noTradeMode && BazaarApi.isBazaarItem(stack)) return false
-        if (hideNpcSellFilter.match(name)) return false
+            if (stack.isVanilla() && !stack.isEnchanted()) {
+                return false
+            }
+        }
 
         hideReason = "This item should not be sold at the NPC!"
         return true
@@ -602,7 +585,7 @@ object HideNotClickableItems {
     }
 
     private fun isNotAuctionable(stack: ItemStack): Boolean {
-        if (stack.isAnySoulbound()) {
+        if (stack.isCoopSoulBound()) {
             hideReason = "Soulbound items cannot be auctioned!"
             return true
         }
@@ -619,7 +602,7 @@ object HideNotClickableItems {
         return result
     }
 
-    private fun isEnabled() = SkyBlockUtils.inSkyBlock && config.enabled
+    private fun isEnabled() = SkyBlockUtils.inSkyBlock && config.items
 
     @HandleEvent
     fun onConfigFix(event: ConfigUpdaterMigrator.ConfigFixEvent) {
@@ -628,6 +611,5 @@ object HideNotClickableItems {
         event.move(3, "inventory.hideNotClickableOpacity", "inventory.hideNotClickable.opacity")
         event.move(3, "inventory.notClickableItemsBypass", "inventory.hideNotClickable.itemsBypass")
         event.move(3, "inventory.hideNotClickableItemsGreenLine", "inventory.hideNotClickable.itemsGreenLine")
-        event.move(108, "inventory.hideNotClickable.items", "inventory.hideNotClickable.enabled")
     }
 }

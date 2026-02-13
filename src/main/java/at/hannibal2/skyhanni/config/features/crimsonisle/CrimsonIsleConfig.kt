@@ -89,9 +89,4 @@ class CrimsonIsleConfig {
     @Expose
     @ConfigLink(owner = CrimsonIsleConfig::class, field = "showDojoRankDisplay")
     val dojoRankDisplayPosition: Position = Position(-378, 206)
-
-    @Expose
-    @ConfigOption(name = "Magma Boss Phase", desc = "Show the current phase of the Magma Boss.")
-    @ConfigEditorBoolean
-    var magmaBossDisplay: Boolean = false
 }

@@ -51,8 +51,8 @@ import at.hannibal2.skyhanni.utils.renderables.primitives.ItemStackRenderable.Co
 import at.hannibal2.skyhanni.utils.renderables.primitives.WrappedStringRenderable.Companion.wrappedText
 import at.hannibal2.skyhanni.utils.renderables.primitives.placeholder
 import at.hannibal2.skyhanni.utils.renderables.primitives.text
-import net.minecraft.world.item.ItemStack
-import net.minecraft.world.level.block.Blocks
+import net.minecraft.init.Blocks
+import net.minecraft.item.ItemStack
 import java.awt.Color
 import kotlin.math.ceil
 import kotlin.time.Duration.Companion.milliseconds
@@ -63,7 +63,7 @@ object BlockStrengthGuide {
 
     private enum class DisplayOres(private val iconDel: () -> ItemStack, val oreBlocks: Set<OreBlock>) {
         VANILLA_ORES(
-            { ItemStack(Blocks.REDSTONE_BLOCK) },
+            { ItemStack(Blocks.redstone_block) },
             setOf(
                 OreBlock.COAL_ORE,
                 OreBlock.IRON_ORE,
@@ -76,7 +76,7 @@ object BlockStrengthGuide {
             ),
         ),
         PURE_ORES(
-            { ItemStack(Blocks.GOLD_BLOCK) },
+            { ItemStack(Blocks.gold_block) },
             setOf(
                 OreBlock.PURE_COAL,
                 OreBlock.PURE_IRON,
@@ -97,7 +97,7 @@ object BlockStrengthGuide {
             setOf(OreBlock.LOW_TIER_MITHRIL),
         ),
         GREEN_MITHRIL(
-            { ItemStack(Blocks.PRISMARINE) },
+            { ItemStack(Blocks.prismarine) },
             setOf(OreBlock.MID_TIER_MITHRIL),
         ),
         BLUE_MITHRIL(
@@ -105,7 +105,7 @@ object BlockStrengthGuide {
             setOf(OreBlock.HIGH_TIER_MITHRIL),
         ),
         TUNGSTEN_UMBER(
-            { ItemStack(Blocks.CLAY) },
+            { ItemStack(Blocks.clay) },
             setOf(
                 OreBlock.LOW_TIER_UMBER,
                 OreBlock.MID_TIER_UMBER,
@@ -116,11 +116,11 @@ object BlockStrengthGuide {
             ),
         ),
         GLACITE(
-            { ItemStack(Blocks.PACKED_ICE) },
+            { ItemStack(Blocks.packed_ice) },
             setOf(OreBlock.GLACITE),
         ),
         OBSIDIAN(
-            { ItemStack(Blocks.OBSIDIAN) },
+            { ItemStack(Blocks.obsidian) },
             setOf(OreBlock.OBSIDIAN),
         ),
         RUBY(
@@ -148,27 +148,27 @@ object BlockStrengthGuide {
             setOf(OreBlock.ONYX, OreBlock.PERIDOT, OreBlock.CITRINE, OreBlock.AQUAMARINE),
         ),
         HARD_STONE(
-            { ItemStack(Blocks.STONE) },
+            { ItemStack(Blocks.stone) },
             setOf(OreBlock.HARD_STONE_HOLLOWS, OreBlock.HARD_STONE_TUNNELS, OreBlock.HARD_STONE_MINESHAFT),
         ),
         COBBLE_STONE(
-            { ItemStack(Blocks.COBBLESTONE) },
+            { ItemStack(Blocks.cobblestone) },
             setOf(OreBlock.COBBLESTONE),
         ),
         STONE(
-            { ItemStack(Blocks.STONE) },
+            { ItemStack(Blocks.stone) },
             setOf(OreBlock.STONE),
         ),
         SULPHUR(
-            { ItemStack(Blocks.SPONGE) },
+            { ItemStack(Blocks.sponge) },
             setOf(OreBlock.SULPHUR),
         ),
         NETHERRACK(
-            { ItemStack(Blocks.NETHERRACK) },
+            { ItemStack(Blocks.netherrack) },
             setOf(OreBlock.NETHERRACK),
         ),
         END_STONE(
-            { ItemStack(Blocks.END_STONE) },
+            { ItemStack(Blocks.end_stone) },
             setOf(OreBlock.END_STONE),
         );
 

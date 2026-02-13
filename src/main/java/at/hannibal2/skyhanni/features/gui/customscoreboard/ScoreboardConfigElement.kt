@@ -30,7 +30,6 @@ import at.hannibal2.skyhanni.features.gui.customscoreboard.elements.ScoreboardEl
 import at.hannibal2.skyhanni.features.gui.customscoreboard.elements.ScoreboardElementSkyBlockXP
 import at.hannibal2.skyhanni.features.gui.customscoreboard.elements.ScoreboardElementSlayer
 import at.hannibal2.skyhanni.features.gui.customscoreboard.elements.ScoreboardElementSoulflow
-import at.hannibal2.skyhanni.features.gui.customscoreboard.elements.ScoreboardElementSowdust
 import at.hannibal2.skyhanni.features.gui.customscoreboard.elements.ScoreboardElementTime
 import at.hannibal2.skyhanni.features.gui.customscoreboard.elements.ScoreboardElementTitle
 import at.hannibal2.skyhanni.features.gui.customscoreboard.elements.ScoreboardElementTuning
@@ -46,7 +45,6 @@ enum class ScoreboardConfigElement(val element: ScoreboardElement) {
     BANK(ScoreboardElementBank),
     BITS(ScoreboardElementBits),
     COPPER(ScoreboardElementCopper),
-    SOWDUST(ScoreboardElementSowdust),
     GEMS(ScoreboardElementGems),
     HEAT(ScoreboardElementHeat),
     COLD(ScoreboardElementCold),
@@ -113,7 +111,6 @@ enum class ScoreboardConfigElement(val element: ScoreboardElement) {
             BANK,
             BITS,
             COPPER,
-            SOWDUST,
             GEMS,
             HEAT,
             COLD,

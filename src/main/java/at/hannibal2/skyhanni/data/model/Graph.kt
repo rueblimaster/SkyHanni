@@ -6,13 +6,10 @@ import at.hannibal2.skyhanni.utils.LorenzVec
 import at.hannibal2.skyhanni.utils.NumberUtil.roundTo
 import at.hannibal2.skyhanni.utils.json.SkyHanniTypeAdapters.registerTypeAdapter
 import at.hannibal2.skyhanni.utils.json.fromJson
-import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.annotations.Expose
-import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonToken
-import com.google.gson.stream.JsonWriter
 
 // TODO: This class should be disambiguated into a NodePath and a Graph class
 @JvmInline
@@ -26,7 +23,7 @@ value class Graph(
 
     override fun containsAll(elements: Collection<GraphNode>) = nodes.containsAll(elements)
 
-    override fun get(index: Int) = nodes[index]
+    override fun get(index: Int) = nodes.get(index)
 
     override fun isEmpty() = nodes.isEmpty()
 
@@ -45,7 +42,7 @@ value class Graph(
     fun getNodesWithName(name: String): List<GraphNode> = nodes.filter { it.name == name }
 
     fun getNearestNode(
-        location: LorenzVec = GraphUtils.playerPosition,
+        location: LorenzVec = GraphUtils.playerGraphGridLocation(),
         condition: (GraphNode) -> Boolean = { true },
     ): GraphNode = asSequence()
         .filter(condition)
@@ -54,143 +51,110 @@ value class Graph(
     constructor() : this(emptyList())
 
     companion object {
-        val gson: Gson = GsonBuilder().setPrettyPrinting().registerTypeAdapter<Graph>(
-            { out, value -> serializeGraph(out, value) },
-            { reader -> deserializeGraph(reader) },
-        ).create()
-
-        private fun serializeGraph(out: JsonWriter, value: Graph) {
-            out.beginObject()
-            for (graphNode in value) {
-                out.name(graphNode.id.toString()).beginObject()
-
-                out.name("Position").value(with(graphNode.position) { "$x:$y:$z" })
-
-                graphNode.name?.let {
-                    out.name("Name").value(it)
-                }
-
-                graphNode.tagNames.takeIf { list -> list.isNotEmpty() }?.let {
-                    out.name("Tags")
-                    out.beginArray()
-                    for (tagName in it) {
-                        out.value(tagName)
-                    }
-                    out.endArray()
-                }
-
-                out.name("Neighbours")
+        val gson = GsonBuilder().setPrettyPrinting().registerTypeAdapter<Graph>(
+            { out, value ->
                 out.beginObject()
-                for ((node, weight) in graphNode.neighbours) {
-                    out.name(node.id.toString()).value(weight.roundTo(2))
+                value.forEach {
+                    out.name(it.id.toString()).beginObject()
+
+                    out.name("Position").value(with(it.position) { "$x:$y:$z" })
+
+                    it.name?.let {
+                        out.name("Name").value(it)
+                    }
+
+                    it.tagNames.takeIf { list -> list.isNotEmpty() }?.let {
+                        out.name("Tags")
+                        out.beginArray()
+                        for (tagName in it) {
+                            out.value(tagName)
+                        }
+                        out.endArray()
+                    }
+
+                    out.name("Neighbours")
+                    out.beginObject()
+                    for ((node, weight) in it.neighbours) {
+                        val id = node.id.toString()
+                        out.name(id).value(weight.roundTo(2))
+                    }
+                    out.endObject()
+
+                    out.endObject()
                 }
                 out.endObject()
-
-                out.endObject()
-            }
-            out.endObject()
-        }
-
-        private fun deserializeGraph(reader: JsonReader): Graph {
-            reader.beginObject()
-            val (nodes, neighbourMap) = parseNodes(reader)
-            reader.endObject()
-
-            linkNeighbours(nodes, neighbourMap)
-            return Graph(nodes)
-        }
-
-        private fun parseNodes(reader: JsonReader): Pair<List<GraphNode>, Map<GraphNode, List<Pair<Int, Double>>>> {
-            val list = mutableListOf<GraphNode>()
-            val neighbourMap = mutableMapOf<GraphNode, List<Pair<Int, Double>>>()
-
-            while (reader.hasNext()) {
-                if (reader.peek() != JsonToken.NAME) {
-                    reader.skipValue()
-                    continue
-                }
-
-                val id = reader.nextName().toIntOrNull() ?: run {
-                    reader.skipValue()
-                    continue
-                }
-
+            },
+            { reader ->
                 reader.beginObject()
-                val nodeData = parseNodeData(reader)
-                reader.endObject()
+                val list = mutableListOf<GraphNode>()
+                val neighbourMap = mutableMapOf<GraphNode, List<Pair<Int, Double>>>()
+                while (reader.hasNext()) {
+                    if (reader.peek() != JsonToken.NAME) {
+                        reader.skipValue()
+                        continue
+                    }
+                    val topLevelName = reader.nextName()
+                    val id = topLevelName.toIntOrNull() ?: run {
+                        reader.skipValue()
+                        continue
+                    }
+                    reader.beginObject()
+                    var position: LorenzVec? = null
+                    var name: String? = null
+                    var tags = emptyList<String>()
+                    val neighbors = mutableListOf<Pair<Int, Double>>()
+                    while (reader.hasNext()) {
+                        if (reader.peek() != JsonToken.NAME) {
+                            reader.skipValue()
+                            continue
+                        }
+                        when (reader.nextName()) {
+                            "Position" -> {
+                                position = reader.nextString().split(":").let { parts ->
+                                    LorenzVec(parts[0].toDouble(), parts[1].toDouble(), parts[2].toDouble())
+                                }
+                            }
 
-                nodeData.position?.let { pos ->
-                    val node = GraphNode(id, pos, nodeData.name, nodeData.tags)
-                    list.add(node)
-                    neighbourMap[node] = nodeData.neighbors
-                }
-            }
+                            "Neighbours" -> {
+                                reader.beginObject()
+                                while (reader.hasNext()) {
+                                    val nId = reader.nextName().toInt()
+                                    val distance = reader.nextDouble()
+                                    neighbors.add(nId to distance)
+                                }
+                                reader.endObject()
+                            }
 
-            return list to neighbourMap
-        }
+                            "Name" -> {
+                                name = reader.nextString()
+                            }
 
-        private data class NodeData(
-            var position: LorenzVec? = null,
-            var name: String? = null,
-            var tags: List<String> = emptyList(),
-            val neighbors: MutableList<Pair<Int, Double>> = mutableListOf(),
-        )
+                            "Tags" -> {
+                                tags = mutableListOf()
+                                reader.beginArray()
+                                while (reader.hasNext()) {
+                                    val tagName = reader.nextString()
+                                    tags.add(tagName)
+                                }
+                                reader.endArray()
+                            }
 
-        private fun parseNodeData(reader: JsonReader): NodeData {
-            val data = NodeData()
-
-            while (reader.hasNext()) {
-                if (reader.peek() != JsonToken.NAME) {
-                    reader.skipValue()
-                    continue
-                }
-
-                when (reader.nextName()) {
-                    "Position" -> {
-                        data.position = reader.nextString().split(":").let { parts ->
-                            LorenzVec(parts[0].toDouble(), parts[1].toDouble(), parts[2].toDouble())
                         }
                     }
-
-                    "Neighbours" -> parseNeighbours(reader, data.neighbors)
-                    "Name" -> data.name = reader.nextString()
-                    "Tags" -> data.tags = parseTags(reader)
+                    val node = GraphNode(id, position!!, name, tags)
+                    list.add(node)
+                    neighbourMap[node] = neighbors
+                    reader.endObject()
                 }
-            }
-
-            return data
-        }
-
-        private fun parseNeighbours(reader: JsonReader, neighbors: MutableList<Pair<Int, Double>>) {
-            reader.beginObject()
-            while (reader.hasNext()) {
-                val nId = reader.nextName().toInt()
-                val distance = reader.nextDouble()
-                neighbors.add(nId to distance)
-            }
-            reader.endObject()
-        }
-
-        private fun parseTags(reader: JsonReader): List<String> {
-            val tags = mutableListOf<String>()
-            reader.beginArray()
-            while (reader.hasNext()) {
-                tags.add(reader.nextString())
-            }
-            reader.endArray()
-            return tags
-        }
-
-        private fun linkNeighbours(nodes: List<GraphNode>, neighbourMap: Map<GraphNode, List<Pair<Int, Double>>>) {
-            val nodeLookup = nodes.associateBy { it.id }
-
-            for ((node, edges) in neighbourMap) {
-                node.neighbours = edges.associate { (id, distance) ->
-                    val neighbor = nodeLookup[id] ?: error("Node ${node.id} references non-existent neighbor $id")
-                    neighbor to distance
+                neighbourMap.forEach { (node, edge) ->
+                    node.neighbours = edge.associate { (id, distance) ->
+                        list.first { it.id == id } to distance
+                    }
                 }
-            }
-        }
+                reader.endObject()
+                Graph(list)
+            },
+        ).create()
 
         fun fromJson(json: String): Graph = gson.fromJson<Graph>(json)
         fun fromJson(json: JsonElement): Graph = gson.fromJson<Graph>(json)
@@ -201,9 +165,8 @@ value class Graph(
     fun toJson(): String = gson.toJson(this)
 }
 
-// The node object that gets parsed from/to JSON
-class GraphNode(val id: Int, override val position: LorenzVec, val name: String? = null, val tagNames: List<String> = emptyList()) :
-    GraphUtils.GenericNode {
+// The node object that gets parsed from/to json
+class GraphNode(val id: Int, val position: LorenzVec, val name: String? = null, val tagNames: List<String> = emptyList()) {
 
     val tags: List<GraphNodeTag> by lazy {
         tagNames.mapNotNull { GraphNodeTag.byId(it) }
@@ -224,7 +187,9 @@ class GraphNode(val id: Int, override val position: LorenzVec, val name: String?
 
         other as GraphNode
 
-        return id == other.id
+        if (id != other.id) return false
+
+        return true
     }
 
     fun sameNameAndTags(other: GraphNode): Boolean = name == other.name && allowedTags == other.allowedTags

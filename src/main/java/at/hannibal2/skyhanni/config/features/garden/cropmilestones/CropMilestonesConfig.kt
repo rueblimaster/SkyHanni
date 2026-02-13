@@ -2,7 +2,6 @@ package at.hannibal2.skyhanni.config.features.garden.cropmilestones
 
 import at.hannibal2.skyhanni.config.FeatureToggle
 import at.hannibal2.skyhanni.config.core.config.Position
-import at.hannibal2.skyhanni.features.garden.CropType
 import at.hannibal2.skyhanni.utils.TimeUnit
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
@@ -29,11 +28,6 @@ class CropMilestonesConfig {
     @ConfigOption(name = "Overflow", desc = "")
     @Accordion
     val overflow: CropMilestonesOverflowConfig = CropMilestonesOverflowConfig()
-
-    @Expose
-    @ConfigOption(name = "Show Without Tool", desc = "Show progress display when not holding a farming tool")
-    @ConfigEditorBoolean
-    var showWithoutTool: Boolean = false
 
     @Expose
     @ConfigOption(
@@ -68,28 +62,13 @@ class CropMilestonesConfig {
         desc = "Calculate the progress and ETA till maxed milestone (46) instead of next milestone.",
     )
     @ConfigEditorBoolean
-    val showMaxTier: Property<Boolean> = Property.of(false)
-
-    @Expose
-    @ConfigOption(
-        name = "Custom Milestone Goal",
-        desc = "What crops to set custom milestone goals for."
-    )
-    @ConfigEditorDraggableList
-    val customGoalCrops: Property<MutableList<CropType>> = Property.of(mutableListOf())
-
-    @Expose
-    @ConfigOption(
-        name = "Custom Milestone Goal Settings",
-        desc = ""
-    )
-    @Accordion
-    val customGoalConfig: CustomGoalConfig = CustomGoalConfig()
+    val bestShowMaxedNeeded: Property<Boolean> = Property.of(false)
 
     @Expose
     @ConfigOption(
         name = "Milestone Text",
-        desc = "Drag text to change the appearance of the overlay.\n"
+        desc = "Drag text to change the appearance of the overlay.\n" +
+            "Hold a farming tool to show the overlay.",
     )
     @ConfigEditorDraggableList
     val text: MutableList<MilestoneTextEntry> = mutableListOf(

@@ -8,7 +8,6 @@ import at.hannibal2.skyhanni.features.dungeon.DungeonLividFinder
 import at.hannibal2.skyhanni.features.garden.GardenApi
 import at.hannibal2.skyhanni.features.garden.pests.PestType
 import at.hannibal2.skyhanni.features.rift.RiftApi
-import at.hannibal2.skyhanni.utils.AllEntitiesGetter
 import at.hannibal2.skyhanni.utils.EntityUtils
 import at.hannibal2.skyhanni.utils.EntityUtils.baseMaxHealth
 import at.hannibal2.skyhanni.utils.EntityUtils.hasBossHealth
@@ -17,27 +16,26 @@ import at.hannibal2.skyhanni.utils.LorenzVec
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.SimpleTimeMark.Companion.fromNow
-import at.hannibal2.skyhanni.utils.compat.findHealthReal
 import at.hannibal2.skyhanni.utils.getLorenzVec
-import net.minecraft.client.player.RemotePlayer
-import net.minecraft.world.entity.Entity
-import net.minecraft.world.entity.ambient.Bat
-import net.minecraft.world.entity.animal.equine.Horse
-import net.minecraft.world.entity.animal.golem.IronGolem
-import net.minecraft.world.entity.animal.wolf.Wolf
-import net.minecraft.world.entity.boss.enderdragon.EnderDragon
-import net.minecraft.world.entity.boss.wither.WitherBoss
-import net.minecraft.world.entity.monster.Blaze
-import net.minecraft.world.entity.monster.EnderMan
-import net.minecraft.world.entity.monster.Ghast
-import net.minecraft.world.entity.monster.Giant
-import net.minecraft.world.entity.monster.Guardian
-import net.minecraft.world.entity.monster.MagmaCube
-import net.minecraft.world.entity.monster.Silverfish
-import net.minecraft.world.entity.monster.skeleton.AbstractSkeleton
-import net.minecraft.world.entity.monster.spider.Spider
-import net.minecraft.world.entity.monster.zombie.Zombie
-import net.minecraft.world.entity.monster.zombie.ZombifiedPiglin
+import net.minecraft.client.entity.EntityOtherPlayerMP
+import net.minecraft.entity.Entity
+import net.minecraft.entity.boss.EntityDragon
+import net.minecraft.entity.boss.EntityWither
+import net.minecraft.entity.monster.EntityBlaze
+import net.minecraft.entity.monster.EntityEnderman
+import net.minecraft.entity.monster.EntityGhast
+import net.minecraft.entity.monster.EntityGiantZombie
+import net.minecraft.entity.monster.EntityGuardian
+import net.minecraft.entity.monster.EntityIronGolem
+import net.minecraft.entity.monster.EntityMagmaCube
+import net.minecraft.entity.monster.EntityPigZombie
+import net.minecraft.entity.monster.EntitySilverfish
+import net.minecraft.entity.monster.EntitySkeleton
+import net.minecraft.entity.monster.EntitySpider
+import net.minecraft.entity.monster.EntityZombie
+import net.minecraft.entity.passive.EntityBat
+import net.minecraft.entity.passive.EntityHorse
+import net.minecraft.entity.passive.EntityWolf
 import java.util.UUID
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -54,23 +52,23 @@ class MobFinder {
     // F2
     private var floor2summons1 = false
     private var floor2summons1SpawnTime = SimpleTimeMark.farPast()
-    private val floor2summonsDiedOnce = mutableListOf<RemotePlayer>()
+    private val floor2summonsDiedOnce = mutableListOf<EntityOtherPlayerMP>()
     private var floor2secondPhase = false
     private var floor2secondPhaseSpawnTime = SimpleTimeMark.farPast()
 
     // F3
     private var floor3GuardianShield = false
     private var floor3GuardianShieldSpawnTime = SimpleTimeMark.farPast()
-    private val guardians = mutableListOf<Guardian>()
+    private val guardians = mutableListOf<EntityGuardian>()
     private var floor3Professor = false
     private var floor3ProfessorSpawnTime = SimpleTimeMark.farPast()
     private var floor3ProfessorGuardianPrepare = false
     private var floor3ProfessorGuardianPrepareSpawnTime = SimpleTimeMark.farPast()
     private var floor3ProfessorGuardian = false
-    private var floor3ProfessorGuardianEntity: Guardian? = null
+    private var floor3ProfessorGuardianEntity: EntityGuardian? = null
 
     // F5
-    private var floor5lividEntity: RemotePlayer? = null
+    private var floor5lividEntity: EntityOtherPlayerMP? = null
     private var floor5lividEntitySpawnTime = SimpleTimeMark.farPast()
     private val correctLividPattern = "§c\\[BOSS] (.*) Livid§r§f: Impossible! How did you figure out which one I was\\?!".toPattern()
 
@@ -96,20 +94,20 @@ class MobFinder {
                      * EntityPigZombie will never be reached because EntityPigZombie extends EntityZombie.
                      * Please take this into consideration if you are to modify this.
                      */
-                    is RemotePlayer -> tryAddEntityOtherPlayerMP(mob)
-                    is IronGolem -> tryAddEntityIronGolem(mob)
-                    is ZombifiedPiglin -> tryAddEntityPigZombie(mob)
-                    is MagmaCube -> tryAddEntityMagmaCube(mob)
-                    is EnderMan -> tryAddEntityEnderman(mob)
-                    is AbstractSkeleton -> tryAddEntitySkeleton(mob)
-                    is Guardian -> tryAddEntityGuardian(mob)
-                    is Zombie -> tryAddEntityZombie(mob)
-                    is WitherBoss -> tryAddEntityWither(mob)
-                    is EnderDragon -> tryAddEntityDragon(mob)
-                    is Spider -> tryAddEntitySpider(mob)
-                    is Horse -> tryAddEntityHorse(mob)
-                    is Blaze -> tryAddEntityBlaze(mob)
-                    is Wolf -> tryAddEntityWolf(mob)
+                    is EntityOtherPlayerMP -> tryAddEntityOtherPlayerMP(mob)
+                    is EntityIronGolem -> tryAddEntityIronGolem(mob)
+                    is EntityPigZombie -> tryAddEntityPigZombie(mob)
+                    is EntityMagmaCube -> tryAddEntityMagmaCube(mob)
+                    is EntityEnderman -> tryAddEntityEnderman(mob)
+                    is EntitySkeleton -> tryAddEntitySkeleton(mob)
+                    is EntityGuardian -> tryAddEntityGuardian(mob)
+                    is EntityZombie -> tryAddEntityZombie(mob)
+                    is EntityWither -> tryAddEntityWither(mob)
+                    is EntityDragon -> tryAddEntityDragon(mob)
+                    is EntitySpider -> tryAddEntitySpider(mob)
+                    is EntityHorse -> tryAddEntityHorse(mob)
+                    is EntityBlaze -> tryAddEntityBlaze(mob)
+                    is EntityWolf -> tryAddEntityWolf(mob)
                     else -> null
                 }
             }
@@ -118,7 +116,7 @@ class MobFinder {
 
     private fun tryAddGarden(mob: Mob): EntityResult? {
         val entity = mob.baseEntity
-        if (entity is Silverfish || entity is Bat) {
+        if (entity is EntitySilverfish || entity is EntityBat) {
             return tryAddGardenPest(mob)
         }
 
@@ -155,9 +153,9 @@ class MobFinder {
 
     private fun tryAddDungeonF2(mob: Mob): EntityResult? {
         val entity = mob.baseEntity
-        if (entity.name.string == "Summon " && entity is RemotePlayer) {
+        if (entity.name == "Summon " && entity is EntityOtherPlayerMP) {
             if (floor2summons1 && !floor2summonsDiedOnce.contains(entity)) {
-                if (entity.findHealthReal().toInt() != 0) {
+                if (entity.health.toInt() != 0) {
                     return EntityResult(floor2summons1SpawnTime, bossType = BossType.DUNGEON_F2_SUMMON)
                 }
                 floor2summonsDiedOnce.add(entity)
@@ -167,9 +165,9 @@ class MobFinder {
             }
         }
 
-        if (floor2secondPhase && entity is RemotePlayer) {
+        if (floor2secondPhase && entity is EntityOtherPlayerMP) {
             // TODO only show scarf after (all/at least x) summons are dead?
-            if (entity.name.string == "Scarf ") {
+            if (entity.name == "Scarf ") {
                 return EntityResult(
                     floor2secondPhaseSpawnTime,
                     finalDungeonBoss = true,
@@ -182,7 +180,7 @@ class MobFinder {
 
     private fun tryAddDungeonF3(mob: Mob): EntityResult? {
         val entity = mob.baseEntity
-        if (entity is Guardian && floor3GuardianShield) {
+        if (entity is EntityGuardian && floor3GuardianShield) {
             if (guardians.size == 4) {
                 calcGuardiansTotalHealth()
             } else {
@@ -208,14 +206,14 @@ class MobFinder {
             )
         }
 
-        if (entity is Guardian && floor3ProfessorGuardian && entity == floor3ProfessorGuardianEntity) {
+        if (entity is EntityGuardian && floor3ProfessorGuardian && entity == floor3ProfessorGuardianEntity) {
             return EntityResult(finalDungeonBoss = true, bossType = BossType.DUNGEON_F3_PROFESSOR_2)
         }
         return null
     }
 
     private fun tryAddDungeonF4(mob: Mob): EntityResult? {
-        if (mob.baseEntity is Ghast) {
+        if (mob.baseEntity is EntityGhast) {
             return EntityResult(
                 bossType = BossType.DUNGEON_F4_THORN,
                 ignoreBlocks = true,
@@ -238,8 +236,8 @@ class MobFinder {
 
     private fun tryAddDungeonF6(mob: Mob): EntityResult? {
         val entity = mob.baseEntity
-        if (entity !is Giant || entity.isInvisible) return null
-        if (floor6Giants && entity.position().y > 68) {
+        if (entity !is EntityGiantZombie || entity.isInvisible) return null
+        if (floor6Giants && entity.posY > 68) {
             val (extraDelay, bossType) = checkExtraF6GiantsDelay(entity)
             return EntityResult(
                 floor6GiantsSpawnTime + extraDelay + 5.seconds,
@@ -293,10 +291,10 @@ class MobFinder {
         else -> null
     }
 
-    private fun tryAddEntitySkeleton(mob: Mob): EntityResult? {
-        if (mob.name.contains("ⓆⓊⒶⓏⒾⒾ")) {
+    private fun tryAddEntitySkeleton(mob: Mob) = when (mob.name) {
+        "ⓆⓊⒶⓏⒾⒾ " -> {
             val entity = mob.baseEntity
-            return when {
+            when {
                 entity.hasBossHealth(10_000_000) -> EntityResult(bossType = BossType.SLAYER_BLAZE_QUAZII_4)
                 entity.hasBossHealth(5_000_000) -> EntityResult(bossType = BossType.SLAYER_BLAZE_QUAZII_3)
                 entity.hasBossHealth(1_750_000) -> EntityResult(bossType = BossType.SLAYER_BLAZE_QUAZII_2)
@@ -304,13 +302,12 @@ class MobFinder {
                 else -> null
             }
         }
-        return when (mob.name) {
-            "Bladesoul" -> {
-                EntityResult(bossType = BossType.NETHER_BLADESOUL)
-            }
 
-            else -> null
+        "Bladesoul" -> {
+            EntityResult(bossType = BossType.NETHER_BLADESOUL)
         }
+
+        else -> null
     }
 
     private fun tryAddEntityOtherPlayerMP(mob: Mob) = when (mob.name) {
@@ -388,7 +385,7 @@ class MobFinder {
         else -> null
     }
 
-    private fun tryAddEntityPigZombie(mob: Mob) = if (mob.name.contains("ⓉⓎⓅⒽⓄⒺⓊⓈ")) {
+    private fun tryAddEntityPigZombie(mob: Mob) = if (mob.name == "ⓉⓎⓅⒽⓄⒺⓊⓈ") {
         val entity = mob.baseEntity
         when {
             entity.hasBossHealth(10_000_000) -> EntityResult(bossType = BossType.SLAYER_BLAZE_TYPHOEUS_4)
@@ -427,7 +424,7 @@ class MobFinder {
         if (mob.name != "Arachne") return null
         return when (mob.levelOrTier) {
             300 -> EntityResult(bossType = BossType.ARACHNE_SMALL)
-            500 -> EntityResult(bossType = BossType.ARACHNE_BIG)
+            500 -> EntityResult(bossType = BossType.ARACHNE_SMALL)
             else -> null
         }
     }
@@ -446,8 +443,8 @@ class MobFinder {
         EntityResult(bossType = BossType.THUNDER)
     } else null
 
-    private fun checkExtraF6GiantsDelay(entity: Giant): Pair<Duration, BossType> {
-        val uuid = entity.uuid
+    private fun checkExtraF6GiantsDelay(entity: EntityGiantZombie): Pair<Duration, BossType> {
+        val uuid = entity.uniqueID
 
         floor6GiantsSeparateDelay[uuid]?.let {
             return it
@@ -586,19 +583,16 @@ class MobFinder {
     }
 
     fun handleNewEntity(entity: Entity) {
-        if (DungeonApi.inDungeon() && floor3ProfessorGuardian && entity is Guardian && floor3ProfessorGuardianEntity == null) {
+        if (DungeonApi.inDungeon() && floor3ProfessorGuardian && entity is EntityGuardian && floor3ProfessorGuardianEntity == null) {
             floor3ProfessorGuardianEntity = entity
             floor3ProfessorGuardianPrepare = false
         }
     }
 
-    // While this could be improved to not use getEntities, the performance impact is
-    // minimal enough (only happens in f3/m3 bossfight), that it doesn't matter
-    @OptIn(AllEntitiesGetter::class)
     private fun findGuardians() {
         guardians.clear()
 
-        for (entity in EntityUtils.getEntities<Guardian>()) {
+        for (entity in EntityUtils.getEntities<EntityGuardian>()) {
             // F3
             if (entity.hasMaxHealth(1_000_000, true) || entity.hasMaxHealth(1_200_000, true)) {
                 guardians.add(entity)
@@ -618,7 +612,7 @@ class MobFinder {
     private fun calcGuardiansTotalHealth() {
         var totalHealth = 0
         for (guardian in guardians) {
-            totalHealth += guardian.findHealthReal().toInt()
+            totalHealth += guardian.health.toInt()
         }
         if (totalHealth == 0) {
             floor3GuardianShield = false

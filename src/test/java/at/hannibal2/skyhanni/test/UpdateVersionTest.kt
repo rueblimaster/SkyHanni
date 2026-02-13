@@ -11,7 +11,6 @@ class UpdateVersionTest {
     private val versionD = ModVersion.fromString("1.1.0")
     private val versionE = ModVersion.fromString("1.2.0")
     private val versionF = ModVersion.fromString("2.0.0")
-    private val versionG = ModVersion.fromString("3.0.0")
 
     /**
      * These tests assume you are on the beta updater branch (so you always want the most recent beta
@@ -25,7 +24,5 @@ class UpdateVersionTest {
         assert(versionD < versionE)
 
         assert(versionE < versionF)
-
-        assert(versionF.isInBetween(versionA, versionG))
     }
 }

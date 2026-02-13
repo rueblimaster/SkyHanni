@@ -6,7 +6,6 @@ import at.hannibal2.skyhanni.config.enums.OutsideSBFeature
 import at.hannibal2.skyhanni.events.IslandChangeEvent
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniRenderWorldEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import at.hannibal2.skyhanni.utils.AllEntitiesGetter
 import at.hannibal2.skyhanni.utils.ColorUtils.toColor
 import at.hannibal2.skyhanni.utils.EntityUtils
 import at.hannibal2.skyhanni.utils.LorenzVec
@@ -16,7 +15,7 @@ import at.hannibal2.skyhanni.utils.compat.MinecraftCompat.isLocalPlayer
 import at.hannibal2.skyhanni.utils.getLorenzVec
 import at.hannibal2.skyhanni.utils.getPrevLorenzVec
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.draw3DLine
-import net.minecraft.world.entity.projectile.arrow.Arrow
+import net.minecraft.entity.projectile.EntityArrow
 import java.util.LinkedList
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -31,8 +30,6 @@ object ArrowTrail {
     private val listAllArrow: MutableList<Line> = LinkedList<Line>()
     private val listYourArrow: MutableList<Line> = LinkedList<Line>()
 
-    // TODO: This should probably be done using entity add events, and only iterating through the known arrows on tick
-    @OptIn(AllEntitiesGetter::class)
     @HandleEvent
     fun onTick() {
         if (!isEnabled()) return
@@ -43,9 +40,9 @@ object ArrowTrail {
         listAllArrow.removeIf { it.deathTime.isInPast() }
         listYourArrow.removeIf { it.deathTime.isInPast() }
 
-        for (arrow in EntityUtils.getEntities<Arrow>()) {
+        for (arrow in EntityUtils.getEntities<EntityArrow>()) {
             val line = Line(arrow.getPrevLorenzVec(), arrow.getLorenzVec(), deathTime)
-            if (arrow.owner.isLocalPlayer) {
+            if (arrow.shootingEntity.isLocalPlayer) {
                 listYourArrow.add(line)
             } else {
                 listAllArrow.add(line)

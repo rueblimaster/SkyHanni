@@ -52,7 +52,7 @@ object HighlightRiftGuide {
         if (!inInventory) return
 
         for (slot in InventoryUtils.getItemsInOpenChest()) {
-            if (slot.containerSlot in highlightedItems) {
+            if (slot.slotIndex in highlightedItems) {
                 slot.highlight(LorenzColor.YELLOW)
             }
         }

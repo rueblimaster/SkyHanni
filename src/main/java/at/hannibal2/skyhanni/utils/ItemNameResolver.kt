@@ -124,7 +124,7 @@ object ItemNameResolver {
             return "ULTIMATE_REITERATE;$tier".toInternalName()
         }
         // TODO USE SH-REPO
-        return originalName.removeColor().toInternalName()
+        return originalName.toInternalName()
     }
 
     private fun getInternalNameOrNullIgnoreCase(itemName: String): NeuInternalName? {

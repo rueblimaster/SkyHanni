@@ -9,18 +9,21 @@ import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.minecraft.KeyPressEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
+import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.SignUtils.isGardenSign
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.StringUtils
 import at.hannibal2.skyhanni.utils.collection.TimeLimitedCache
+import at.hannibal2.skyhanni.utils.compat.DrawContext
 import at.hannibal2.skyhanni.utils.compat.DrawContextUtils
-import at.hannibal2.skyhanni.utils.compat.SkyHanniGuiContainer
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.gui.screens.inventory.ContainerScreen
-import net.minecraft.client.gui.screens.inventory.InventoryScreen
-import net.minecraft.client.gui.screens.inventory.SignEditScreen
-import org.lwjgl.glfw.GLFW
+import net.minecraft.client.gui.inventory.GuiChest
+import net.minecraft.client.gui.inventory.GuiContainer
+import net.minecraft.client.gui.inventory.GuiEditSign
+import net.minecraft.client.gui.inventory.GuiInventory
+import net.minecraft.client.renderer.GlStateManager
+import org.lwjgl.input.Keyboard
+import org.lwjgl.opengl.GL11
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -37,25 +40,33 @@ object GuiEditManager {
     @HandleEvent
     fun onKeyPress(event: KeyPressEvent) {
         if (event.keyCode != SkyHanniMod.feature.gui.keyBindOpen) return
-        if (event.keyCode == GLFW.GLFW_KEY_ENTER) {
+        if (event.keyCode == Keyboard.KEY_RETURN) {
             ChatUtils.chat("You can't use Enter as a keybind to open the gui editor!")
             return
         }
         if (isInGui()) return
 
-        val guiScreen = Minecraft.getInstance().screen
+        val guiScreen = Minecraft.getMinecraft().currentScreen
         val openGui = guiScreen?.javaClass?.name ?: "none"
         val isInNeuPv = openGui == "io.github.moulberry.notenoughupdates.profileviewer.GuiProfileViewer"
         if (isInNeuPv) return
         guiScreen?.let {
-            if (it !is InventoryScreen && it !is ContainerScreen && it !is SignEditScreen) return
-            if (it is SignEditScreen && !it.isGardenSign()) return
+            if (it !is GuiInventory && it !is GuiChest && it !is GuiEditSign) return
+            if (it is GuiEditSign && !it.isGardenSign()) return
         }
 
         if (lastHotkeyPressed.passedSince() < 500.milliseconds) return
+        if (NeuItems.neuHasFocus()) return
         lastHotkeyPressed = SimpleTimeMark.now()
 
         openGuiPositionEditor(hotkeyReminder = false)
+    }
+
+    @HandleEvent(priority = HandleEvent.LOWEST)
+    fun onRenderOverlay(event: GuiRenderEvent.GuiOverlayRenderEvent) {
+        GlStateManager.color(1f, 1f, 1f, 1f)
+        GlStateManager.enableBlend()
+        GlStateManager.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0)
     }
 
     @HandleEvent
@@ -83,7 +94,7 @@ object GuiEditManager {
         SkyHanniMod.screenToOpen = GuiPositionEditor(
             currentPositions.values.toList(),
             2,
-            Minecraft.getInstance().screen as? SkyHanniGuiContainer,
+            Minecraft.getMinecraft().currentScreen as? GuiContainer,
         )
         if (hotkeyReminder && lastHotkeyReminded.passedSince() > 30.minutes) {
             lastHotkeyReminded = SimpleTimeMark.now()
@@ -96,24 +107,25 @@ object GuiEditManager {
     }
 
     @JvmStatic
-    fun renderLast(context: GuiGraphics) {
+    fun renderLast(context: DrawContext) {
         if (GlobalRender.renderDisabled) return
         if (!isInGui()) return
 
         DrawContextUtils.setContext(context)
-        DrawContextUtils.translate(0f, 0f)
+        DrawContextUtils.translate(0f, 0f, 200f)
 
         RenderData.renderOverlay(context)
 
         DrawContextUtils.pushPop {
+            GlStateManager.enableDepth()
             GuiRenderEvent.ChestGuiOverlayRenderEvent(context).post()
         }
 
-        DrawContextUtils.translate(0f, 0f)
+        DrawContextUtils.translate(0f, 0f, -200f)
         DrawContextUtils.clearContext()
     }
 
-    fun isInGui() = Minecraft.getInstance().screen is GuiPositionEditor
+    fun isInGui() = Minecraft.getMinecraft().currentScreen is GuiPositionEditor
 
     fun Position.getDummySize(random: Boolean = false): Vector2i {
         if (random) return Vector2i(5, 5)

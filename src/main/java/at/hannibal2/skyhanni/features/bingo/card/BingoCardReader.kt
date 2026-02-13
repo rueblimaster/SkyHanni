@@ -52,7 +52,7 @@ object BingoCardReader {
                 lore.any { it.endsWith("Community Goal") } -> GoalType.COMMUNITY
                 else -> continue
             }
-            val name = stack.hoverName.string.removeColor()
+            val name = stack.displayName.removeColor()
             var index = 0
             val builder = StringBuilder()
             for (s in lore) {
@@ -151,7 +151,7 @@ object BingoCardReader {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!SkyBlockUtils.isBingoProfile) return
         if (!config.enabled) return
 

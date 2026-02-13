@@ -31,7 +31,7 @@ object DailyMiniBossHelper {
     private val config get() = SkyHanniMod.feature.crimsonIsle.reputationHelper
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
 
         val message = event.message

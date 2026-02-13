@@ -22,17 +22,17 @@ import at.hannibal2.skyhanni.utils.compat.ColoredBlockCompat
 import at.hannibal2.skyhanni.utils.compat.DrawContextUtils
 import at.hannibal2.skyhanni.utils.compat.GuiScreenUtils
 import at.hannibal2.skyhanni.utils.compat.MouseCompat
-import at.hannibal2.skyhanni.utils.compat.SkyHanniBaseScreen
+import at.hannibal2.skyhanni.utils.compat.SkyhanniBaseScreen
 import com.google.gson.JsonObject
 import net.minecraft.client.Minecraft
-import net.minecraft.util.Mth
-import org.lwjgl.glfw.GLFW
+import net.minecraft.util.MathHelper
+import org.lwjgl.input.Keyboard
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
-open class VisualWordGui : SkyHanniBaseScreen() {
+open class VisualWordGui : SkyhanniBaseScreen() {
 
     private var guiLeft = 0
     private var guiTop = 0
@@ -78,7 +78,7 @@ open class VisualWordGui : SkyHanniBaseScreen() {
             }
         }
 
-        fun isInGui() = Minecraft.getInstance().screen is VisualWordGui
+        fun isInGui() = Minecraft.getMinecraft().currentScreen is VisualWordGui
         var sbeConfigPath = File("." + File.separator + "config" + File.separator + "SkyblockExtras.cfg")
         var drawImport = false
 
@@ -142,7 +142,7 @@ open class VisualWordGui : SkyHanniBaseScreen() {
                 GuiRenderUtils.drawRect(importX - 45, importY - 10, importX + 45, importY + 10, importColor)
             }
 
-            DrawContextUtils.scale(scale, scale)
+            DrawContextUtils.scale(scale, scale, 1f)
 
             drawUnmodifiedStringCentered(
                 "§7Modify Words. Replaces the top with the bottom", (guiLeft + 180) * inverseScale, (guiTop + 9) * inverseScale,
@@ -213,7 +213,7 @@ open class VisualWordGui : SkyHanniBaseScreen() {
                     ColoredBlockCompat.RED.createStainedClay()
                 }
 
-                DrawContextUtils.scale(inverseScale, inverseScale)
+                DrawContextUtils.scale(inverseScale, inverseScale, 1f)
 
                 if (index != 0) {
                     GuiRenderUtils.renderItemAndBackground(itemUp, guiLeft + 295, top, colorA)
@@ -224,7 +224,7 @@ open class VisualWordGui : SkyHanniBaseScreen() {
 
                 GuiRenderUtils.renderItemAndBackground(statusBlock, guiLeft + 335, top, colorA)
 
-                DrawContextUtils.scale(scale, scale)
+                DrawContextUtils.scale(scale, scale, 1f)
 
                 if (inBox) {
                     drawUnmodifiedString(
@@ -253,7 +253,9 @@ open class VisualWordGui : SkyHanniBaseScreen() {
 
             if (modifiedWords.isEmpty()) {
                 modifiedWords = ModifyVisualWords.userModifiedWords
-                    .map { it.toVisualWord() }.toMutableList()
+                //#if MC > 1.21
+                //$$ .map { it.toVisualWord() }.toMutableList()
+                //#endif
             }
 
             if (toRemove != null) {
@@ -261,7 +263,7 @@ open class VisualWordGui : SkyHanniBaseScreen() {
                 saveChanges()
             }
 
-            DrawContextUtils.scale(inverseScale, inverseScale)
+            DrawContextUtils.scale(inverseScale, inverseScale, 1f)
 
             scrollScreen()
         } else {
@@ -459,7 +461,7 @@ open class VisualWordGui : SkyHanniBaseScreen() {
 
     override fun onKeyTyped(typedChar: Char?, keyCode: Int?) {
         if (!currentlyEditing) {
-            if (keyCode == GLFW.GLFW_KEY_DOWN || keyCode == GLFW.GLFW_KEY_S) {
+            if (keyCode == Keyboard.KEY_DOWN || keyCode == Keyboard.KEY_S) {
                 if (KeyboardManager.isModifierKeyDown()) {
                     pageScroll = -(modifiedWords.size * 30 - 100)
                 } else {
@@ -467,7 +469,7 @@ open class VisualWordGui : SkyHanniBaseScreen() {
                 }
                 scrollScreen()
             }
-            if (keyCode == GLFW.GLFW_KEY_UP || keyCode == GLFW.GLFW_KEY_W) {
+            if (keyCode == Keyboard.KEY_UP || keyCode == Keyboard.KEY_W) {
                 if (KeyboardManager.isModifierKeyDown()) {
                     pageScroll = 0
                 } else {
@@ -480,7 +482,7 @@ open class VisualWordGui : SkyHanniBaseScreen() {
         if (currentTextBox == SelectedTextBox.NONE) return
         if (currentIndex >= modifiedWords.size || currentIndex == -1) return
 
-        if (keyCode == GLFW.GLFW_KEY_BACKSPACE) {
+        if (keyCode == Keyboard.KEY_BACK) {
             if (currentText.isNotEmpty()) {
                 currentText = if (KeyboardManager.isDeleteLineDown()) ""
                 else if (KeyboardManager.isDeleteWordDown()) {
@@ -502,7 +504,7 @@ open class VisualWordGui : SkyHanniBaseScreen() {
         }
 
         if (KeyboardManager.isPastingKeysDown()) {
-            SkyHanniMod.launchCoroutine("visual word pasting") {
+            SkyHanniMod.launchCoroutine {
                 val clipboard = OSUtils.readFromClipboard().orEmpty()
                 for (char in clipboard) {
                     if (currentText.length < maxTextLength && !Character.isISOControl(char)) {
@@ -544,13 +546,16 @@ open class VisualWordGui : SkyHanniBaseScreen() {
             pageScroll = 0
         }
 
-        pageScroll = Mth.clamp(pageScroll, -(modifiedWords.size * 30 - 100), 0)
+        pageScroll = MathHelper.clamp_int(pageScroll, -(modifiedWords.size * 30 - 100), 0)
         lastMouseScroll = 0
     }
 
     private fun saveChanges() {
 
-        ModifyVisualWords.userModifiedWords = modifiedWords.map { VisualWordText.fromVisualWord(it) }.toMutableList()
+        ModifyVisualWords.userModifiedWords = modifiedWords
+        //#if MC > 1.21
+        //$$ .map { VisualWordText.fromVisualWord(it) }.toMutableList()
+        //#endif
         ModifyVisualWords.update()
 
         SkyHanniMod.configManager.saveConfig(ConfigFileType.VISUAL_WORDS, "Updated visual words")

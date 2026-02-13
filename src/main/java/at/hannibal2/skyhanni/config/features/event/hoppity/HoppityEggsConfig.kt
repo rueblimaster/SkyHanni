@@ -1,6 +1,7 @@
 package at.hannibal2.skyhanni.config.features.event.hoppity
 
 import at.hannibal2.skyhanni.config.FeatureToggle
+import at.hannibal2.skyhanni.config.OnlyModern
 import at.hannibal2.skyhanni.config.features.event.hoppity.summary.HoppityEventSummaryConfig
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
@@ -104,6 +105,7 @@ class HoppityEggsConfig {
         desc = "Mute or revert the note block sounds when opening an egg."
     )
     @ConfigEditorDropdown
+    @OnlyModern
     @SearchTag("rolling eat")
     var soundMode: EggSoundMode = EggSoundMode.NO_MODIFICATION
 }

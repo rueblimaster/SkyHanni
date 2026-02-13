@@ -1,12 +1,10 @@
 package at.hannibal2.skyhanni.utils
 
-import net.minecraft.network.chat.Component
-
 class DisplayTableEntry(
-    val left: Component,
-    val right: Component,
-    val sort: Number,
+    val left: String,
+    val right: String,
+    val sort: Double,
     val item: NeuInternalName,
-    val hover: List<Component> = emptyList(),
+    val hover: List<String> = emptyList(),
     val highlightsOnHoverSlots: List<Int> = emptyList(),
 )

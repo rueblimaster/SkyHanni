@@ -14,26 +14,21 @@ import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.NumberUtil.isPositive
 import at.hannibal2.skyhanni.utils.RegexUtils.anyMatches
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
-import at.hannibal2.skyhanni.utils.compat.getBooleanOrDefault
-import at.hannibal2.skyhanni.utils.compat.getByteOrDefault
-import at.hannibal2.skyhanni.utils.compat.getCompoundOrDefault
-import at.hannibal2.skyhanni.utils.compat.getDoubleOrDefault
-import at.hannibal2.skyhanni.utils.compat.getIntOrDefault
-import at.hannibal2.skyhanni.utils.compat.getLongOrDefault
-import at.hannibal2.skyhanni.utils.compat.getStringOrDefault
 import com.google.gson.JsonObject
 import com.google.gson.annotations.Expose
-import net.minecraft.core.component.DataComponents
-import net.minecraft.core.registries.BuiltInRegistries
-import net.minecraft.nbt.CompoundTag
-import net.minecraft.resources.Identifier
-import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.Items
+import net.minecraft.item.Item
+import net.minecraft.item.ItemStack
+import net.minecraft.nbt.NBTTagCompound
+import net.minecraft.util.ResourceLocation
 import java.util.Locale
 import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
+//#if MC > 1.21
+//$$ import net.minecraft.component.DataComponentTypes
+//$$ import net.minecraft.registry.Registries
+//$$ import net.minecraft.item.Items
+//$$ import kotlin.time.Duration.Companion.seconds
+//#endif
 
 @Suppress("TooManyFunctions")
 object SkyBlockItemModifierUtils {
@@ -48,17 +43,13 @@ object SkyBlockItemModifierUtils {
 
     fun ItemStack.getFarmingForDummiesCount() = getAttributeInt("farming_for_dummies_count")
 
-    fun ItemStack.getOverclockerCount() = getAttributeInt("levelable_overclocks")
-
     fun ItemStack.getPolarvoidBookCount() = getAttributeInt("polarvoid")
 
     fun ItemStack.getBookwormBookCount() = getAttributeInt("bookworm_books")
 
     fun ItemStack.getCultivatingCounter() = getAttributeLong("farmed_cultivating")
 
-    fun ItemStack.getOldHoeCounter() = getAttributeLong("mined_crops")
-    fun ItemStack.getHoeExp() = getAttributeDouble("levelable_exp")?.toLong()
-    fun ItemStack.getHoeLevel() = getAttributeInt("levelable_lvl")
+    fun ItemStack.getHoeCounter() = getAttributeLong("mined_crops")
 
     fun ItemStack.getSilexCount() = getHypixelEnchantments()?.get("efficiency")?.let {
         it - 5 - getBaseSilexCount()
@@ -146,12 +137,12 @@ object SkyBlockItemModifierUtils {
     var lastWarnedParseFailure: SimpleTimeMark = SimpleTimeMark.farPast()
 
     fun ItemStack.getPetInfo(): PetInfo? {
-        val colorlessName = hoverName.string.removeColor()
+        val colorlessName = displayName.removeColor()
         // Repo pets will always return null for PetInfo, don't even attempt to parse it
         if (colorlessName.contains("→") || colorlessName.contains("{LVL}")) return null
         val petInfoJson = getExtraAttributes()?.takeIf {
-            it.contains("petInfo")
-        }?.getStringOrDefault("petInfo")?.takeIf {
+            it.hasKey("petInfo")
+        }?.getString("petInfo")?.takeIf {
             it.isNotEmpty()
         } ?: return null
 
@@ -176,9 +167,9 @@ object SkyBlockItemModifierUtils {
 
     fun ItemStack.getDrillUpgrades() = getExtraAttributes()?.let {
         val list = mutableListOf<NeuInternalName>()
-        for (attributes in it.keySet()) {
+        for (attributes in it.keySet) {
             if (attributes in drillPartTypes) {
-                val upgradeItem = it.getStringOrDefault(attributes)
+                val upgradeItem = it.getString(attributes)
                 list.add(upgradeItem.uppercase().toInternalName())
             }
         }
@@ -204,8 +195,8 @@ object SkyBlockItemModifierUtils {
     fun ItemStack.getRanchersSpeed() = getAttributeInt("ranchers_speed")
 
     fun ItemStack.getRune(): NeuInternalName? {
-        val runesMap = getExtraAttributes()?.getCompoundOrDefault("runes") ?: return null
-        val runesList = runesMap.keySet().associateWith { runesMap.getIntOrDefault(it) }.toList()
+        val runesMap = getExtraAttributes()?.getCompoundTag("runes") ?: return null
+        val runesList = runesMap.keySet.associateWith { runesMap.getInteger(it) }.toList()
         if (runesList.isEmpty()) return null
         val (name, tier) = runesList.first()
         return "${name.uppercase()}_RUNE;$tier".toInternalName()
@@ -234,10 +225,10 @@ object SkyBlockItemModifierUtils {
 
     fun ItemStack.getAttributes() = getExtraAttributes()
         ?.takeIf { it.containsCompound("attributes") }
-        ?.getCompoundOrDefault("attributes")
+        ?.getCompoundTag("attributes")
         ?.let { attr ->
-            attr.keySet().map {
-                it.uppercase() to attr.getIntOrDefault(it)
+            attr.keySet.map {
+                it.uppercase() to attr.getInteger(it)
             }.sortedBy { it.first }
         }
 
@@ -267,8 +258,9 @@ object SkyBlockItemModifierUtils {
 
     fun ItemStack.getSecondsHeld() = when (getItemId()) { // TODO move item IDs and attribute tags to repo
         "NEW_BOTTLE_OF_JYRRE" -> getAttributeInt("bottle_of_jyrre_seconds")
+        "DARK_CACAO_TRUFFLE", "MOBY_DUCK" -> getAttributeInt("seconds_held")
         "DISCRITE" -> getAttributeInt("rift_discrite_seconds")
-        else -> getAttributeInt("seconds_held")
+        else -> null
     }
 
     fun ItemStack.getEdition() = getAttributeInt("edition")
@@ -278,10 +270,10 @@ object SkyBlockItemModifierUtils {
     fun ItemStack.getPersonalCompactorActive() = getAttributeByte("PERSONAL_DELETOR_ACTIVE") == 1.toByte()
 
     fun ItemStack.getHypixelEnchantments(): Map<String, Int>? = getExtraAttributes()
-        ?.takeIf { it.contains("enchantments") }
+        ?.takeIf { it.hasKey("enchantments") }
         ?.run {
-            val enchantments = this.getCompoundOrDefault("enchantments")
-            enchantments.keySet().associateWith { enchantments.getIntOrDefault(it) }
+            val enchantments = this.getCompoundTag("enchantments")
+            enchantments.keySet.associateWith { enchantments.getInteger(it) }
         }
 
     fun ItemStack.getAppliedPocketSackInASack(): Int? {
@@ -298,27 +290,37 @@ object SkyBlockItemModifierUtils {
 
     fun ItemStack.getItemId() = getAttributeString("id")
 
-    fun ItemStack.getMinecraftId() = BuiltInRegistries.ITEM.getKey(item)
+    //#if MC < 1.21
+    fun ItemStack.getMinecraftId() = Item.itemRegistry.getNameForObject(item) as ResourceLocation
+    //#else
+    //$$ fun ItemStack.getMinecraftId() = Registries.ITEM.getId(item)
+    //#endif
 
-    private val identifierPattern = "[a-z0-9_\\-.:]+".toRegex()
-
+    //#if MC < 1.21
     fun isVanillaItem(itemId: String): Boolean {
-        if (!identifierPattern.matches(itemId)) return false
-        return BuiltInRegistries.ITEM.getValue(Identifier.parse(itemId)) != Items.AIR
+        return Item.itemRegistry.getObject(ResourceLocation(itemId)) != null
     }
+    //#else
+    //$$ private val identifierPattern = "[a-z0-9_\\-.:]+".toRegex()
+    //$$
+    //$$ fun isVanillaItem(itemId: String): Boolean {
+    //$$     if (!identifierPattern.matches(itemId)) return false
+    //$$     return Registries.ITEM.get(Identifier.of(itemId)) != Items.AIR
+    //$$ }
+    //#endif
 
     fun ItemStack.getGemstones() = getExtraAttributes()?.let {
         val list = mutableListOf<GemstoneSlot>()
-        for (attributes in it.keySet()) {
+        for (attributes in it.keySet) {
             if (attributes != "gems") continue
-            val gemstones = it.getCompoundOrDefault(attributes)
-            for (key in gemstones.keySet()) {
+            val gemstones = it.getCompoundTag(attributes)
+            for (key in gemstones.keySet) {
                 if (key.endsWith("_gem")) continue
                 if (key == "unlocked_slots") continue
-                var value = gemstones.getStringOrDefault(key)
+                var value = gemstones.getString(key)
                 if (value == "") {
-                    val tag = gemstones.getCompoundOrDefault(key)
-                    value = tag.getStringOrDefault("quality")
+                    val tag = gemstones.getCompoundTag(key)
+                    value = tag.getString("quality")
                     if (value == "") continue
                 }
 
@@ -327,16 +329,16 @@ object SkyBlockItemModifierUtils {
 
                 val quality = GemstoneQuality.getByNameOrNull(value)
                 if (quality == null) {
-                    ChatUtils.debug("Gemstone quality is null for item name().formattedTextCompatLeadingWhiteLessResets()§7: ('$key' = '$value')")
+                    ChatUtils.debug("Gemstone quality is null for item $displayName§7: ('$key' = '$value')")
                     continue
                 }
                 if (type != null) {
                     list.add(GemstoneSlot(type, quality))
                 } else {
-                    val newKey = gemstones.getStringOrDefault(key + "_gem")
+                    val newKey = gemstones.getString(key + "_gem")
                     val newType = GemstoneType.getByNameOrNull(newKey)
                     if (newType == null) {
-                        ChatUtils.debug("Gemstone type is null for item name().formattedTextCompatLeadingWhiteLessResets()§7: ('$newKey' with '$key' = '$value')")
+                        ChatUtils.debug("Gemstone type is null for item $displayName§7: ('$newKey' with '$key' = '$value')")
                         continue
                     }
                     list.add(GemstoneSlot(newType, quality))
@@ -347,33 +349,34 @@ object SkyBlockItemModifierUtils {
     }
 
     fun ItemStack.getAttributeString(label: String) =
-        getExtraAttributes()?.getStringOrDefault(label)?.takeUnless { it.isBlank() }
+        getExtraAttributes()?.getString(label)?.takeUnless { it.isBlank() }
 
     private fun ItemStack.getAttributeInt(label: String) =
-        getExtraAttributes()?.getIntOrDefault(label)?.takeUnless { it == 0 }
+        getExtraAttributes()?.getInteger(label)?.takeUnless { it == 0 }
 
     private fun ItemStack.getAttributeLong(label: String) =
-        getExtraAttributes()?.getLongOrDefault(label)?.takeUnless { it == 0L }
-
-    private fun ItemStack.getAttributeDouble(label: String) =
-        getExtraAttributes()?.getDoubleOrDefault(label)?.takeUnless { it == 0.0 }
+        getExtraAttributes()?.getLong(label)?.takeUnless { it == 0L }
 
     private fun ItemStack.getAttributeBoolean(label: String) =
-        getExtraAttributes()?.getBooleanOrDefault(label) ?: false
+        getExtraAttributes()?.getBoolean(label) ?: false
 
     private fun ItemStack.getAttributeByte(label: String) =
-        getExtraAttributes()?.getByteOrDefault(label) ?: 0
+        getExtraAttributes()?.getByte(label) ?: 0
 
-    fun ItemStack.getExtraAttributes(): CompoundTag? {
-        val data = cachedData
-        if (data.lastExtraAttributesFetchTime.passedSince() < 0.1.seconds) {
-            return data.lastExtraAttributes
-        }
-        val extraAttributes = get(DataComponents.CUSTOM_DATA)?.copyTag()
-        data.lastExtraAttributes = extraAttributes
-        data.lastExtraAttributesFetchTime = SimpleTimeMark.now()
-        return extraAttributes
-    }
+    //#if MC < 1.21
+    fun ItemStack.getExtraAttributes(): NBTTagCompound? = tagCompound?.extraAttributes
+    //#else
+    //$$ fun ItemStack.getExtraAttributes(): NbtCompound? {
+    //$$    val data = cachedData
+    //$$    if (data.lastExtraAttributesFetchTime.passedSince() < 0.1.seconds) {
+    //$$        return data.lastExtraAttributes
+    //$$    }
+    //$$    val extraAttributes = get(DataComponentTypes.CUSTOM_DATA)?.copyNbt()
+    //$$    data.lastExtraAttributes = extraAttributes
+    //$$    data.lastExtraAttributesFetchTime = SimpleTimeMark.now()
+    //$$    return extraAttributes
+    //$$ }
+    //#endif
 
     class GemstoneSlot(private val type: GemstoneType, private val quality: GemstoneQuality) {
         fun getInternalName() = "${quality.name}_${type.name}_GEM".toInternalName()

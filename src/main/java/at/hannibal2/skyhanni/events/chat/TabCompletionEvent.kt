@@ -1,6 +1,7 @@
 package at.hannibal2.skyhanni.events.chat
 
 import at.hannibal2.skyhanni.api.event.SkyHanniEvent
+import at.hannibal2.skyhanni.utils.system.PlatformUtils
 
 class TabCompletionEvent(
     val leftOfCursor: String,
@@ -12,7 +13,7 @@ class TabCompletionEvent(
 
     fun addSuggestion(suggestion: String) {
         if (!suggestion.startsWith(lastWord, ignoreCase = true)) return
-        val adjustedSuggestion = suggestion.removePrefix("/")
+        val adjustedSuggestion = if (PlatformUtils.IS_LEGACY) suggestion else suggestion.removePrefix("/")
         additionalSuggestions.add(adjustedSuggestion)
     }
 

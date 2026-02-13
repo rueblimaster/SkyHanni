@@ -8,7 +8,6 @@ import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.SecondPassedEvent
 import at.hannibal2.skyhanni.features.fame.ReminderUtils
-import at.hannibal2.skyhanni.features.inventory.chocolatefactory.data.CFDataLoader
 import at.hannibal2.skyhanni.features.inventory.chocolatefactory.data.ChocolateAmount
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
@@ -17,21 +16,18 @@ import at.hannibal2.skyhanni.utils.ItemUtils.getLore
 import at.hannibal2.skyhanni.utils.NumberUtil.formatLong
 import at.hannibal2.skyhanni.utils.NumberUtil.shortFormat
 import at.hannibal2.skyhanni.utils.RegexUtils.firstMatcher
-import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.SoundUtils
-import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.TimeUtils.format
 import at.hannibal2.skyhanni.utils.TimeUtils.minutes
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.screens.inventory.ContainerScreen
-import net.minecraft.world.item.ItemStack
+import net.minecraft.client.gui.inventory.GuiChest
+import net.minecraft.item.ItemStack
 
 @SkyHanniModule
 object CFCustomReminder {
@@ -78,7 +74,7 @@ object CFCustomReminder {
     )
 
     @HandleEvent
-    fun onChat(event: SystemMessageEvent.Allow) {
+    fun onChat(event: SystemMessageEvent) {
         if (!isEnabled()) return
         if (!CFApi.inChocolateFactory) return
         if (configReminder.hideChat) {
@@ -96,11 +92,9 @@ object CFCustomReminder {
 
     @HandleEvent(receiveCancelled = true)
     fun onSlotClick(event: GuiContainerEvent.SlotClickEvent) {
-        if (!isEnabled() || !inChocolateMenu()) return
+        if (!isEnabled()) return
         val item = event.item ?: return
-        CFDataLoader.upgradeTierPattern.matchMatcher(item.hoverName.string.removeColor()) {
-            if (group("upgrade") == "Time Tower" && event.clickedButton == 1) return
-        }
+        if (event.clickedButton != 0) return
         val (cost, name) = getCostAndName(item) ?: return
         val duration = ChocolateAmount.CURRENT.timeUntilGoal(cost)
 
@@ -127,7 +121,7 @@ object CFCustomReminder {
                 missing to "§6${amount.shortFormat()} Chocolate Milestone"
             }
 
-        val nextLevelName = CFApi.getNextLevelName(item) ?: item.hoverName.formattedTextCompatLeadingWhiteLessResets()
+        val nextLevelName = CFApi.getNextLevelName(item) ?: item.displayName
         return cost to nextLevelName
     }
 
@@ -144,7 +138,7 @@ object CFCustomReminder {
     fun onRenderOverlay(event: GuiRenderEvent.GuiOverlayRenderEvent) {
         if (!isEnabled()) return
         if (!configReminder.always) return
-        if (Minecraft.getInstance().screen is ContainerScreen) return
+        if (Minecraft.getMinecraft().currentScreen is GuiChest) return
         if (ReminderUtils.isBusy()) return
 
         configReminder.position.renderRenderables(display, posLabel = "Chocolate Factory Custom Reminder")

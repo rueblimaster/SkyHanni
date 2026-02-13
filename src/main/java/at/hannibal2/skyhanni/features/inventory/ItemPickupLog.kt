@@ -6,7 +6,7 @@ import at.hannibal2.skyhanni.config.ConfigUpdaterMigrator
 import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.PurseChangeEvent
 import at.hannibal2.skyhanni.events.SackChangeEvent
-import at.hannibal2.skyhanni.events.item.ShardEvent
+import at.hannibal2.skyhanni.events.item.ShardGainEvent
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniTickEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.InventoryUtils
@@ -30,7 +30,6 @@ import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.compat.MinecraftCompat
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
 import at.hannibal2.skyhanni.utils.compat.getItemOnCursor
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.container.HorizontalContainerRenderable.Companion.horizontal
@@ -38,7 +37,7 @@ import at.hannibal2.skyhanni.utils.renderables.container.VerticalContainerRender
 import at.hannibal2.skyhanni.utils.renderables.primitives.ItemStackRenderable.Companion.item
 import at.hannibal2.skyhanni.utils.renderables.primitives.text
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.world.item.ItemStack
+import net.minecraft.item.ItemStack
 import java.util.Objects
 import kotlin.math.absoluteValue
 import kotlin.time.Duration.Companion.seconds
@@ -135,7 +134,7 @@ object ItemPickupLog {
     }
 
     @HandleEvent
-    fun onShardGain(event: ShardEvent) {
+    fun onShardGain(event: ShardGainEvent) {
         if (!isEnabled() || !config.shards) return
 
         val itemStack = event.shardInternalName.getItemStack()
@@ -177,9 +176,9 @@ object ItemPickupLog {
                 val hash = itemStack.hash()
                 val old = itemList[hash]
                 if (old != null) {
-                    itemList[hash] = old.copy(second = old.second + itemStack.count)
+                    itemList[hash] = old.copy(second = old.second + itemStack.stackSize)
                 } else {
-                    itemList[hash] = itemStack to itemStack.count
+                    itemList[hash] = itemStack to itemStack.stackSize
                 }
             }
         }
@@ -249,11 +248,11 @@ object ItemPickupLog {
             ItemCategory.PET -> true
             else -> false
         }
-        return if (compact) getInternalName().repoItemName else hoverName.formattedTextCompatLeadingWhiteLessResets()
+        return if (compact) getInternalName().repoItemName else displayName
     }
 
     private fun ItemStack.hash(): Int {
-        var displayName = this.hoverName.string.removeColor()
+        var displayName = this.displayName.removeColor()
         shopPattern.matchMatcher(displayName) {
             displayName = group("itemName")
         }

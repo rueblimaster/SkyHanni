@@ -8,10 +8,10 @@ class AllBurrowsListConfig {
     @Expose
     @ConfigOption(
         name = "Save Found Burrows",
-        desc = "Save the location of every found burrow in a locally stored list.",
+        desc = "Save the location of every found burrow in a locally stored list."
     )
     @ConfigEditorBoolean
-    var save: Boolean = false
+    var save: Boolean = true
 
     @Expose
     @ConfigOption(name = "Show All Burrows", desc = "Show the list of all ever found burrows in the world.")

@@ -6,8 +6,6 @@ import com.google.gson.annotations.SerializedName
 import com.mojang.authlib.GameProfile
 import com.mojang.authlib.properties.Property
 import java.util.UUID
-import com.google.common.collect.ImmutableMultimap
-import com.mojang.authlib.properties.PropertyMap
 
 data class NeuNbtInfoJson(
     @Expose @SerializedName("HideFlags") val hideFlags: Int?,
@@ -47,12 +45,10 @@ data class DisplayInfo(
 )
 
 fun SkullOwnerInfo.toGameProfile(): GameProfile {
-    val builder = ImmutableMultimap.builder<String, Property>()
+    val profile = GameProfile(UUID.fromString(this.uuid), "hannibal2")
     val textures = this.properties?.textures?.get(0)
-    if (textures != null) {
-        builder.put("textures", Property("textures", textures.value.orEmpty(), textures.signature.orEmpty()))
-    }
-    return GameProfile(UUID.fromString(this.uuid), "hannibal2", PropertyMap(builder.build()))
+    profile.properties.put("textures", Property("textures", textures?.value.orEmpty(), textures?.signature.orEmpty()))
+    return profile
 }
 
 data class NbtBoolean(val boolean: Boolean) {

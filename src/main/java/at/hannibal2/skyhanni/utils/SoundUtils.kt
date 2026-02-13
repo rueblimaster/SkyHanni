@@ -4,64 +4,82 @@ import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
-import at.hannibal2.skyhanni.config.commands.brigadier.BrigadierArguments
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.test.command.ErrorManager
 import kotlinx.coroutines.delay
 import net.minecraft.client.Minecraft
-import net.minecraft.client.resources.sounds.SimpleSoundInstance
-import net.minecraft.client.resources.sounds.SoundInstance
-import net.minecraft.resources.Identifier
-import net.minecraft.sounds.SoundEvent
+import net.minecraft.client.audio.ISound
+import net.minecraft.client.audio.SoundCategory
+import net.minecraft.util.ResourceLocation
+//#if MC < 1.21
+import net.minecraft.client.audio.PositionedSound
+//#else
+//$$ import net.minecraft.client.sound.PositionedSoundInstance
+//$$ import net.minecraft.sound.SoundEvent
+//#endif
 
 @SkyHanniModule
 object SoundUtils {
 
     private val config get() = SkyHanniMod.feature.misc
-    private val beepSoundCache = mutableMapOf<Float, SoundInstance>()
+    private val beepSoundCache = mutableMapOf<Float, ISound>()
     private val clickSound by lazy { createSound("gui.button.press", 1f) }
     private val errorSound by lazy { createSound("mob.endermen.portal", 0f) }
     val plingSound by lazy { createSound("note.pling", 1f) }
     val centuryActiveTimerAlert by lazy { createSound("skyhanni:centurytimer.active", 1f) }
 
-    fun SoundInstance.playSound() {
-        DelayedRun.runOrNextTick {
-            val category = this.source
+    fun ISound.playSound() {
+        DelayedRun.onThread.execute {
+            //#if MC < 1.21
+            val category = SoundCategory.PLAYERS
+            //#else
+            //$$ val category = this.category
+            //#endif
 
-            val oldLevel = Minecraft.getInstance().options.getSoundSourceVolume(category)
-            if (!config.maintainGameVolume) this.setLevel(1f)
+            val oldLevel = Minecraft.getMinecraft().gameSettings.getSoundLevel(category)
+            if (!config.maintainGameVolume) category.setLevel(1f)
 
             try {
-                Minecraft.getInstance().soundManager.play(this)
+                Minecraft.getMinecraft().soundHandler.playSound(this)
             } catch (e: IllegalArgumentException) {
-                if (e.message?.startsWith("value already present:") == true) return@runOrNextTick
+                if (e.message?.startsWith("value already present:") == true) return@execute
                 ErrorManager.logErrorWithData(
                     e,
                     "Failed to play a sound",
-                    "soundLocation" to this.identifier,
+                    "soundLocation" to this.soundLocation,
                 )
             } catch (e: Exception) {
                 ErrorManager.logErrorWithData(
                     e,
                     "Failed to play a sound",
-                    "soundLocation" to this.identifier,
+                    "soundLocation" to this.soundLocation,
                 )
             } finally {
-                if (!config.maintainGameVolume) this.setLevel(oldLevel)
+                if (!config.maintainGameVolume) category.setLevel(oldLevel)
             }
         }
     }
 
-    private fun SoundInstance.setLevel(level: Float) =
-        //? if < 1.21.11 {
-        Minecraft.getInstance().soundManager.setVolume(this, level)
-    //?} else
-    //Minecraft.getInstance().soundManager.updateCategoryVolume(this.source, level)
+    private fun SoundCategory.setLevel(level: Float) =
+        Minecraft.getMinecraft().soundHandler.setSoundLevel(this, level)
 
-    fun createSound(name: String, pitch: Float, volume: Float = 50f): SoundInstance {
-        val newSound = at.hannibal2.skyhanni.utils.compat.SoundCompat.getModernSoundName(name)
-        val identifier = Identifier.parse(newSound.replace(Regex("[^a-z0-9/._-]"), ""))
-        return SimpleSoundInstance.forUI(SoundEvent.createVariableRangeEvent(identifier), pitch, volume)
+    fun createSound(name: String, pitch: Float, volume: Float = 50f): ISound {
+        //#if MC < 1.21
+        val sound: ISound = object : PositionedSound(ResourceLocation(name)) {
+            init {
+                this.volume = volume
+                repeat = false
+                repeatDelay = 0
+                attenuationType = ISound.AttenuationType.NONE
+                this.pitch = pitch
+            }
+        }
+        return sound
+        //#else
+        //$$ val newSound = at.hannibal2.skyhanni.utils.compat.SoundCompat.getModernSoundName(name)
+        //$$ val identifier = Identifier.of(newSound.replace(Regex("[^a-z0-9/._-]"), ""))
+        //$$ return PositionedSoundInstance.master(SoundEvent.of(identifier), pitch, volume)
+        //#endif
     }
 
     fun playBeepSound(pitch: Float = 1f) {
@@ -77,13 +95,26 @@ object SoundUtils {
         plingSound.playSound()
     }
 
+    private fun onCommand(args: Array<String>) {
+        if (args.isEmpty()) {
+            ChatUtils.userError("Specify a sound effect to test")
+            return
+        }
+
+        val soundName = args[0]
+        val pitch = args.getOrNull(1)?.toFloat() ?: 1f
+        val volume = args.getOrNull(2)?.toFloat() ?: 50f
+
+        createSound(soundName, pitch, volume).playSound()
+    }
+
     fun playErrorSound() {
         errorSound.playSound()
     }
 
     // TODO use duration for delay
-    fun repeatSound(delay: Long, repeat: Int, sound: SoundInstance) {
-        SkyHanniMod.launchCoroutine("repeatSound") {
+    fun repeatSound(delay: Long, repeat: Int, sound: ISound) {
+        SkyHanniMod.launchCoroutine {
             repeat(repeat) {
                 sound.playSound()
                 delay(delay)
@@ -96,24 +127,7 @@ object SoundUtils {
         event.registerBrigadier("shplaysound") {
             description = "Play the specified sound effect at the given pitch and volume."
             category = CommandCategory.DEVELOPER_TEST
-            arg("name", BrigadierArguments.string()) { soundName ->
-                arg("pitch", BrigadierArguments.float()) { pitch ->
-                    arg("volume", BrigadierArguments.float()) { volume ->
-                        callback {
-                            createSound(getArg(soundName), getArg(pitch), getArg(volume)).playSound()
-                        }
-                    }
-                    callback {
-                        createSound(getArg(soundName), getArg(pitch), 50f).playSound()
-                    }
-                }
-                callback {
-                    createSound(getArg(soundName), 1f, 50f).playSound()
-                }
-            }
-            simpleCallback {
-                ChatUtils.userError("Specify a sound effect to test")
-            }
+            legacyCallbackArgs { onCommand(it) }
         }
     }
 }

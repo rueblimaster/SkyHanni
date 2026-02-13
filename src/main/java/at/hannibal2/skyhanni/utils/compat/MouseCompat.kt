@@ -1,46 +1,21 @@
 package at.hannibal2.skyhanni.utils.compat
 
-import at.hannibal2.skyhanni.utils.DelayedRun
-import net.minecraft.client.Minecraft
+import org.lwjgl.input.Mouse
 
 object MouseCompat {
-    var deltaMouseY = 0.0
-    var deltaMouseX = 0.0
-    var scroll = 0.0
-    var timeDelta = 0.0
-    var lastEventButton = -1
+    fun isButtonDown(button: Int): Boolean = Mouse.isButtonDown(button)
 
-    private val mouse by lazy {
-        Minecraft.getInstance().mouseHandler
-    }
+    fun getX(): Int = Mouse.getX()
+    fun getY(): Int = Mouse.getY()
 
-    fun isButtonDown(button: Int): Boolean {
-        return lastEventButton == button
-    }
+    fun getEventButtonState(): Boolean = Mouse.getEventButtonState()
+    fun getEventNanoseconds(): Long = Mouse.getEventNanoseconds()
 
-    fun getScrollDelta(): Int {
-        val delta = scroll
-        DelayedRun.runNextTickOld { scroll = 0.0 }
-        return delta.toInt() * 120
-    }
+    fun getEventX(): Int = Mouse.getEventX()
+    fun getEventY(): Int = Mouse.getEventY()
 
-    fun getX(): Int {
-        return mouse.xpos().toInt()
-    }
+    fun getEventDY(): Int = Mouse.getEventDY()
+    fun getScrollDelta(): Int = Mouse.getEventDWheel()
 
-    fun getY(): Int {
-        return mouse.ypos().toInt()
-    }
-
-    // I have no clue what the difference between getx and geteventx is on 1.8.9
-    // on 1.8.9 they are pretty much the same (they are the exact same when the mouse is still)
-    fun getEventX(): Int = getX()
-    fun getEventY(): Int = getY()
-
-    fun getEventButtonState(): Boolean = lastEventButton != -1
-    fun getEventNanoseconds(): Long = timeDelta.toLong()
-
-    fun getEventDY(): Int {
-        return deltaMouseY.toInt()
-    }
+    fun getEventButton(): Int = Mouse.getEventButton()
 }

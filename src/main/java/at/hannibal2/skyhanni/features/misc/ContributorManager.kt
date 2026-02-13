@@ -8,8 +8,9 @@ import at.hannibal2.skyhanni.data.mob.MobFilter.isRealPlayer
 import at.hannibal2.skyhanni.events.RepositoryReloadEvent
 import at.hannibal2.skyhanni.events.entity.EntityDisplayNameEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import at.hannibal2.skyhanni.utils.compat.append
-import net.minecraft.world.entity.player.Player
+import at.hannibal2.skyhanni.utils.chat.TextHelper.asComponent
+import at.hannibal2.skyhanni.utils.compat.appendComponent
+import net.minecraft.entity.player.EntityPlayer
 
 @SkyHanniModule
 object ContributorManager {
@@ -30,10 +31,10 @@ object ContributorManager {
     }
 
     @HandleEvent
-    fun onRenderNametag(event: EntityDisplayNameEvent<Player>) {
+    fun onRenderNametag(event: EntityDisplayNameEvent<EntityPlayer>) {
         if (!config.contributorNametags) return
-        if (event.entity.isRealPlayer()) getSuffix(event.entity.name.string)?.let {
-            event.chatComponent.append(it)
+        if (event.entity.isRealPlayer()) getSuffix(event.entity.name)?.let {
+            event.chatComponent.appendComponent(it.asComponent())
         }
     }
 

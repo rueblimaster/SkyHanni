@@ -1,7 +1,7 @@
 package at.hannibal2.skyhanni.events.minecraft.packet
 
 import at.hannibal2.skyhanni.api.event.CancellableSkyHanniEvent
-import net.minecraft.network.protocol.Packet
+import net.minecraft.network.Packet
 
 class PacketSentEvent(val packet: Packet<*>) : CancellableSkyHanniEvent() {
 
@@ -19,11 +19,20 @@ class PacketSentEvent(val packet: Packet<*>) : CancellableSkyHanniEvent() {
     }
 
     companion object {
-        private val networkClassName = net.minecraft.client.multiplayer.ClientPacketListener::class.java.name
-        private fun isNetworkHandlerClass(className: String) = className == networkClassName
+
+        //#if MC < 1.21
+        private fun isNetworkHandlerClass(className: String) = className == "net.minecraft.client.network.NetHandlerPlayClient"
+        //#else
+        //$$ private val networkClassName = net.minecraft.client.network.ClientPlayNetworkHandler::class.java.name
+        //$$ private fun isNetworkHandlerClass(className: String) = className == networkClassName
+        //#endif
 
         private fun startsWithMinecraft(string: String): Boolean {
-            return string.startsWith("net.minecraft.") || string.startsWith("com.mojang.") || string.startsWith("org.lwjgl.")
+            //#if MC < 1.21
+            return string.startsWith("net.minecraft.")
+            //#else
+            //$$ return string.startsWith("net.minecraft.") || string.startsWith("com.mojang.") || string.startsWith("org.lwjgl.")
+            //#endif
         }
     }
 }

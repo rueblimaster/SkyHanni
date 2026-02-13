@@ -27,8 +27,7 @@ object EnforcedConfigValues {
         val constant = event.getConstant<EnforcedConfigValuesJson>("misc/EnforcedConfigValues").enforcedConfigValues
         val oldEnforcedValues = enforcedConfigValuesData
         enforcedConfigValuesData = constant.filter {
-            SkyHanniMod.modVersion <= it.affectedVersion &&
-                (it.minimumAffectedVersion?.let { minVersion -> SkyHanniMod.modVersion >= minVersion } ?: true)
+            SkyHanniMod.modVersion <= it.affectedVersion
         }.filter {
             it.affectedMinecraftVersions?.contains(PlatformUtils.MC_VERSION) ?: true
         }

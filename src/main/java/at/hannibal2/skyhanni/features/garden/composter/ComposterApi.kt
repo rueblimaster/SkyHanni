@@ -5,14 +5,13 @@ import at.hannibal2.skyhanni.features.garden.GardenApi
 import at.hannibal2.skyhanni.utils.NumberUtil.formatLong
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.TimeUtils
-import net.minecraft.network.chat.Component
 import kotlin.math.floor
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
 object ComposterApi {
 
-    var tabListData = mapOf<ComposterDisplay.DataType, Component>()
+    var tabListData = mapOf<ComposterDisplay.DataType, String>()
     val composterUpgrades: MutableMap<ComposterUpgrade, Int>? get() = GardenApi.storage?.composterUpgrades
 
     fun ComposterUpgrade.getLevel(addOne: ComposterUpgrade?) =
@@ -23,7 +22,7 @@ object ComposterApi {
             return null
         }
 
-        val nextCompostTime = tabListData[ComposterDisplay.DataType.TIME_LEFT]?.string?.removeColor()?.let {
+        val nextCompostTime = tabListData[ComposterDisplay.DataType.TIME_LEFT]?.removeColor()?.let {
             if (it != "INACTIVE") TimeUtils.getDuration(it) else null
         } ?: Duration.ZERO
 
@@ -53,12 +52,12 @@ object ComposterApi {
         return timePerCompost * compostRemainingAfterNextCompostFinishes
     }
 
-    fun getFuel() = tabListData[ComposterDisplay.DataType.FUEL]?.string?.removeColor()?.formatLong() ?: 0
+    fun getFuel() = tabListData[ComposterDisplay.DataType.FUEL]?.removeColor()?.formatLong() ?: 0
 
-    fun getOrganicMatter() = tabListData[ComposterDisplay.DataType.ORGANIC_MATTER]?.string?.removeColor()?.formatLong() ?: 0
+    fun getOrganicMatter() = tabListData[ComposterDisplay.DataType.ORGANIC_MATTER]?.removeColor()?.formatLong() ?: 0
 
     fun maxOrganicMatter(addOne: ComposterUpgrade?) =
-        40_000 + ComposterUpgrade.ORGANIC_MATTER_CAP.getLevel(addOne) * 30_000
+        40_000 + ComposterUpgrade.ORGANIC_MATTER_CAP.getLevel(addOne) * 20_000
 
     fun multiDropChance(addOne: ComposterUpgrade?) = ComposterUpgrade.MULTI_DROP.getLevel(addOne) * 0.03
 

@@ -8,7 +8,7 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDraggableLi
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorKeybind
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorSlider
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
-import org.lwjgl.glfw.GLFW
+import org.lwjgl.input.Keyboard
 
 class RewardWarningConfig {
     @Expose
@@ -31,8 +31,8 @@ class RewardWarningConfig {
 
     @Expose
     @ConfigOption(name = "Bypass Key", desc = "Hold this key to bypass the Prevent Refusing feature.")
-    @ConfigEditorKeybind(defaultKey = GLFW.GLFW_KEY_LEFT_CONTROL)
-    var bypassKey: Int = GLFW.GLFW_KEY_LEFT_CONTROL
+    @ConfigEditorKeybind(defaultKey = Keyboard.KEY_LCONTROL)
+    var bypassKey: Int = Keyboard.KEY_LCONTROL
 
 
     @Expose
@@ -46,8 +46,7 @@ class RewardWarningConfig {
         VisitorReward.SPACE_HELMET,
         VisitorReward.CULTIVATING,
         VisitorReward.REPLENISH,
-        VisitorReward.COPPER_DYE,
-        VisitorReward.FARMING_EXP_BOOST_EPIC,
+        VisitorReward.COPPER_DYE
     )
 
     @Expose

@@ -3,11 +3,9 @@ package at.hannibal2.skyhanni.features.garden.farming
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.ConfigUpdaterMigrator
 import at.hannibal2.skyhanni.config.features.garden.cropmilestones.NextConfig.BestTypeEntry
-import at.hannibal2.skyhanni.data.garden.cropmilestones.CropMilestonesApi.getCurrentMilestoneTier
-import at.hannibal2.skyhanni.data.garden.cropmilestones.CropMilestonesApi.isMaxMilestone
-import at.hannibal2.skyhanni.data.garden.cropmilestones.CropMilestonesApi.milestoneProgressToNextTier
-import at.hannibal2.skyhanni.data.garden.cropmilestones.CropMilestonesApi.milestoneTierAmount
-import at.hannibal2.skyhanni.data.garden.cropmilestones.CropMilestonesApi.milestoneTotalCropsForTier
+import at.hannibal2.skyhanni.data.GardenCropMilestones
+import at.hannibal2.skyhanni.data.GardenCropMilestones.getCounter
+import at.hannibal2.skyhanni.data.GardenCropMilestones.isMaxed
 import at.hannibal2.skyhanni.features.garden.CropType
 import at.hannibal2.skyhanni.features.garden.GardenApi
 import at.hannibal2.skyhanni.features.garden.GardenNextJacobContest
@@ -32,8 +30,6 @@ object GardenBestCropTime {
     private val config get() = GardenApi.config.cropMilestones
 
     val timeTillNextCrop = mutableMapOf<CropType, Duration>()
-    private val maxedCrops = mutableListOf<CropType>()
-    private var allCropsMaxed = false
 
     @HandleEvent
     fun onConfigLoad() {
@@ -56,25 +52,20 @@ object GardenBestCropTime {
     }
 
     fun updateTimeTillNextCrop() {
+        val useOverflow = config.overflow.bestCropTime
         for (crop in CropType.entries) {
-            if (crop !in maxedCrops && crop.isMaxMilestone()) {
-                maxedCrops.add(crop)
-                if (maxedCrops.size >= CropType.entries.size) allCropsMaxed = true
-                continue
-            }
             val speed = crop.getSpeed() ?: continue
+            if (crop.isMaxed(useOverflow)) continue
 
-            val currentTier = crop.getCurrentMilestoneTier() ?: return
+            val counter = crop.getCounter()
+            val currentTier = GardenCropMilestones.getTierForCropCount(counter, crop, allowOverflow = true)
 
-            val cropsForCurrentTier = crop.milestoneTotalCropsForTier(currentTier)
+            val cropsForCurrentTier = GardenCropMilestones.getCropsForTier(currentTier, crop)
+            val nextTier = if (config.bestShowMaxedNeeded.get()) 46 else currentTier + 1
+            val cropsForNextTier = GardenCropMilestones.getCropsForTier(nextTier, crop)
 
-            val have = crop.milestoneProgressToNextTier() ?: return
-            val need =
-                if (config.showMaxTier.get()) {
-                    cropsForCurrentTier
-                } else {
-                    crop.milestoneTierAmount(currentTier + 1)
-                }
+            val have = counter - cropsForCurrentTier
+            val need = cropsForNextTier - cropsForCurrentTier
 
             val missing = need - have
             val missingTimeSeconds = missing / speed
@@ -84,16 +75,19 @@ object GardenBestCropTime {
     }
 
     fun drawBestDisplay(currentCrop: CropType?) = Renderable.vertical {
-        if (timeTillNextCrop.size < CropType.entries.size && !allCropsMaxed) {
+        if (timeTillNextCrop.size < CropType.entries.size) {
             updateTimeTillNextCrop()
         }
 
         val gardenExp = config.next.bestType.get() == BestTypeEntry.GARDEN_EXP
+        val useOverflow = config.overflow.bestCropTime
         val sorted = if (gardenExp) {
             val helpMap = mutableMapOf<CropType, Long>()
             for ((crop, time) in timeTillNextCrop) {
-                if (crop.isMaxMilestone()) continue
-                val gardenExpForTier = getGardenExpForTier((crop.getCurrentMilestoneTier() ?: continue) + 1)
+                if (crop.isMaxed(useOverflow)) continue
+                val currentTier =
+                    GardenCropMilestones.getTierForCropCount(crop.getCounter(), crop, allowOverflow = true)
+                val gardenExpForTier = getGardenExpForTier(currentTier + 1)
                 val fakeTime = time / gardenExpForTier
                 helpMap[crop] = fakeTime.inWholeMilliseconds
             }
@@ -112,11 +106,6 @@ object GardenBestCropTime {
             }
         }
 
-        if (allCropsMaxed) {
-            addString("§eAll Crops Maxed!")
-            return@vertical
-        }
-
         if (!config.progress) {
             addString("§cCrop Milestone Progress Display is disabled!")
             return@vertical
@@ -128,13 +117,12 @@ object GardenBestCropTime {
         }
 
         sorted.keys.withIndex().forEach { (index, crop) ->
-            createCropEntry(crop, index + 1, gardenExp, currentCrop)?.let(::add)
+            createCropEntry(crop, index + 1, useOverflow, gardenExp, currentCrop)?.let(::add)
         }
     }
 
-    private fun createCropEntry(crop: CropType, index: Int, gardenExp: Boolean, currentCrop: CropType?): Renderable? {
-        if (crop.isMaxMilestone()) return null
-        val currentTier = crop.getCurrentMilestoneTier() ?: return null
+    private fun createCropEntry(crop: CropType, index: Int, useOverflow: Boolean, gardenExp: Boolean, currentCrop: CropType?): Renderable? {
+        if (crop.isMaxed(useOverflow)) return null
         val millis = timeTillNextCrop[crop] ?: return null
         val biggestUnit = config.highestTimeFormat.get().timeUnit
         val duration = millis.format(biggestUnit, maxUnits = 2)
@@ -149,7 +137,8 @@ object GardenBestCropTime {
 
             val color = if (isCurrent) "§e" else "§7"
             val contestFormat = if (GardenNextJacobContest.isNextCrop(crop)) "§n" else ""
-            val nextTier = if (config.showMaxTier.get()) 46 else currentTier + 1
+            val currentTier = GardenCropMilestones.getTierForCropCount(crop.getCounter(), crop, allowOverflow = true)
+            val nextTier = if (config.bestShowMaxedNeeded.get()) 46 else currentTier + 1
 
             val cropName = if (!config.next.bestCompact.get()) crop.cropName + " " else ""
             val tier = if (!config.next.bestCompact.get()) "$currentTier➜$nextTier§r " else ""

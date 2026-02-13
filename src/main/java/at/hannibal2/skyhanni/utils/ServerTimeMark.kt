@@ -49,13 +49,9 @@ value class ServerTimeMark private constructor(val ticks: Long) : Comparable<Ser
         private const val FAR_PAST_TICKS = Long.MIN_VALUE
         private const val FAR_FUTURE_TICKS = Long.MAX_VALUE
 
-        private val FAR_PAST = ServerTimeMark(FAR_PAST_TICKS)
-        private val FAR_FUTURE = ServerTimeMark(FAR_FUTURE_TICKS)
+        val FAR_PAST = ServerTimeMark(FAR_PAST_TICKS)
+        val FAR_FUTURE = ServerTimeMark(FAR_FUTURE_TICKS)
 
-        fun farPast() = FAR_PAST
-        fun farFuture() = FAR_FUTURE
-
-        fun Duration.fromServerNow() = now() + this
     }
 
 }

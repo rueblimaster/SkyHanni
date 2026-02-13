@@ -16,10 +16,14 @@ import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
 import at.hannibal2.skyhanni.utils.compat.DrawContextUtils
+import at.hannibal2.skyhanni.utils.compat.MinecraftCompat
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.addLine
 import at.hannibal2.skyhanni.utils.renderables.primitives.text
 import net.minecraft.client.Minecraft
+//#if FORGE
+import net.minecraftforge.client.ClientCommandHandler
+//#endif
 
 @SkyHanniModule
 object QuickModMenuSwitch {
@@ -45,8 +49,11 @@ object QuickModMenuSwitch {
 
     @HandleEvent
     fun onTick(event: SkyHanniTickEvent) {
-        if (!isEnabled() || !event.isMod(5)) return
-        update()
+        if (!isEnabled()) return
+
+        if (event.isMod(5)) {
+            update()
+        }
     }
 
     class Mod(val name: String, val description: List<String>, val command: String, private val guiPath: List<String>) {
@@ -55,7 +62,7 @@ object QuickModMenuSwitch {
     }
 
     private fun update() {
-        var openGui = Minecraft.getInstance().screen?.javaClass?.name ?: "none"
+        var openGui = Minecraft.getMinecraft().currentScreen?.javaClass?.name ?: "none"
         openGui = handleAbstractGuis(openGui)
         if (latestGuiPath != openGui) {
             latestGuiPath = openGui
@@ -91,7 +98,7 @@ object QuickModMenuSwitch {
         if (openGui == "gg.essential.vigilance.gui.SettingsGui") {
             val clazz = Class.forName("gg.essential.vigilance.gui.SettingsGui")
             val titleBarDelegate = clazz.getDeclaredField("titleBar\$delegate").makeAccessible()
-                .get(Minecraft.getInstance().screen)
+                .get(Minecraft.getMinecraft().currentScreen)
             val titleBar =
                 titleBarDelegate.javaClass.declaredFields[0].makeAccessible().get(titleBarDelegate)
             val gui = titleBar.javaClass.getDeclaredField("gui").makeAccessible().get(titleBar)
@@ -100,7 +107,7 @@ object QuickModMenuSwitch {
             return config.javaClass.name
         }
         if (openGui == "cc.polyfrost.oneconfig.gui.OneConfigGui") {
-            val actualGui = Minecraft.getInstance().screen ?: return openGui
+            val actualGui = Minecraft.getMinecraft().currentScreen ?: return openGui
             val currentPage = actualGui.javaClass.getDeclaredField("currentPage")
                 .makeAccessible()
                 .get(actualGui)
@@ -144,10 +151,13 @@ object QuickModMenuSwitch {
     }
 
     private fun open(mod: Mod) {
+        lastGuiOpen = System.currentTimeMillis()
+        currentlyOpeningMod = mod.name
+        update()
         try {
-            lastGuiOpen = System.currentTimeMillis()
-            currentlyOpeningMod = mod.name
-            update()
+            //#if FORGE
+            ClientCommandHandler.instance.executeCommand(MinecraftCompat.localPlayer, "/" + mod.command)
+            //#endif
         } catch (e: Exception) {
             ErrorManager.logErrorWithData(e, "Error trying to open the gui for mod " + mod.name)
         }
@@ -157,9 +167,9 @@ object QuickModMenuSwitch {
     fun onScreenDrawn(event: ScreenDrawnEvent) {
         if (!isEnabled()) return
 
-        DrawContextUtils.pushPop {
-            config.pos.renderRenderables(display, posLabel = "Quick Mod Menu Switch")
-        }
+        DrawContextUtils.pushMatrix()
+        config.pos.renderRenderables(display, posLabel = "Quick Mod Menu Switch")
+        DrawContextUtils.popMatrix()
     }
 
     private fun isEnabled() = (SkyBlockUtils.inSkyBlock || OutsideSBFeature.QUICK_MOD_MENU_SWITCH.isSelected()) && config.enabled

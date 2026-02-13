@@ -25,8 +25,7 @@ import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.TabListData
-import net.minecraft.network.chat.Component
-import net.minecraft.world.item.ItemStack
+import net.minecraft.item.ItemStack
 
 object QuestLoader {
 
@@ -38,20 +37,28 @@ object QuestLoader {
     }
 
     fun loadFromTabList() {
+        DailyQuestHelper.greatSpook = false
         var found = 0
 
 
         for (line in TabWidget.FACTION_QUESTS.lines) {
             readQuest(line)
             found++
+            if (DailyQuestHelper.greatSpook) return
         }
 
         CrimsonIsleReputationHelper.tabListQuestsMissing = found == 0
         DailyQuestHelper.update()
     }
 
-    private fun readQuest(line: Component) {
+    private fun readQuest(line: String) {
         CrimsonIsleReputationHelper.tabListQuestPattern.matchMatcher(line) {
+            if (line.contains("The Great Spook")) {
+                DailyQuestHelper.greatSpook = true
+                DailyQuestHelper.update()
+                return
+            }
+
             val name = group("name")
             val amount = groupOrNull("amount")?.toInt() ?: 1
             val green = group("status") == "✔"
@@ -171,6 +178,11 @@ object QuestLoader {
     }
 
     fun loadConfig(storage: ProfileSpecificStorage.CrimsonIsleStorage) {
+        if (DailyQuestHelper.greatSpook) return
+        if (storage.quests.toList().any { hasGreatSpookLine(it) }) {
+            DailyQuestHelper.greatSpook = true
+            return
+        }
         for (text in storage.quests.toList()) {
             val split = text.split(":")
             val name = split[0]
@@ -201,6 +213,15 @@ object QuestLoader {
             }
             addQuest(quest)
         }
+    }
+
+    private fun hasGreatSpookLine(text: String) = when {
+        text.contains("The Great Spook") -> true
+        text.contains(" Days") -> true
+        text.contains("Fear: §r") -> true
+        text.contains("Primal Fears") -> true
+
+        else -> false
     }
 
     private fun addQuest(element: Quest) {

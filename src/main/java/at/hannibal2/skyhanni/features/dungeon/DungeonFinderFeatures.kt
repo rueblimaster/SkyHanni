@@ -7,11 +7,9 @@ import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.InventoryCloseEvent
 import at.hannibal2.skyhanni.events.InventoryOpenEvent
 import at.hannibal2.skyhanni.events.RenderInventoryItemTipEvent
-import at.hannibal2.skyhanni.events.minecraft.ToolTipTextEvent
-import at.hannibal2.skyhanni.events.minecraft.add
+import at.hannibal2.skyhanni.events.minecraft.ToolTipEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import at.hannibal2.skyhanni.utils.ItemUtils.cleanName
-import at.hannibal2.skyhanni.utils.ItemUtils.getLoreComponent
+import at.hannibal2.skyhanni.utils.ItemUtils.getLore
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.NumberUtil.romanToDecimalIfNecessary
 import at.hannibal2.skyhanni.utils.RegexUtils.anyMatches
@@ -21,21 +19,20 @@ import at.hannibal2.skyhanni.utils.RenderUtils.highlight
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.StringUtils.createCommaSeparatedList
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
-import at.hannibal2.skyhanni.utils.chat.TextHelper.asComponent
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.network.chat.Component
-import net.minecraft.world.item.ItemStack
+import net.minecraft.item.ItemStack
 
+// TODO Remove all removeColor calls in this class. Deal with the color code in regex.
 // TODO also fix up this all being coded very poorly and having the same patterns in multiple places
 @SkyHanniModule
 object DungeonFinderFeatures {
     private val config get() = SkyHanniMod.feature.dungeon.partyFinder
 
     //  Repo group and patterns
-    private val patternGroup = RepoPattern.group("dungeon.finder.new")
+    private val patternGroup = RepoPattern.group("dungeon.finder")
 
     /**
-     * REGEX-TEST: Note: 3m comp carry
+     * REGEX-TEST: §7§7Note: §f3m comp carry
      */
     private val pricePattern by patternGroup.pattern(
         "price",
@@ -43,8 +40,8 @@ object DungeonFinderFeatures {
     )
 
     /**
-     * REGEX-TEST: Note: 3m comp carry
-     * REGEX-TEST: Note: 250k comp carry
+     * REGEX-TEST: §7§7Note: §f3m comp carry
+     * REGEX-TEST: §7§7Note: §f250k comp carry
      */
     private val carryPattern by patternGroup.pattern(
         "carry",
@@ -56,32 +53,28 @@ object DungeonFinderFeatures {
     )
 
     /**
-     * REGEX-TEST:  4sn_: Archer (29)
-     * REGEX-TEST:  kaydo_odyak: Berserk (26)
-     * REGEX-TEST:  ItsKind: §eBerserk§b (§e38§b)
-     * REGEX-TEST:  sphxia: §eTank§b (§e36§b)
-     * REGEX-TEST:  Skept1x: §eMage§b (§e35§b)
-     * REGEX-TEST:  Mewlius: §eArcher§b (§e41§b)
+     * REGEX-TEST:  §b4sn_§f: §eArcher§b (§e29§b)
+     * REGEX-TEST:  §akaydo_odyak§f: §eBerserk§b (§e26§b)
      */
     private val memberPattern by patternGroup.pattern(
         "member",
-        " (?<playerName>.*): (?<className>.*) \\((?<level>.*)\\)",
+        ".*§.(?<playerName>.*)§f: §e(?<className>.*)§b \\(§e(?<level>.*)§b\\)",
     )
 
     /**
-     * REGEX-TEST: Requires a Class at Level 25!
+     * REGEX-TEST: §cRequires a Class at Level 25!
      */
     private val ineligiblePattern by patternGroup.pattern(
         "ineligible",
-        "Requires .*$|You don't meet the requirement!|Complete previous floor first!$",
+        "§c(?:Requires .*$|You don't meet the requirement!|Complete previous floor first!$)",
     )
 
     /**
-     * REGEX-TEST: Note: s+ clear first
+     * REGEX-TEST: §7§7Note: §fs+ clear first
      */
     private val notePattern by patternGroup.pattern(
         "note",
-        "Note: (?<note>.*)",
+        "§7§7Note: §f(?<note>.*)",
     )
 
     /**
@@ -168,14 +161,14 @@ object DungeonFinderFeatures {
     )
     private val detectDungeonClassPattern by patternGroup.pattern(
         "detect.dungeon.class",
-        "View and select a dungeon class\\.",
+        "§7View and select a dungeon class\\.",
     )
 
     //  Variables used
     private var selectedClass = ""
     private var floorStackSize = mapOf<Int, String>()
     private var highlightParty = mapOf<Int, LorenzColor>()
-    private var toolTipMap = mapOf<Int, List<Component>>()
+    private var toolTipMap = mapOf<Int, List<String>>()
     private var inInventory = false
 
     @HandleEvent
@@ -200,7 +193,7 @@ object DungeonFinderFeatures {
     private fun selectFloorStackTip(inventoryItems: Map<Int, ItemStack>, map: MutableMap<Int, String>) {
         inInventory = true
         for ((slot, stack) in inventoryItems) {
-            val name = stack.hoverName.string.removeColor()
+            val name = stack.displayName.removeColor()
             map[slot] = if (anyFloorPattern.matches(name)) {
                 "A"
             } else if (entranceFloorPattern.matches(name)) {
@@ -216,24 +209,24 @@ object DungeonFinderFeatures {
     private fun partyFinderStackTip(inventoryItems: Map<Int, ItemStack>, map: MutableMap<Int, String>) {
         inInventory = true
         for ((slot, stack) in inventoryItems) {
-            val name = stack.cleanName()
+            val name = stack.displayName.removeColor()
             if (!checkIfPartyPattern.matches(name)) continue
-            val lore = stack.getLoreComponent()
-            val floor = lore.find { floorPattern.matches(it.string) } ?: continue
-            val dungeon = lore.find { dungeonFloorPattern.matches(it.string) } ?: continue
+            val lore = stack.getLore()
+            val floor = lore.find { floorPattern.matches(it.removeColor()) } ?: continue
+            val dungeon = lore.find { dungeonFloorPattern.matches(it.removeColor()) } ?: continue
             val floorNum = floorNumberPattern.matchMatcher(floor) {
                 group("floorNum").romanToDecimalIfNecessary()
             }
-            map[slot] = getFloorName(floor.string, dungeon.string, floorNum)
+            map[slot] = getFloorName(floor, dungeon, floorNum)
         }
     }
 
     private fun catacombsGateStackTip(inventoryItems: Map<Int, ItemStack>, map: MutableMap<Int, String>) {
         val dungeonClassItemIndex = 45
         inInventory = true
-        inventoryItems[dungeonClassItemIndex]?.getLoreComponent()?.let {
+        inventoryItems[dungeonClassItemIndex]?.getLore()?.let {
             if (it.size > 3 && detectDungeonClassPattern.matches(it[0])) {
-                getDungeonClassPattern.matchMatcher(it[2].string) {
+                getDungeonClassPattern.matchMatcher(it[2].removeColor()) {
                     selectedClass = group("class")
                 }
             }
@@ -241,7 +234,7 @@ object DungeonFinderFeatures {
 
         if (!config.floorAsStackSize) return
         for ((slot, stack) in inventoryItems) {
-            val name = stack.hoverName.string.removeColor()
+            val name = stack.displayName.removeColor()
             if (!floorTypePattern.matches(name)) continue
             val floorNum = floorNumberPattern.matchMatcher(name) {
                 group("floorNum").romanToDecimalIfNecessary()
@@ -265,9 +258,9 @@ object DungeonFinderFeatures {
         // TODO: Refactor this to not have so many continue statements
         @Suppress("LoopWithTooManyJumpStatements")
         for ((slot, stack) in event.inventoryItems) {
-            val lore = stack.getLoreComponent()
-            if (!checkIfPartyPattern.matches(stack.cleanName())) continue
-            if (config.markIneligibleGroups && ineligiblePattern.anyMatches(lore.map { it.string })) {
+            val lore = stack.getLore()
+            if (!checkIfPartyPattern.matches(stack.displayName)) continue
+            if (config.markIneligibleGroups && ineligiblePattern.anyMatches(lore)) {
                 map[slot] = LorenzColor.DARK_RED
                 continue
             }
@@ -316,26 +309,26 @@ object DungeonFinderFeatures {
         return map
     }
 
-    private fun toolTipHandler(event: InventoryOpenEvent): Map<Int, List<Component>> {
-        val map = mutableMapOf<Int, List<Component>>()
+    private fun toolTipHandler(event: InventoryOpenEvent): Map<Int, List<String>> {
+        val map = mutableMapOf<Int, List<String>>()
         val inventoryName = event.inventoryName
         if (!partyFinderTitlePattern.matches(inventoryName)) return map
         inInventory = true
         for ((slot, stack) in event.inventoryItems) {
             // TODO use enum
             val classNames = mutableListOf("Healer", "Mage", "Berserk", "Archer", "Tank")
-            val toolTip = stack.getLoreComponent().toMutableList()
-            for ((index, line) in stack.getLoreComponent().withIndex()) {
+            val toolTip = stack.getLore().toMutableList()
+            for ((index, line) in stack.getLore().withIndex()) {
                 memberPattern.matchMatcher(line) {
                     val playerName = group("playerName")
                     val className = group("className")
                     val level = group("level").toInt()
                     val color = DungeonApi.getColor(level)
-                    if (config.coloredClassLevel) toolTip[index] = " §b$playerName§f: §e$className $color$level".asComponent()
+                    if (config.coloredClassLevel) toolTip[index] = " §b$playerName§f: §e$className $color$level"
                     classNames.remove(className)
                 }
             }
-            val name = stack.getLoreComponent().firstOrNull()
+            val name = stack.getLore().firstOrNull()?.removeColor()
             if (config.showMissingClasses && dungeonFloorPattern.matches(name)) {
                 if (classNames.contains(selectedClass)) {
                     classNames[classNames.indexOf(selectedClass)] = "§a$selectedClass§7"
@@ -351,16 +344,16 @@ object DungeonFinderFeatures {
     }
 
     @HandleEvent
-    fun onToolTip(event: ToolTipTextEvent) {
+    fun onToolTip(event: ToolTipEvent) {
         if (!isEnabled()) return
         if (!inInventory) return
-        event.slot ?: return
 
         val featureActive = config.let { it.coloredClassLevel || it.showMissingClasses }
         if (!featureActive) return
 
-        val toolTip = toolTipMap[event.slot.index]
+        val toolTip = toolTipMap[event.slot.slotNumber]
         if (toolTip.isNullOrEmpty()) return
+        // TODO @Thunderblade73 fix that to "event.toolTip = toolTip"
         val oldToolTip = event.toolTip
         for ((index, line) in toolTip.withIndex()) {
             if (index >= event.toolTip.size - 1) {
@@ -376,8 +369,8 @@ object DungeonFinderFeatures {
         if (!isEnabled()) return
         if (!config.floorAsStackSize) return
         val slot = event.slot
-        if (slot.index != slot.containerSlot) return
-        event.stackTip = (floorStackSize[slot.containerSlot]?.takeIf { it.isNotEmpty() } ?: return)
+        if (slot.slotNumber != slot.slotIndex) return
+        event.stackTip = (floorStackSize[slot.slotIndex]?.takeIf { it.isNotEmpty() } ?: return)
     }
 
     @HandleEvent
@@ -385,7 +378,7 @@ object DungeonFinderFeatures {
         if (!isEnabled()) return
         if (!inInventory) return
 
-        event.container.slots.associateWith { highlightParty[it.index] }.forEach { (slot, color) ->
+        event.container.inventorySlots.associateWith { highlightParty[it.slotNumber] }.forEach { (slot, color) ->
             color?.let { slot.highlight(it) }
         }
     }

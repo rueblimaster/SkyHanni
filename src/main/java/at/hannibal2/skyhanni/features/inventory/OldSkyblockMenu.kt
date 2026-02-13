@@ -13,15 +13,14 @@ import at.hannibal2.skyhanni.utils.HypixelCommands
 import at.hannibal2.skyhanni.utils.InventoryDetector
 import at.hannibal2.skyhanni.utils.ItemUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.getLore
-import at.hannibal2.skyhanni.utils.ItemUtils.setLoreString
+import at.hannibal2.skyhanni.utils.ItemUtils.setLore
 import at.hannibal2.skyhanni.utils.NumberUtil.addSeparators
 import at.hannibal2.skyhanni.utils.SkullTextureHolder
 import at.hannibal2.skyhanni.utils.SoundUtils
 import at.hannibal2.skyhanni.utils.compat.ColoredBlockCompat.Companion.isStainedGlassPane
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
-import net.minecraft.world.item.Item
-import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.Items
+import net.minecraft.init.Items
+import net.minecraft.item.Item
+import net.minecraft.item.ItemStack
 import kotlin.reflect.KFunction
 
 /**
@@ -30,13 +29,13 @@ import kotlin.reflect.KFunction
 @SkyHanniModule
 object OldSkyblockMenu {
     private val skyblockMenu = InventoryDetector(
-        onOpenInventory = { openInvEvent ->
+        openInventory = { openInvEvent ->
             SkyBlockButton.entries.forEach {
                 val invItem = openInvEvent.inventoryItems[it.slot] ?: return@forEach
                 it.disabled = !invItem.isStainedGlassPane()
             }
         },
-        onCloseInventory = { _ ->
+        closeInventory = { _ ->
             // Reset all buttons to enabled when the menu is closed
             SkyBlockButton.entries.forEach { it.disabled = false }
         },
@@ -51,7 +50,7 @@ object OldSkyblockMenu {
         if (!isEnabled()) return
 
         val sbButton = slotMap[event.slot]?.takeIf { !it.disabled } ?: return
-        val isAlreadySbButton = event.originalItem.hoverName.formattedTextCompatLeadingWhiteLessResets().endsWith(sbButton.displayName)
+        val isAlreadySbButton = event.originalItem.displayName.endsWith(sbButton.displayName)
         if (isAlreadySbButton) return
 
         event.replace(sbButton.item)
@@ -99,7 +98,7 @@ object OldSkyblockMenu {
             "These trades are always",
             "available and accessible through",
             "the SkyBlock Menu.",
-            itemData = NormalItemData(Items.EMERALD),
+            itemData = NormalItemData(Items.emerald),
             requiresBoosterCookie = false,
         ),
         ACCESSORY(
@@ -117,7 +116,7 @@ object OldSkyblockMenu {
                 lore.add(4, "")
                 val format = magicalPower.addSeparators()
                 lore.add(5, "§7Magical Power: §6$format")
-                item.copy().setLoreString(lore)
+                item.copy().setLore(lore)
             }
         ),
         POTION(
@@ -182,7 +181,7 @@ object OldSkyblockMenu {
                 }
             }
             return baseItem.apply {
-                extraItemBuilding?.let { it(this) }
+                if (extraItemBuilding != null) extraItemBuilding(this)
             }
         }
     }

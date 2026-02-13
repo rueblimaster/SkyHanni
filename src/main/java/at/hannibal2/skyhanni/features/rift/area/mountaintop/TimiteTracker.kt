@@ -24,7 +24,6 @@ import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addSearc
 import at.hannibal2.skyhanni.utils.renderables.Searchable
 import at.hannibal2.skyhanni.utils.tracker.ItemTrackerData
 import at.hannibal2.skyhanni.utils.tracker.SkyHanniItemTracker
-import at.hannibal2.skyhanni.utils.tracker.SkyHanniTracker
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -35,13 +34,17 @@ object TimiteTracker {
     private val TIMITE = "TIMITE".toInternalName()
 
     class Data : ItemTrackerData() {
+        override fun resetItems() {
+            return
+        }
+
         override fun getDescription(timesGained: Long): List<String> = emptyList()
 
         override fun getCoinName(item: TrackedItem): String = "§5Motes"
 
         override fun getCoinDescription(item: TrackedItem): List<String> = emptyList()
 
-        override fun getCustomPricePer(internalName: NeuInternalName, tracker: SkyHanniTracker<*, *>): Double {
+        override fun getCustomPricePer(internalName: NeuInternalName): Double {
             return internalName.getItemStack().motesNpcPrice() ?: 0.0
         }
 
@@ -55,23 +58,18 @@ object TimiteTracker {
         val profit = tracker.drawItems(data, { true }, this)
 
         NeuItems.getRecipes(HIGHLITE).singleOrNull()?.let { highliteRecipe ->
-            var craftableAmountByYoungite = 0
-            var craftableAmountByTimite = 0
-            var craftableAmountByObsolite = 0
+            var craftableAmount = 0
 
             for (neededItem in ItemUtils.neededItems(highliteRecipe)) {
                 if (neededItem.key in validItems) {
                     data.items[neededItem.key]?.let {
-                        when (neededItem.key) {
-                            "YOUNGITE".toInternalName() -> craftableAmountByYoungite = it.totalAmount.toInt() / neededItem.value
-                            TIMITE -> craftableAmountByTimite = it.totalAmount.toInt() / neededItem.value
-                            "OBSOLITE".toInternalName() -> craftableAmountByObsolite = it.totalAmount.toInt() / neededItem.value
+                        val amountCanCraft = it.totalAmount.toInt() / neededItem.value
+                        if (craftableAmount == 0 || amountCanCraft < craftableAmount) {
+                            craftableAmount = amountCanCraft
                         }
                     }
                 }
             }
-            val craftableAmountArray = listOf(craftableAmountByYoungite, craftableAmountByTimite, craftableAmountByObsolite)
-            val craftableAmount = craftableAmountArray.min()
             val motes = HIGHLITE.motesNpcPrice()?.times(craftableAmount)?.shortFormat() ?: "0"
             if (craftableAmount > 0) {
                 addSearchString(" §7${craftableAmount.shortFormat()}x ${HIGHLITE.repoItemName} Craftable§7: §5$motes motes")
@@ -82,12 +80,7 @@ object TimiteTracker {
         addSearchString("§dTotal Profit§7: §5${profit.toInt().shortFormat()} Motes")
     }
 
-    private val tracker = SkyHanniItemTracker(
-        "Timite Tracker",
-        ::Data,
-        { it.rift.timiteTracker },
-        trackerConfig = { config.perTrackerConfig }
-    ) {
+    private val tracker = SkyHanniItemTracker("Timite Tracker", { Data() }, { it.rift.timiteTracker }) {
         drawDisplay(it)
     }
 
@@ -114,10 +107,10 @@ object TimiteTracker {
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerBrigadier("shresettimitetracker") {
+        event.register("shresettimitetracker") {
             description = "Resets the Timite Tracker."
             category = CommandCategory.USERS_RESET
-            simpleCallback { tracker.resetCommand() }
+            callback { tracker.resetCommand() }
         }
     }
 

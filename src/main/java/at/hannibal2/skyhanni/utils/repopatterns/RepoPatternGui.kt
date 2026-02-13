@@ -1,15 +1,16 @@
 package at.hannibal2.skyhanni.utils.repopatterns
 
+import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import at.hannibal2.skyhanni.utils.ConfigUtils.asStructuredText
-import at.hannibal2.skyhanni.utils.XmlUtils
 import io.github.notenoughupdates.moulconfig.common.MyResourceLocation
-import io.github.notenoughupdates.moulconfig.common.text.StructuredText
+import io.github.notenoughupdates.moulconfig.gui.GuiComponentWrapper
+import io.github.notenoughupdates.moulconfig.gui.GuiContext
 import io.github.notenoughupdates.moulconfig.observer.ObservableList
 import io.github.notenoughupdates.moulconfig.xml.Bind
+import io.github.notenoughupdates.moulconfig.xml.XMLUniverse
 
 /**
  * Gui for analyzing [RepoPattern]s
@@ -30,7 +31,9 @@ class RepoPatternGui private constructor() {
                 category = CommandCategory.DEVELOPER_TEST
                 simpleCallback {
                     val location = MyResourceLocation("skyhanni", "gui/regexes.xml")
-                    XmlUtils.openXmlScreen(RepoPatternGui(), location)
+                    val universe = XMLUniverse.getDefaultUniverse()
+                    val context = GuiContext(universe.load(RepoPatternGui(), location))
+                    SkyHanniMod.screenToOpen = GuiComponentWrapper(context)
                 }
             }
         }
@@ -49,7 +52,7 @@ class RepoPatternGui private constructor() {
     ) {
 
         @field:Bind
-        val key: StructuredText = repoPatternImpl.key.asStructuredText()
+        val key: String = repoPatternImpl.key
 
         val remoteData = when (repoPatternImpl) {
             is RepoPatternList -> repoPatternImpl.value.map { it.pattern() }
@@ -57,7 +60,7 @@ class RepoPatternGui private constructor() {
         }
 
         @field:Bind
-        val regex: StructuredText = remoteData.joinToString("\n").asStructuredText()
+        val regex: String = remoteData.joinToString("\n")
 
         @field:Bind
         val hoverRegex: List<String> = run {
@@ -81,21 +84,20 @@ class RepoPatternGui private constructor() {
         val keyW = listOf(key)
 
         @field:Bind
-        val overriden: StructuredText = (
+        val overriden: String =
             if (repoPatternImpl.wasOverridden) "§9Overriden"
             else if (repoPatternImpl.isLoadedRemotely) "§aRemote"
             else "§cLocal"
-            ).asStructuredText()
     }
 
     @Bind
-    fun poll(): StructuredText {
+    fun poll(): String {
         if (search != lastSearch) {
             searchCache.clear()
-            searchCache.addAll(allKeys.filter { search in it.key.text })
+            searchCache.addAll(allKeys.filter { search in it.key })
             lastSearch = search
         }
-        return "".asStructuredText()
+        return ""
     }
 
     @Bind

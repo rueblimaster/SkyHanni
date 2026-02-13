@@ -1,24 +1,16 @@
-#version 150
-
-in vec4 vertexColor;
+#version 120
 
 // Rect specific uniforms
-layout(std140) uniform SkyHanniRoundedUniforms {
-    float scaleFactor;
-    float radius;
-    float smoothness;
-    vec2 halfSize;
-    vec2 centerPos;
-    mat4 modelViewMatrix;
-};
+uniform float scaleFactor;
+uniform float radius;
+uniform vec2 halfSize;
+uniform vec2 centerPos;
 
 // Outline specific uniforms
-layout(std140) uniform SkyHanniRoundedOutlineUniforms {
-    float borderThickness;
-    float borderBlur;
-};
+uniform float borderThickness;
+uniform float borderBlur;
 
-out vec4 outColor;
+varying vec4 color;
 
 // From https://www.shadertoy.com/view/WtdSDs
 float roundedRectSDF(vec2 center, vec2 halfSize, float radius) {
@@ -26,10 +18,10 @@ float roundedRectSDF(vec2 center, vec2 halfSize, float radius) {
 }
 
 void main() {
-    float xScale = modelViewMatrix[0][0];
-    float yScale = modelViewMatrix[1][1];
-    float xTranslation = modelViewMatrix[3][0];
-    float yTranslation = modelViewMatrix[3][1];
+    float xScale = gl_ModelViewMatrix[0][0];
+    float yScale = gl_ModelViewMatrix[1][1];
+    float xTranslation = gl_ModelViewMatrix[3][0];
+    float yTranslation = gl_ModelViewMatrix[3][1];
 
     vec2 newHalfSize = vec2(halfSize.x * xScale, halfSize.y * yScale);
 
@@ -44,5 +36,5 @@ void main() {
 
     // In testing, keeping the upper bound at 1.0 and letting the lower be changable seemed the most sensible for nice results
     float smoothed = 1.0 - smoothstep(borderBlur, 1.0, abs(distance / borderThickness));
-    outColor = vertexColor * vec4(1.0, 1.0, 1.0, smoothed);
+    gl_FragColor = color * vec4(1.0, 1.0, 1.0, smoothed);
 }

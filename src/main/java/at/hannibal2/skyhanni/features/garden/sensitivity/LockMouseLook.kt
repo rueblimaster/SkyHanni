@@ -31,7 +31,7 @@ object LockMouseLook {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!gardenTeleportPattern.matches(event.message)) return
         unlockMouse()
     }
@@ -70,11 +70,11 @@ object LockMouseLook {
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerBrigadier("shmouselock") {
+        event.register("shmouselock") {
             description = "Lock/Unlock the mouse so it will no longer rotate the player (for farming)"
             category = CommandCategory.USERS_ACTIVE
             aliases = listOf("shlockmouse")
-            simpleCallback { toggleLock() }
+            callback { toggleLock() }
         }
     }
 }

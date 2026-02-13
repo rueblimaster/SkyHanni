@@ -34,7 +34,7 @@ object SpringBootsHelper {
             soundStreak = 0
             return
         }
-        if (!MinecraftCompat.localPlayer.isShiftKeyDown) return
+        if (!MinecraftCompat.localPlayer.isSneaking) return
         soundStreak += 1
 
         if (soundStreak == 5) {

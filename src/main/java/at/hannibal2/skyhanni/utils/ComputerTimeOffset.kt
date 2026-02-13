@@ -6,18 +6,18 @@ import at.hannibal2.skyhanni.events.DebugDataCollectEvent
 import at.hannibal2.skyhanni.events.ProfileJoinEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.test.command.ErrorManager
+import at.hannibal2.skyhanni.utils.ConfigUtils.jumpToEditor
 import at.hannibal2.skyhanni.utils.EnumUtils.next
 import at.hannibal2.skyhanni.utils.EnumUtils.previous
 import at.hannibal2.skyhanni.utils.TimeUtils.format
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.addOrPut
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
 import org.apache.commons.net.ntp.NTPUDPClient
 import java.net.InetAddress
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.INFINITE
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -28,6 +28,7 @@ object ComputerTimeOffset {
 
     private val devConfig get() = SkyHanniMod.feature.dev
     private val config get() = SkyHanniMod.feature.misc
+    private val timeCheckMutex = Mutex()
     private val timeoutMap: MutableMap<String, Int> = mutableMapOf()
     private val offsetFixLink by lazy {
         when {
@@ -44,16 +45,15 @@ object ComputerTimeOffset {
     private var offsetDuration: Duration? = null
     private var lastSystemTime = System.currentTimeMillis()
     private var timeoutWarned = SimpleTimeMark.farPast()
-    private var checkJob: Job? = null
 
     enum class State(val duration: Duration) {
         NORMAL(1.seconds),
         SLOW(10.seconds),
-        TOTALLY_OFF(INFINITE),
+        TOTALLY_OFF(Duration.INFINITE),
     }
 
     init {
-        SkyHanniMod.launchIOCoroutine("computer time offset init", timeout = INFINITE) {
+        SkyHanniMod.launchIOCoroutine {
             while (state != State.TOTALLY_OFF) {
                 delay(state.duration)
                 detectTimeChange()
@@ -63,7 +63,7 @@ object ComputerTimeOffset {
 
     private fun tryCheckOffset() {
         // probably a problem when the response somehow took longer than 1s?
-        if (checkJob?.isActive == true) {
+        if (!timeCheckMutex.tryLock()) {
             stableRuns = 0
             state = state.next() ?: error("state is already TOTALLY_OFF")
             if (state == State.TOTALLY_OFF) ErrorManager.logErrorStateWithData(
@@ -73,13 +73,16 @@ object ComputerTimeOffset {
                 "Computer Time Offset calculation took longer than normal. Checking less often now.",
             )
             return
-        } else if (stableRuns++ > 10 && state != State.NORMAL) {
-            stableRuns = 0
-            state = state.previous() ?: state
-        }
+        } else {
+            if (stableRuns++ > 10) {
+                stableRuns = 0
+                state = state.previous() ?: state
+            }
+            timeCheckMutex.unlock()
+        } // Immediate release, we only want to check if it's already running
 
         val wasOffsetBefore = (offsetDuration?.absoluteValue ?: 0.seconds) > 5.seconds
-        checkJob = SkyHanniMod.launchIOCoroutine("computer time offset calculation") {
+        SkyHanniMod.launchIOCoroutineWithMutex(timeCheckMutex) {
             offsetDuration = getNtpOffset(devConfig.ntpServer)
             offsetDuration?.let {
                 tryDisplayOffset(wasOffsetBefore)
@@ -93,10 +96,11 @@ object ComputerTimeOffset {
             if (timeoutWarned.passedSince() > 10.minutes) {
                 timeoutMap[ntpServer] = 0
                 timeoutWarned = SimpleTimeMark.now()
-                ChatUtils.notifyOrDisable(
+                ChatUtils.clickableChat(
                     "NTP server $ntpServer is not responding ($timeouts failures). Check your connection, " +
                         "try disconnecting from any VPNs/proxies, or click here to change NTP servers.",
-                    devConfig::ntpServer,
+                    hover = "Click to open Dev Config",
+                    onClick = { devConfig::ntpServer.jumpToEditor() }
                 )
             }
             return@runCatching null

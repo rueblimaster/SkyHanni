@@ -9,10 +9,10 @@ import at.hannibal2.skyhanni.features.misc.ReplaceRomanNumerals
 // scoreboard update event
 object ScoreboardElementSlayer : ScoreboardElement() {
     override fun getDisplay() = buildList {
-        if (!SlayerApi.hasActiveQuest()) return@buildList
+        if (!SlayerApi.hasActiveSlayerQuest()) return@buildList
         add("Slayer Quest")
-        add(ReplaceRomanNumerals.replaceLine(SlayerApi.latestCategory))
-        add(SlayerApi.latestProgress)
+        add(ReplaceRomanNumerals.replaceLine(SlayerApi.latestSlayerCategory))
+        add(SlayerApi.latestSlayerProgress)
     }
 
     override fun showWhen() = if (informationFilteringConfig.hideIrrelevantLines) SlayerApi.isInCorrectArea else true

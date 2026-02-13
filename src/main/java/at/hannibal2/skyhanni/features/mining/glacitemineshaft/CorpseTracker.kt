@@ -10,7 +10,6 @@ import at.hannibal2.skyhanni.data.MiningApi
 import at.hannibal2.skyhanni.events.IslandChangeEvent
 import at.hannibal2.skyhanni.events.ItemAddEvent
 import at.hannibal2.skyhanni.events.mining.CorpseLootedEvent
-import at.hannibal2.skyhanni.features.mining.glacitemineshaft.CorpseTracker.drawDisplay
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ItemUtils.repoItemName
 import at.hannibal2.skyhanni.utils.NeuInternalName
@@ -29,21 +28,25 @@ import at.hannibal2.skyhanni.utils.renderables.primitives.text
 import at.hannibal2.skyhanni.utils.renderables.toSearchable
 import at.hannibal2.skyhanni.utils.tracker.BucketedItemTrackerData
 import at.hannibal2.skyhanni.utils.tracker.SkyHanniBucketedItemTracker
+import at.hannibal2.skyhanni.utils.tracker.SkyHanniTracker
 import com.google.gson.annotations.Expose
 
 @SkyHanniModule
-object CorpseTracker : SkyHanniBucketedItemTracker<CorpseType, CorpseTracker.BucketData>(
-    "Corpse Tracker",
-    ::BucketData,
-    { it.mining.mineshaft.corpseProfitTracker },
-    { drawDisplay(it) },
-    trackerConfig = { SkyHanniMod.feature.mining.glaciteMineshaft.corpseTracker.perTrackerConfig }
-) {
+object CorpseTracker {
     private val config get() = SkyHanniMod.feature.mining.glaciteMineshaft.corpseTracker
 
-    data class BucketData(
-        @Expose var corpsesLooted: MutableMap<CorpseType, Long> = enumMapOf()
-    ) : BucketedItemTrackerData<CorpseType>(CorpseType::class) {
+    private val tracker = SkyHanniBucketedItemTracker(
+        "Corpse Tracker",
+        { BucketData() },
+        { it.mining.mineshaft.corpseProfitTracker },
+        { drawDisplay(it) },
+    )
+
+    class BucketData : BucketedItemTrackerData<CorpseType>(CorpseType::class) {
+        override fun resetItems() {
+            corpsesLooted = enumMapOf()
+        }
+
         override fun getDescription(bucket: CorpseType?, timesGained: Long): List<String> {
             val divisor = 1.coerceAtLeast(
                 selectedBucket?.let {
@@ -60,18 +63,25 @@ object CorpseTracker : SkyHanniBucketedItemTracker<CorpseType, CorpseTracker.Buc
 
         override fun getCoinName(bucket: CorpseType?, item: TrackedItem) = "<no coins>"
         override fun getCoinDescription(bucket: CorpseType?, item: TrackedItem): List<String> = listOf("<no coins>")
+
         override fun CorpseType.isBucketSelectable() = true
-        override fun bucketName(): String = "Corpse"
+
+        override fun bucketName(): String {
+            return "Corpse"
+        }
+
+        @Expose
+        var corpsesLooted: MutableMap<CorpseType, Long> = enumMapOf()
 
         fun getCorpseCount(): Long = selectedBucket?.let { corpsesLooted[it] } ?: corpsesLooted.values.sum()
     }
 
-    private fun addLootedCorpse(type: CorpseType) = modify { it.corpsesLooted.addOrPut(type, 1) }
+    private fun addLootedCorpse(type: CorpseType) = tracker.modify { it.corpsesLooted.addOrPut(type, 1) }
 
     @HandleEvent
     fun onItemAdd(event: ItemAddEvent) {
         if (isEnabled() && event.source == ItemAddManager.Source.COMMAND) {
-            event.addItemFromEvent()
+            with(tracker) { event.addItemFromEvent() }
         }
     }
 
@@ -81,18 +91,18 @@ object CorpseTracker : SkyHanniBucketedItemTracker<CorpseType, CorpseTracker.Buc
         for ((itemName, amount) in event.loot) {
             if (itemName.removeColor().trim() == "Glacite Powder") continue
             NeuInternalName.fromItemNameOrNull(itemName)?.let { item ->
-                addItem(event.corpseType, item, amount, command = false, message = false)
+                tracker.addItem(event.corpseType, item, amount, command = false, message = false)
             }
         }
     }
 
     private fun drawDisplay(bucketData: BucketData): List<Searchable> = buildList {
         addSearchString("§b§lMineshaft Corpse Profit Tracker")
-        addBucketSelector(this, bucketData, "Corpse Type")
+        tracker.addBucketSelector(this, bucketData, "Corpse Type")
 
         if (bucketData.getCorpseCount() == 0L) return@buildList
 
-        var profit = drawItems(bucketData, { true }, this)
+        var profit = tracker.drawItems(bucketData, { true }, this)
         val applicableKeys: List<CorpseType> = bucketData.selectedBucket?.let {
             listOf(it)
         } ?: enumValues<CorpseType>().toList()
@@ -103,7 +113,7 @@ object CorpseTracker : SkyHanniBucketedItemTracker<CorpseType, CorpseTracker.Buc
             applicableKeys.forEach { keyData ->
                 keyData.key?.let { key ->
                     val keyName = key.repoItemName
-                    val price = getPricePer(key)
+                    val price = SkyHanniTracker.getPricePer(key)
                     val count = bucketData.corpsesLooted[keyData] ?: 0
                     val totalPrice = price * count
                     if (totalPrice > 0) {
@@ -128,29 +138,28 @@ object CorpseTracker : SkyHanniBucketedItemTracker<CorpseType, CorpseTracker.Buc
             )
         }
 
-        val duration = bucketData.getTotalUptime()
-        addAll(addTotalProfit(profit, bucketData.getCorpseCount(), "corpse", duration, "Corpses"))
+        add(tracker.addTotalProfit(profit, bucketData.getCorpseCount(), "loot"))
 
-        addPriceFromButton(this)
+        tracker.addPriceFromButton(this)
     }
 
     init {
-        initRenderer({ config.position }) { isEnabled() }
+        tracker.initRenderer({ config.position }) { isEnabled() }
     }
 
     @HandleEvent
     fun onIslandChange(event: IslandChangeEvent) {
         if (event.newIsland == IslandType.MINESHAFT || event.newIsland == IslandType.DWARVEN_MINES) {
-            firstUpdate()
+            tracker.firstUpdate()
         }
     }
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerBrigadier("shresetcorpsetracker") {
+        event.register("shresetcorpsetracker") {
             description = "Resets the Glacite Mineshaft Corpse Tracker"
             category = CommandCategory.USERS_RESET
-            simpleCallback { resetCommand() }
+            callback { tracker.resetCommand() }
         }
     }
 

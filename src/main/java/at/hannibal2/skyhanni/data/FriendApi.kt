@@ -14,9 +14,8 @@ import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.StringUtils.cleanPlayerName
 import at.hannibal2.skyhanni.utils.compat.command
 import at.hannibal2.skyhanni.utils.compat.hover
-import at.hannibal2.skyhanni.utils.compat.unformattedTextCompat
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.network.chat.Component
+import net.minecraft.util.IChatComponent
 import java.util.UUID
 
 @SkyHanniModule
@@ -97,7 +96,7 @@ object FriendApi {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         readFriendsList(event)
 
         removedFriendPattern.matchMatcher(event.message) {
@@ -136,11 +135,11 @@ object FriendApi {
         saveConfig()
     }
 
-    private fun readFriendsList(event: SkyHanniChatEvent.Allow) {
+    private fun readFriendsList(event: SkyHanniChatEvent) {
         if (!event.message.contains("Friends")) return
 
         for (sibling in event.chatComponent.siblings) {
-            val chatStyle = sibling.style ?: continue
+            val chatStyle = sibling.chatStyle ?: continue
             val value = sibling.command ?: continue
             if (!value.startsWith("/viewprofile")) continue
 
@@ -161,7 +160,7 @@ object FriendApi {
                     }
                 }
             }
-            val bestFriend = sibling.unformattedTextCompat().split(" ").firstOrNull()?.contains("§l") ?: false
+            val bestFriend = sibling.unformattedText.split(" ").firstOrNull()?.contains("§l") ?: false
             val name = readName(sibling)
             if (uuid != null && name != null) {
                 getFriends()[uuid] = Friend().also {
@@ -174,10 +173,10 @@ object FriendApi {
         saveConfig()
     }
 
-    private fun readName(chatComponent: Component): String? {
+    private fun readName(chatComponent: IChatComponent): String? {
         val hoverEventSiblings = chatComponent.hover?.siblings ?: return null
         for (component in hoverEventSiblings) {
-            val rawName = component.unformattedTextCompat()
+            val rawName = component.unformattedText
             rawNamePattern.matchMatcher(rawName) {
                 return group("name").cleanPlayerName()
             }

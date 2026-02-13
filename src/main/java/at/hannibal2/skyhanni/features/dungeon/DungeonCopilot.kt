@@ -14,9 +14,8 @@ import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.PlayerUtils
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.RenderUtils.renderString
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLessResets
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.entity.item.EntityArmorStand
 
 @SkyHanniModule
 object DungeonCopilot {
@@ -50,7 +49,7 @@ object DungeonCopilot {
     private var searchForKey = false
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
 
         copilot(event.message)?.let {
@@ -108,16 +107,16 @@ object DungeonCopilot {
     }
 
     @HandleEvent(onlyOnIsland = IslandType.CATACOMBS)
-    fun onCheckRender(event: CheckRenderEntityEvent<ArmorStand>) {
+    fun onCheckRender(event: CheckRenderEntityEvent<EntityArmorStand>) {
         val entity = event.entity
 
         if (!searchForKey) return
 
-        if (entity.name.formattedTextCompatLessResets() == "§6§8Wither Key") {
+        if (entity.name == "§6§8Wither Key") {
             changeNextStep("Pick up Wither Key")
             searchForKey = false
         }
-        if (entity.name.formattedTextCompatLessResets() == "§c§cBlood Key") {
+        if (entity.name == "§c§cBlood Key") {
             changeNextStep("Pick up Blood Key")
             searchForKey = false
         }

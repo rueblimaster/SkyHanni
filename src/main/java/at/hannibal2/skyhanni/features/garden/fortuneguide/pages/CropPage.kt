@@ -41,6 +41,7 @@ class CropPage(val crop0: () -> CropType, sizeX: Int, sizeY: Int, paddingX: Int 
     private fun header(): List<Renderable> = buildList {
         add(FortuneStats.BASE.getFarmingBar())
         add(FortuneStats.CROP_TOTAL.getFarmingBar(110))
+        add(FortuneStats.CROP_UPGRADE.getFarmingBar())
     }
 
     private fun FortuneStats.getFarmingBar(
@@ -74,6 +75,6 @@ class CropPage(val crop0: () -> CropType, sizeX: Int, sizeY: Int, paddingX: Int 
     }
 
     companion object {
-        private val headers = setOf(FortuneStats.BASE, FortuneStats.CROP_TOTAL)
+        private val headers = setOf(FortuneStats.BASE, FortuneStats.CROP_TOTAL, FortuneStats.CROP_UPGRADE)
     }
 }

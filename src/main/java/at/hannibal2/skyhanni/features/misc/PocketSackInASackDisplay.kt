@@ -4,12 +4,11 @@ import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.ConfigUpdaterMigrator
 import at.hannibal2.skyhanni.events.GuiRenderItemEvent
-import at.hannibal2.skyhanni.events.minecraft.ToolTipTextEvent
+import at.hannibal2.skyhanni.events.minecraft.ToolTipEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ItemUtils
 import at.hannibal2.skyhanni.utils.RenderUtils.drawSlotText
 import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.getAppliedPocketSackInASack
-import at.hannibal2.skyhanni.utils.chat.TextHelper.asComponent
 
 @SkyHanniModule
 object PocketSackInASackDisplay {
@@ -19,7 +18,7 @@ object PocketSackInASackDisplay {
 
     @HandleEvent(onlyOnSkyblock = true)
     fun onRenderItemOverlayPost(event: GuiRenderItemEvent.RenderOverlayEvent.GuiRenderItemPost) {
-        val stack = event.stack?.takeIf { it.count == 1 } ?: return
+        val stack = event.stack?.takeIf { it.stackSize == 1 } ?: return
         if (!config.showOverlay) return
         val pocketSackInASackApplied = stack.getAppliedPocketSackInASack() ?: return
 
@@ -31,7 +30,7 @@ object PocketSackInASackDisplay {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onToolTip(event: ToolTipTextEvent) {
+    fun onToolTip(event: ToolTipEvent) {
         if (!config.replaceLore) return
         val itemStack = event.itemStack
         val applied = itemStack.getAppliedPocketSackInASack() ?: return
@@ -40,14 +39,14 @@ object PocketSackInASackDisplay {
         val iterator = event.toolTip.listIterator()
         var next = false
         for (line in iterator) {
-            if (line.string.contains("This sack is")) {
+            if (line.contains("7This sack is")) {
                 val color = if (applied == MAX_STITCHES) "§a" else "§b"
-                iterator.set("§7This sack is stitched $color$applied§7/$color$MAX_STITCHES".asComponent())
+                iterator.set("§7This sack is stitched $color$applied§7/$color$MAX_STITCHES")
                 next = true
                 continue
             }
             if (next) {
-                iterator.set("§7times with a §cPocket Sack-in-a-Sack§7.".asComponent())
+                iterator.set("§7times with a §cPocket Sack-in-a-Sack§7.")
                 return
             }
         }

@@ -1,15 +1,14 @@
 package at.hannibal2.skyhanni.utils
 
 import at.hannibal2.skyhanni.SkyHanniMod
+import at.hannibal2.skyhanni.mixins.transformers.AccessorGuiEditSign
 import at.hannibal2.skyhanni.utils.StringUtils.capAtMinecraftLength
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.chat.TextHelper.asComponent
-import at.hannibal2.skyhanni.utils.compat.unformattedTextCompat
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.gui.screens.inventory.AbstractSignEditScreen
-import net.minecraft.client.gui.screens.inventory.SignEditScreen
-import net.minecraft.network.chat.Component
+import net.minecraft.client.gui.GuiScreen
+import net.minecraft.client.gui.inventory.GuiEditSign
+import net.minecraft.util.IChatComponent
 
 object SignUtils {
     private var pasteLastClicked = false
@@ -17,45 +16,49 @@ object SignUtils {
     private var deleteLastClicked = false
 
     fun setTextIntoSign(text: String, line: Int = 0) {
-        val gui = Minecraft.getInstance().screen
-        if (gui !is AbstractSignEditScreen) return
-        val oldRow = gui.line
-        gui.line = line
-        gui.setMessage(text)
-        gui.line = oldRow
+        val gui = Minecraft.getMinecraft().currentScreen
+        if (gui !is AccessorGuiEditSign) return
+        //#if MC < 1.21
+        gui.signText[line] = text.asComponent()
+        //#else
+        //$$ val oldRow = gui.currentRow
+        //$$ gui.currentRow = line
+        //$$ gui.setCurrentRowMessage(text)
+        //$$ gui.currentRow = oldRow
+        //#endif
     }
 
     private fun addTextIntoSign(addedText: String) {
-        val gui = Minecraft.getInstance().screen
-        if (gui !is AbstractSignEditScreen) return
+        val gui = Minecraft.getMinecraft().currentScreen
+        if (gui !is AccessorGuiEditSign) return
         val lines = gui.signText
-        val index = gui.line
-        val text = lines[index].unformattedTextCompat() + addedText
+        val index = gui.currentRow
+        val text = lines[index].unformattedText + addedText
         lines[index] = text.capAtMinecraftLength(91).asComponent()
     }
 
-    fun checkDeleting(gui: Screen?) {
+    fun checkDeleting(gui: GuiScreen?) {
         val deleteClicked = KeyboardManager.isDeleteWordDown() || KeyboardManager.isDeleteLineDown()
-        if (!deleteLastClicked && deleteClicked && gui is AbstractSignEditScreen) {
-            SkyHanniMod.launchCoroutine("sign utils check deleting") {
+        if (!deleteLastClicked && deleteClicked && gui is AccessorGuiEditSign) {
+            SkyHanniMod.launchCoroutine {
                 val newLine = if (KeyboardManager.isDeleteLineDown()) ""
                 else if (KeyboardManager.isDeleteWordDown()) {
-                    val currentLine = gui.signText[gui.line].unformattedTextCompat()
+                    val currentLine = gui.signText[gui.currentRow].unformattedText
 
                     val lastSpaceIndex = currentLine.trimEnd().lastIndexOf(' ')
                     if (lastSpaceIndex >= 0) currentLine.substring(0, lastSpaceIndex + 2) else ""
                 } else return@launchCoroutine
-                setTextIntoSign(newLine, gui.line)
+                setTextIntoSign(newLine, gui.currentRow)
             }
         }
         deleteLastClicked = deleteClicked
     }
 
-    fun checkCopying(gui: Screen?) {
+    fun checkCopying(gui: GuiScreen?) {
         val copyClicked = KeyboardManager.isCopyingKeysDown()
-        if (!copyLastClicked && copyClicked && gui is AbstractSignEditScreen) {
-            SkyHanniMod.launchCoroutine("sign utils copy copying") {
-                ClipboardUtils.copyToClipboard(gui.signText[gui.line].unformattedTextCompat())
+        if (!copyLastClicked && copyClicked && gui is AccessorGuiEditSign) {
+            SkyHanniMod.launchCoroutine {
+                ClipboardUtils.copyToClipboard(gui.signText[gui.currentRow].unformattedText)
             }
         }
         copyLastClicked = copyClicked
@@ -64,7 +67,7 @@ object SignUtils {
     fun checkPaste() {
         val pasteClicked = KeyboardManager.isPastingKeysDown()
         if (!pasteLastClicked && pasteClicked) {
-            SkyHanniMod.launchCoroutine("sign utils check pasting") {
+            SkyHanniMod.launchCoroutine {
                 OSUtils.readFromClipboard()?.let {
                     addTextIntoSign(it)
                 }
@@ -73,43 +76,41 @@ object SignUtils {
         pasteLastClicked = pasteClicked
     }
 
-    private fun SignEditScreen.getSignLines(): List<String>? {
-        if (this !is AbstractSignEditScreen) return null
-        return (this as AbstractSignEditScreen).signText.map { it.unformattedTextCompat().removeColor() }
+    private fun GuiEditSign.getSignLines(): List<String>? {
+        if (this !is AccessorGuiEditSign) return null
+        return (this as AccessorGuiEditSign).signText.map { it.unformattedText.removeColor() }
     }
 
-    fun SignEditScreen.isRancherSign(): Boolean {
+    fun GuiEditSign.isRancherSign(): Boolean {
         val signText = getSignLines() ?: return false
-        // one of the signs say "Set your Garden's" but because its too long (on 1.8) the word garden doesnt get rendered
-        return signText[1] == "^^^^^^" && signText[2].startsWith("Set your") && signText[3].endsWith("speed cap!")
+        return signText[1] == "^^^^^^" && signText[2] == "Set your" && signText[3] == "speed cap!"
     }
 
-    fun SignEditScreen.isMousematSign(): Boolean {
+    fun GuiEditSign.isMousematSign(): Boolean {
         val signText = getSignLines() ?: return false
         return signText[1] == "Set Yaw Above!" && signText[2] == "Set Pitch Below!"
     }
 
-    fun SignEditScreen.isBazaarSign(): Boolean {
+    fun GuiEditSign.isBazaarSign(): Boolean {
         val signText = getSignLines() ?: return false
         if (signText[1] == "^^^^^^^^^^^^^^^" && signText[2] == "Enter amount" && signText[3] == "to order") return true // Bazaar buy
         if (signText[1] == "^^^^^^^^^^^^^^^" && signText[2] == "Enter amount" && signText[3] == "to sell") return true // Bazaar sell
         return false
     }
 
-    fun SignEditScreen.isSupercraftAmountSetSign(): Boolean {
+    fun GuiEditSign.isSupercraftAmountSetSign(): Boolean {
         val signText = getSignLines() ?: return false
         return signText[1] == "^^^^^^" && signText[2] == "Enter amount" && signText[3] == "of crafts"
     }
 
-    fun SignEditScreen.isGardenSign(): Boolean {
+    fun GuiEditSign.isGardenSign(): Boolean {
         return isRancherSign() || isMousematSign()
     }
 
-    fun SignEditScreen.isPlayerElectionSign(): Boolean {
-        val signText = getSignLines() ?: return false
-        return signText[2] == "Cast your" && signText[3] == "vote"
-    }
-
-    private val AbstractSignEditScreen.signText: Array<Component>
-        get() = this.text.getMessages(false)
+    private val AccessorGuiEditSign.signText: Array<IChatComponent>
+        //#if MC < 1.21
+        get() = this.tileSign.signText
+    //#else
+    //$$ get() = this.text.getMessages(false)
+    //#endif
 }

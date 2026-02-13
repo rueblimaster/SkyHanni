@@ -11,9 +11,9 @@ abstract class GuideRenderablePage(
     protected var renderable: Renderable? = null
 
     final override fun drawPage(mouseX: Int, mouseY: Int) {
-        DrawContextUtils.translate(paddingX.toFloat(), paddingY.toFloat())
+        DrawContextUtils.translate(paddingX.toFloat(), paddingY.toFloat(), 0f)
         renderable?.render(paddingX, paddingY)
-        DrawContextUtils.translate(-paddingX.toFloat(), -paddingY.toFloat())
+        DrawContextUtils.translate(-paddingX.toFloat(), -paddingY.toFloat(), 0f)
     }
 
     override fun onLeave() {

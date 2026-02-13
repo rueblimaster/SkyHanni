@@ -5,5 +5,5 @@ package at.hannibal2.skyhanni.features.gui.customscoreboard.elements
 object ScoreboardElementEmptyLine : ScoreboardElement() {
     override fun getDisplay() = ""
 
-    override val configLine = "----- Separator -----"
+    override val configLine = ""
 }

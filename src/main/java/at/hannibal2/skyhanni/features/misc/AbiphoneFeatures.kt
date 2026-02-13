@@ -19,7 +19,7 @@ import at.hannibal2.skyhanni.utils.StringUtils.isValidUuid
 import at.hannibal2.skyhanni.utils.StringUtils.removeAllNonLettersAndNumbers
 import at.hannibal2.skyhanni.utils.compat.value
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import org.lwjgl.glfw.GLFW
+import org.lwjgl.input.Keyboard
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -41,7 +41,7 @@ object AbiphoneFeatures {
     )
 
     @HandleEvent(priority = HandleEvent.HIGHEST)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (callRingPattern.matches(event.message) && acceptUUID == null) readPickupUuid(event)
     }
 
@@ -53,7 +53,7 @@ object AbiphoneFeatures {
     @HandleEvent
     fun onKeyPress(event: KeyPressEvent) {
         if (InventoryUtils.inInventory()) return
-        if (config.abiphoneAcceptKey == GLFW.GLFW_KEY_UNKNOWN || config.abiphoneAcceptKey != event.keyCode) return
+        if (config.abiphoneAcceptKey == Keyboard.KEY_NONE || config.abiphoneAcceptKey != event.keyCode) return
         val acceptUUID = acceptUUID ?: return
         HypixelCommands.callback(acceptUUID)
         AbiphoneFeatures.acceptUUID = null
@@ -64,9 +64,12 @@ object AbiphoneFeatures {
     @HandleEvent
     fun onNeuRepoReload(event: NeuRepositoryReloadEvent) {
         val constant = event.getConstant<Map<String, AbiphoneContactInfo>>("abiphone", NeuAbiphoneJson.TYPE)
-        abiphoneContacts = constant.flatMap { (key, value) ->
-            value.callNames ?: listOf(key.removeAllNonLettersAndNumbers().replace(" ", ""))
-        }.toSet()
+        val completions = mutableSetOf<String>()
+        for (contact in constant) {
+            val names = contact.value.callNames ?: listOf(contact.key.removeAllNonLettersAndNumbers().replace(" ", ""))
+            completions.addAll(names)
+        }
+        abiphoneContacts = completions
     }
 
     @HandleEvent(onlyOnSkyblock = true)
@@ -81,10 +84,10 @@ object AbiphoneFeatures {
         event.move(76, "event.hoppityEggs.hoppityCallWarning.acceptHotkey", "misc.abiphoneAcceptKey")
     }
 
-    private fun readPickupUuid(event: SkyHanniChatEvent.Allow) {
+    private fun readPickupUuid(event: SkyHanniChatEvent) {
         val siblings = event.chatComponent.siblings.takeIf { it.size >= 3 } ?: return
-        val clickEvent = siblings[2]?.style?.clickEvent ?: return
-        if (clickEvent.action().name.lowercase() != "run_command" || !clickEvent.value().lowercase().startsWith("/cb")) return
+        val clickEvent = siblings[2]?.chatStyle?.chatClickEvent ?: return
+        if (clickEvent.action.name.lowercase() != "run_command" || !clickEvent.value().lowercase().startsWith("/cb")) return
         acceptUUID = clickEvent.value().lowercase().replace("/cb ", "").takeIf { it.isValidUuid() }
         if (acceptUUID != null) DelayedRun.runDelayed(20.seconds) { acceptUUID = null }
     }

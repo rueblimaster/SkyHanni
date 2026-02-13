@@ -2,21 +2,29 @@ package at.hannibal2.skyhanni.mixins.hooks
 
 import at.hannibal2.skyhanni.features.mining.MiningCommissionsBlocksColor
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
-import net.minecraft.client.renderer.block.BlockRenderDispatcher
-import net.minecraft.client.renderer.block.model.BlockStateModel
-import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.block.state.IBlockState
+import net.minecraft.client.renderer.BlockRendererDispatcher
+import net.minecraft.client.resources.model.IBakedModel
+import net.minecraft.util.BlockPos
+import net.minecraft.world.IBlockAccess
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable
 
+// Taken and modified from Skytils
+@Suppress("UnusedParameter")
 fun modifyGetModelFromBlockState(
-    blockRendererDispatcher: BlockRenderDispatcher,
-    state: BlockState?,
-    cir: CallbackInfoReturnable<BlockStateModel>,
+    blockRendererDispatcher: BlockRendererDispatcher,
+    state: IBlockState?,
+    worldIn: IBlockAccess,
+    pos: BlockPos?,
+    cir: CallbackInfoReturnable<IBakedModel>,
 ) {
+    if (pos == null) return
+
     if (!SkyBlockUtils.inSkyBlock) return
 
     val returnState = MiningCommissionsBlocksColor.processState(state)
 
     if (returnState != state) {
-        cir.returnValue = blockRendererDispatcher.blockModelShaper.getBlockModel(returnState)
+        cir.returnValue = blockRendererDispatcher.blockModelShapes.getModelForState(returnState)
     }
 }

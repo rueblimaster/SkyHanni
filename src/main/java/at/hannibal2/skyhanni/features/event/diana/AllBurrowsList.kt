@@ -53,7 +53,7 @@ object AllBurrowsList {
     }
 
     private fun addFromClipboard() {
-        SkyHanniMod.launchIOCoroutine("diana burrows all addFromClipboard") {
+        SkyHanniMod.launchIOCoroutine {
             val text = OSUtils.readFromClipboard() ?: return@launchIOCoroutine
 
             var new = 0
@@ -88,15 +88,15 @@ object AllBurrowsList {
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerBrigadier("shaddfoundburrowlocationsfromclipboard") {
+        event.register("shaddfoundburrowlocationsfromclipboard") {
             description = "Add all ever found burrow locations from clipboard"
             category = CommandCategory.DEVELOPER_TEST
-            simpleCallback { addFromClipboard() }
+            callback { addFromClipboard() }
         }
-        event.registerBrigadier("shcopyfoundburrowlocations") {
+        event.register("shcopyfoundburrowlocations") {
             description = "Copy all ever found burrow locations to clipboard"
             category = CommandCategory.DEVELOPER_DEBUG
-            simpleCallback { copyToClipboard() }
+            callback { copyToClipboard() }
         }
     }
 

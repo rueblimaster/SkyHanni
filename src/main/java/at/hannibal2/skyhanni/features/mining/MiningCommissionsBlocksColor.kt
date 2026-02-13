@@ -7,7 +7,7 @@ import at.hannibal2.skyhanni.data.MiningApi.inDwarvenMines
 import at.hannibal2.skyhanni.data.MiningApi.inGlacite
 import at.hannibal2.skyhanni.events.ConfigLoadEvent
 import at.hannibal2.skyhanni.events.DebugDataCollectEvent
-import at.hannibal2.skyhanni.events.TabListUpdateComponentEvent
+import at.hannibal2.skyhanni.events.TabListUpdateEvent
 import at.hannibal2.skyhanni.events.chat.SkyHanniChatEvent
 import at.hannibal2.skyhanni.features.mining.MiningCommissionsBlocksColor.CommissionBlock.Companion.onColor
 import at.hannibal2.skyhanni.features.mining.OreType.Companion.isOreType
@@ -19,9 +19,9 @@ import at.hannibal2.skyhanni.utils.collection.TimeLimitedSet
 import at.hannibal2.skyhanni.utils.compat.ColoredBlockCompat
 import at.hannibal2.skyhanni.utils.compat.MinecraftCompat
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
+import net.minecraft.block.state.IBlockState
 import net.minecraft.client.Minecraft
-import net.minecraft.world.item.DyeColor
-import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.item.EnumDyeColor
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -42,29 +42,29 @@ object MiningCommissionsBlocksColor {
         "§a§l(?<name>.*) §r§eCommission Complete! Visit the King §r§eto claim your rewards!",
     )
 
-    private var color = DyeColor.RED
+    private var color = EnumDyeColor.RED
 
-    private fun glass(state: BlockState, result: Boolean): BlockState {
-        val newColor = if (result) color else DyeColor.GRAY
-        return ColoredBlockCompat.fromMeta(newColor.id).createGlassBlockState(state)
+    private fun glass(state: IBlockState, result: Boolean): IBlockState {
+        val newColor = if (result) color else EnumDyeColor.GRAY
+        return ColoredBlockCompat.fromMeta(newColor.metadata).createGlassBlockState(state)
     }
 
 
-    private fun block(result: Boolean): BlockState {
-        val newColor = if (result) color else DyeColor.GRAY
-        return ColoredBlockCompat.fromMeta(newColor.id).createWoolBlockState()
+    private fun block(result: Boolean): IBlockState {
+        val newColor = if (result) color else EnumDyeColor.GRAY
+        return ColoredBlockCompat.fromMeta(newColor.metadata).createWoolBlockState()
     }
 
     private var oldSneakState = false
     private var dirty = false
-    private var replaceBlocksMapCache = mutableMapOf<BlockState, BlockState>()
+    private var replaceBlocksMapCache = mutableMapOf<IBlockState, IBlockState>()
 
     // TODO Commission API
     @HandleEvent
-    fun onTabListUpdate(event: TabListUpdateComponentEvent) {
+    fun onTabListUpdate(event: TabListUpdateEvent) {
         for (block in CommissionBlock.entries) {
-            val tabList = " ${block.commissionName}: "
-            val newValue = event.tabList.any { it.string.startsWith(tabList) && !it.string.contains("DONE") }
+            val tabList = " §r§f${block.commissionName}: "
+            val newValue = event.tabList.any { it.startsWith(tabList) && !it.contains("DONE") }
             if (block.highlight != newValue) {
                 if (newValue && block in ignoredTabListCommissions) continue
                 block.highlight = newValue
@@ -77,7 +77,7 @@ object MiningCommissionsBlocksColor {
 
     // TODO Commission API
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!enabled) return
         commissionCompletePattern.matchMatcher(event.message) {
             val name = group("name")
@@ -102,7 +102,7 @@ object MiningCommissionsBlocksColor {
 
         if (enabled) {
             if (config.sneakQuickToggle.get()) {
-                val sneaking = MinecraftCompat.localPlayer.isShiftKeyDown
+                val sneaking = MinecraftCompat.localPlayer.isSneaking
                 if (sneaking != oldSneakState) {
                     oldSneakState = sneaking
                     if (oldSneakState) {
@@ -118,7 +118,7 @@ object MiningCommissionsBlocksColor {
 
         if (reload) {
             replaceBlocksMapCache = mutableMapOf()
-            Minecraft.getInstance().levelRenderer.allChanged()
+            Minecraft.getMinecraft().renderGlobal.loadRenderers()
             dirty = false
         }
     }
@@ -230,12 +230,12 @@ object MiningCommissionsBlocksColor {
         ;
 
         companion object {
-            fun CommissionBlock.onColor(state: BlockState): BlockState =
+            fun CommissionBlock.onColor(state: IBlockState): IBlockState =
                 if (oreType.isGemstone()) glass(state, highlight) else block(highlight)
         }
     }
 
-    fun processState(state: BlockState?): BlockState? {
+    fun processState(state: IBlockState?): IBlockState? {
         if (!enabled || !active) return state
         if (state == null) return null
         try {

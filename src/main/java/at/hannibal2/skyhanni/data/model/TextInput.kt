@@ -11,9 +11,10 @@ import at.hannibal2.skyhanni.utils.OSUtils
 import at.hannibal2.skyhanni.utils.StringUtils.insert
 import at.hannibal2.skyhanni.utils.StringUtils.removeWordsAtEnd
 import kotlinx.coroutines.runBlocking
-import net.minecraft.client.KeyMapping
+import net.minecraft.client.settings.KeyBinding
 import org.apache.commons.lang3.SystemUtils
-import org.lwjgl.glfw.GLFW
+import org.lwjgl.input.Keyboard
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable
 
 open class TextInput {
@@ -39,7 +40,12 @@ open class TextInput {
 
     fun makeActive() = if (!isActive) activate(this) else Unit
     fun disable() = if (isActive) Companion.disable() else Unit
-    fun handle() = handleTextInput(null)
+    fun handle() =
+        //#if MC < 1.21
+        handleTextInput()
+    //#else
+    //$$ handleTextInput(null)
+    //#endif
 
     fun clear() {
         textBox = ""
@@ -70,6 +76,9 @@ open class TextInput {
 
         fun activate(instance: TextInput) {
             activeInstance = instance
+            //#if MC < 1.21
+            timeSinceKeyEvent = Keyboard.getEventNanoseconds()
+            //#endif
         }
 
         fun disable() {
@@ -82,23 +91,35 @@ open class TextInput {
         }
 
         @Suppress("UnusedParameter")
-        fun onMinecraftInput(keyBinding: KeyMapping, cir: CallbackInfoReturnable<Boolean>) {
+        fun onMinecraftInput(keyBinding: KeyBinding, cir: CallbackInfoReturnable<Boolean>) {
             if (activeInstance != null) {
                 cir.returnValue = false
                 return
             }
         }
 
-        fun onGuiInput(ci: CallbackInfoReturnable<Boolean>) {
+        fun onGuiInput(
+            //#if MC < 1.21
+            ci: CallbackInfo,
+            //#else
+            //$$ ci: CallbackInfoReturnable<Boolean>
+            //#endif
+        ) {
             if (activeInstance != null) {
-                if (GLFW.GLFW_KEY_ESCAPE.isKeyHeld()) {
+                if (Keyboard.KEY_ESCAPE.isKeyHeld()) {
                     disable()
                 } else {
-                    ci.setReturnValue(false)
+                    //#if MC < 1.21
+                    ci.cancel()
+                    //#else
+                    //$$ ci.setReturnValue(false)
+                    //#endif
                 }
                 return
             }
         }
+
+        private var timeSinceKeyEvent = 0L
 
         private var carriage
             get() = activeInstance?.carriage
@@ -119,12 +140,18 @@ open class TextInput {
             }
         }
 
-        @HandleEvent
-        fun onChar(event: at.hannibal2.skyhanni.events.minecraft.CharEvent) {
-            handleTextInput(event.keyCode.toChar())
-        }
+        //#if MC > 1.21
+        //$$ @HandleEvent
+        //$$ fun onChar(event: at.hannibal2.skyhanni.events.minecraft.CharEvent) {
+        //$$     handleTextInput(event.keyCode.toChar())
+        //$$ }
+        //#endif
 
-        private fun handleTextInput(char: Char?) {
+        private fun handleTextInput(
+            //#if MC > 1.21
+            //$$ char: Char?,
+            //#endif
+        ) {
             if (KeyboardManager.isCopyingKeysDown()) {
                 OSUtils.copyToClipboard(textBox)
                 return
@@ -138,11 +165,11 @@ open class TextInput {
             }
             val carriage = carriage
 
-            if (GLFW.GLFW_KEY_LEFT.isKeyClicked()) {
+            if (Keyboard.KEY_LEFT.isKeyClicked()) {
                 this.carriage = carriage?.moveCarriageLeft() ?: (textBox.length - 1)
                 return
             }
-            if (GLFW.GLFW_KEY_RIGHT.isKeyClicked()) {
+            if (Keyboard.KEY_RIGHT.isKeyClicked()) {
                 this.carriage = when {
                     carriage == null -> null
                     (carriage >= textBox.length - 1) -> null
@@ -150,12 +177,19 @@ open class TextInput {
                 }
                 return
             }
-            if (GLFW.GLFW_KEY_BACKSPACE.isKeyClicked() || (SystemUtils.IS_OS_MAC && GLFW.GLFW_KEY_DELETE.isKeyClicked())) {
-                textBox = onRemove()
-                updated()
-                return
-            }
+            //#if MC > 1.21
+            //$$ if (GLFW.GLFW_KEY_BACKSPACE.isKeyClicked() || (SystemUtils.IS_OS_MAC && GLFW.GLFW_KEY_DELETE.isKeyClicked())) {
+            //$$     textBox = onRemove()
+            //$$     updated()
+            //$$     return
+            //$$ }
+            //#endif
 
+            //#if MC < 1.21
+            if (timeSinceKeyEvent == Keyboard.getEventNanoseconds()) return
+            timeSinceKeyEvent = Keyboard.getEventNanoseconds()
+            val char: Char? = Keyboard.getEventCharacter()
+            //#endif
             textBox = when (char) {
                 Char(0) -> return
                 '\b' -> onRemove()

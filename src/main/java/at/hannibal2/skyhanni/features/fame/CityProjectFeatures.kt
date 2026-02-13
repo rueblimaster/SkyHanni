@@ -24,6 +24,7 @@ import at.hannibal2.skyhanni.utils.ItemUtils.repoItemName
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.LorenzVec
 import at.hannibal2.skyhanni.utils.NeuInternalName
+import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.NeuItems.getItemStack
 import at.hannibal2.skyhanni.utils.NumberUtil.addSeparators
 import at.hannibal2.skyhanni.utils.NumberUtil.shortFormat
@@ -37,16 +38,15 @@ import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.TimeUtils
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addItemStack
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.container.HorizontalContainerRenderable.Companion.horizontal
 import at.hannibal2.skyhanni.utils.renderables.container.VerticalContainerRenderable.Companion.vertical
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.screens.inventory.ContainerScreen
-import net.minecraft.client.gui.screens.inventory.SignEditScreen
-import net.minecraft.world.inventory.ChestMenu
-import net.minecraft.world.item.ItemStack
+import net.minecraft.client.gui.inventory.GuiChest
+import net.minecraft.client.gui.inventory.GuiEditSign
+import net.minecraft.inventory.ContainerChest
+import net.minecraft.item.ItemStack
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -117,7 +117,7 @@ object CityProjectFeatures {
             // internal name -> amount
             val materials = mutableMapOf<NeuInternalName, Int>()
             for ((_, item) in event.inventoryItems) {
-                if (item.hoverName.string != "Contribute this component!") continue
+                if (item.displayName != "§eContribute this component!") continue
                 fetchMaterials(item, materials)
             }
 
@@ -147,7 +147,7 @@ object CityProjectFeatures {
                         nextTime = endTime
                     }
                 }
-                if (item.hoverName.string != "Contribute this component!") continue
+                if (item.displayName != "§eContribute this component!") continue
                 nextTime = now
             }
             ProfileStorageData.playerSpecific?.nextCityProjectParticipationTime = nextTime
@@ -190,13 +190,13 @@ object CityProjectFeatures {
     private fun materialLink(name: String, amount: Int): Renderable = Renderable.optionalLink(
         "$name §ex${amount.addSeparators()}",
         {
-            if (Minecraft.getInstance().screen is SignEditScreen) {
+            if (Minecraft.getMinecraft().currentScreen is GuiEditSign) {
                 SignUtils.setTextIntoSign("$amount")
             } else {
                 BazaarApi.searchForBazaarItem(name, amount)
             }
         },
-    ) { inInventory }
+    ) { inInventory && !NeuItems.neuHasFocus() }
 
     private fun fetchMaterials(item: ItemStack, materials: MutableMap<NeuInternalName, Int>) {
         var next = false
@@ -233,8 +233,8 @@ object CityProjectFeatures {
         if (!config.showReady) return
         if (!inInventory) return
 
-        if (event.gui !is ContainerScreen) return
-        val chest = event.container as ChestMenu
+        if (event.gui !is GuiChest) return
+        val chest = event.container as ContainerChest
 
         for ((slot, stack) in chest.getUpperItems()) {
             val lore = stack.getLore()

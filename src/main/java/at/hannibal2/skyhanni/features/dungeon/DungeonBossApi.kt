@@ -165,7 +165,7 @@ object DungeonBossApi {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         handlePhaseMessage(event.message)
     }
 }

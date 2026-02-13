@@ -1,23 +1,19 @@
 package at.hannibal2.skyhanni.features.rift.area.wyldwoods
 
 import at.hannibal2.skyhanni.api.event.HandleEvent
-import at.hannibal2.skyhanni.events.ConfigLoadEvent
 import at.hannibal2.skyhanni.events.SecondPassedEvent
-import at.hannibal2.skyhanni.events.entity.EntityEquipmentChangeEvent
 import at.hannibal2.skyhanni.features.rift.RiftApi
 import at.hannibal2.skyhanni.mixins.hooks.RenderLivingEntityHelper
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import at.hannibal2.skyhanni.utils.AllEntitiesGetter
 import at.hannibal2.skyhanni.utils.ColorUtils.addAlpha
 import at.hannibal2.skyhanni.utils.ColorUtils.toColor
-import at.hannibal2.skyhanni.utils.ConditionalUtils.onToggle
 import at.hannibal2.skyhanni.utils.EntityUtils.getEntities
-import at.hannibal2.skyhanni.utils.EntityUtils.wearingSkullTexture
+import at.hannibal2.skyhanni.utils.EntityUtils.holdingSkullTexture
 import at.hannibal2.skyhanni.utils.InventoryUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.getInternalName
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.SkullTextureHolder
-import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.entity.item.EntityArmorStand
 
 @SkyHanniModule
 object RiftOdonata {
@@ -30,35 +26,28 @@ object RiftOdonata {
 
     @HandleEvent
     fun onSecondPassed(event: SecondPassedEvent) {
-        if (isEnabled()) {
-            checkHand()
-        }
+        if (!isEnabled()) return
+
+        checkHand()
+        if (!hasBottleInHand) return
+
+        findOdonatas()
     }
 
     private fun checkHand() {
         hasBottleInHand = InventoryUtils.getItemInHand()?.getInternalName() == emptyBottle
     }
 
-    @HandleEvent
-    fun onEntityEquipmentChange(event: EntityEquipmentChangeEvent<ArmorStand>) {
-        if (RiftLarva.isEnabled()) tryAdd(event.entity)
-    }
-
-    private fun tryAdd(stand: ArmorStand) {
-        if (!stand.wearingSkullTexture(ODONATA_SKULL_TEXTURE)) return
-        RenderLivingEntityHelper.setEntityColor(stand, config.highlightColor.toColor().addAlpha(1)) {
-            isEnabled() && hasBottleInHand
+    private fun findOdonatas() {
+        for (stand in getEntities<EntityArmorStand>()) {
+            if (stand.holdingSkullTexture(ODONATA_SKULL_TEXTURE)) {
+                RenderLivingEntityHelper.setEntityColor(
+                    stand,
+                    config.highlightColor.toColor().addAlpha(1),
+                ) { isEnabled() && hasBottleInHand }
+            }
         }
     }
 
-    // This only gets called on config change, so the performance impact is minimal
-    @OptIn(AllEntitiesGetter::class)
-    @HandleEvent
-    fun onConfigLoad(event: ConfigLoadEvent) {
-        config.highlight.onToggle {
-            getEntities<ArmorStand>().forEach(::tryAdd)
-        }
-    }
-
-    private fun isEnabled() = RiftApi.inRift() && config.highlight.get()
+    fun isEnabled() = RiftApi.inRift() && config.highlight
 }

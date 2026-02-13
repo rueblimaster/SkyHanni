@@ -28,7 +28,7 @@ object NewYearCakeReminder {
     private var lastReminderSend = SimpleTimeMark.farPast()
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (event.message == "§aYou claimed a §r§cNew Year Cake§r§a!") {
             markCakeClaimed()
         }

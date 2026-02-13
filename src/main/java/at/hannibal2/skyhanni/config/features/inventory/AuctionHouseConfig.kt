@@ -9,7 +9,7 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorKeybind
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
-import org.lwjgl.glfw.GLFW
+import org.lwjgl.input.Keyboard
 
 class AuctionHouseConfig {
     @Expose
@@ -65,8 +65,8 @@ class AuctionHouseConfig {
         name = "Copy Underbid Keybind",
         desc = "Copy the price of the hovered item in Auction House minus 1 coin into the clipboard for easier under-bidding."
     )
-    @ConfigEditorKeybind(defaultKey = GLFW.GLFW_KEY_UNKNOWN)
-    var copyUnderbidKeybind: Int = GLFW.GLFW_KEY_UNKNOWN
+    @ConfigEditorKeybind(defaultKey = Keyboard.KEY_NONE)
+    var copyUnderbidKeybind: Int = Keyboard.KEY_NONE
 
     @Expose
     @ConfigOption(

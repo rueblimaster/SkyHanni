@@ -9,11 +9,6 @@ import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.TimeUtils.format
-import at.hannibal2.skyhanni.utils.compat.append
-import at.hannibal2.skyhanni.utils.compat.appendWithColor
-import at.hannibal2.skyhanni.utils.compat.componentBuilder
-import at.hannibal2.skyhanni.utils.compat.withColor
-import net.minecraft.ChatFormatting
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -38,14 +33,7 @@ object LastServers {
 
         lastServers.entries.removeIf { it.value.passedSince() > config.warnTime.seconds }
         lastServers[id]?.passedSince()?.let {
-            ChatUtils.chat(
-                componentBuilder {
-                    withColor(ChatFormatting.GRAY)
-                    append("You were already on this server ")
-                    appendWithColor(it.format(), ChatFormatting.AQUA)
-                    append(" ago.")
-                }
-            )
+            ChatUtils.chat("§7You were already on this server §b${it.format()}§7 ago.")
         }
         ChatUtils.debug("Adding $id to last servers.")
         lastServerId = id

@@ -6,7 +6,6 @@ import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
 import at.hannibal2.skyhanni.events.garden.farming.CropClickEvent
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniRenderWorldEvent
 import at.hannibal2.skyhanni.features.garden.CropType
-import at.hannibal2.skyhanni.features.garden.CropType.Companion.isTimeFlower
 import at.hannibal2.skyhanni.features.garden.GardenApi
 import at.hannibal2.skyhanni.features.garden.farming.lane.FarmingLaneApi.getValue
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
@@ -54,8 +53,7 @@ object FarmingLaneCreator {
             return
         }
 
-        // if it changes from day to night, no need to reset the lane
-        if (crop != event.crop && (!crop.isTimeFlower() || !event.crop.isTimeFlower())) {
+        if (crop != event.crop) {
             ChatUtils.chat("Different crop broken, stopping lane detection")
             reset()
             return
@@ -83,12 +81,7 @@ object FarmingLaneCreator {
     private fun saveLane(a: LorenzVec, b: LorenzVec, crop: CropType) {
         val lane = createLane(a, b)
         val lanes = FarmingLaneApi.lanes ?: return
-        if (crop.isTimeFlower()) {
-            lanes[CropType.SUNFLOWER] = lane
-            lanes[CropType.MOONFLOWER] = lane
-        } else {
-            lanes[crop] = lane
-        }
+        lanes[crop] = lane
         FarmingLaneApi.currentLane = lane
         ChatUtils.chat("${crop.cropName} lane saved! Farming Lane features are now working.")
         reset()

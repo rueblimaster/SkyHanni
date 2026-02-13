@@ -20,6 +20,7 @@ import at.hannibal2.skyhanni.utils.HypixelCommands
 import at.hannibal2.skyhanni.utils.PlayerUtils
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
+import at.hannibal2.skyhanni.utils.TabListData
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -28,7 +29,6 @@ object ProfileStorageData {
     var playerSpecific: PlayerSpecificStorage? = null
     var profileSpecific: ProfileSpecificStorage? = null
     var loaded = false
-    private var firstLoad = true
     private var noTabListTime = SimpleTimeMark.farPast()
 
     private var sackPlayers: SackData.PlayerSpecific? = null
@@ -71,7 +71,7 @@ object ProfileStorageData {
             ErrorManager.skyHanniError("orderedWaypointRoutes is null in ProfileJoinEvent!")
         }
         loadProfileSpecific(playerSpecific, sackPlayers, storagePlayer, petPlayers, profileName)
-        postConfigLoadEvent()
+        ConfigLoadEvent.post()
     }
 
     private fun workaroundIn10SecondsProfileStorage(profileName: String) {
@@ -105,7 +105,7 @@ object ProfileStorageData {
         }
 
         loadProfileSpecific(playerSpecific, sackPlayers, storagePlayer, petPlayers, profileName)
-        postConfigLoadEvent()
+        ConfigLoadEvent.post()
     }
 
     @HandleEvent
@@ -115,20 +115,21 @@ object ProfileStorageData {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onSecondPassed() {
-        if (noTabListTime.isFarPast() || noTabListTime.passedSince() < 10.seconds) return
+    fun onTick() {
+        if (noTabListTime.isFarPast()) return
 
         playerSpecific?.let {
-            // Do not try to load the data when Hypixel has not yet sent the profile loaded message
+            // do not try to load the data when hypixel has not yet send the profile loaded message
             if (it.multipleProfiles && !hypixelDataLoaded) return
         }
 
+        if (noTabListTime.passedSince() < 3.seconds) return
         noTabListTime = SimpleTimeMark.now()
-        val foundSkyBlockTabList = TabWidget.AREA.isActive
+        val foundSkyBlockTabList = TabListData.getTabList().any { it.contains("§b§lArea:") }
         if (foundSkyBlockTabList) {
             ChatUtils.clickableChat(
-                "§cCannot read profile name from tab list! Open /widget and make sure the Profile Widget " +
-                    "is enabled and visible.",
+                "§cCan not read profile name from tab list! Open /widget and enable Profile Widget. " +
+                    "This is needed for the mod to function! And therefore this warning cannot be disabled",
                 onClick = {
                     HypixelCommands.widget()
                 },
@@ -144,11 +145,6 @@ object ProfileStorageData {
         }
     }
 
-    private fun postConfigLoadEvent() {
-        ConfigLoadEvent(firstLoad).post()
-        firstLoad = false
-    }
-
     private fun loadProfileSpecific(
         playerSpecific: PlayerSpecificStorage,
         sackProfile: SackData.PlayerSpecific,
@@ -162,7 +158,7 @@ object ProfileStorageData {
         storageProfiles = storagePlayer.profiles.getOrPut(profileName) { StorageData.ProfileSpecific() }
         petProfiles = petPlayer.profiles.getOrPut(profileName) { PetDataStorage.ProfileSpecific() }
         loaded = true
-        postConfigLoadEvent()
+        ConfigLoadEvent.post()
     }
 
     @HandleEvent
@@ -173,7 +169,7 @@ object ProfileStorageData {
         storagePlayer = SkyHanniMod.storageData.players.getOrPut(playerUuid) { StorageData.PlayerSpecific() }
         petPlayers = SkyHanniMod.petData.players.getOrPut(playerUuid) { PetDataStorage.PlayerSpecific() }
         orderedWaypointsRoutes = SkyHanniMod.orderedWaypointsRoutesData
-        postConfigLoadEvent()
+        ConfigLoadEvent.post()
     }
 
     @HandleEvent

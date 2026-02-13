@@ -8,10 +8,10 @@ import at.hannibal2.skyhanni.events.entity.EntityLeaveWorldEvent
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniRenderWorldEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ColorUtils
+import at.hannibal2.skyhanni.utils.ColorUtils.getExtendedColorCode
 import at.hannibal2.skyhanni.utils.ColorUtils.toColor
 import at.hannibal2.skyhanni.utils.DelayedRun
 import at.hannibal2.skyhanni.utils.EntityUtils.wearingSkullTexture
-import at.hannibal2.skyhanni.utils.ExtendedChatColor
 import at.hannibal2.skyhanni.utils.LocationUtils.distanceToPlayer
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.LorenzVec
@@ -20,8 +20,7 @@ import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawCylinderInWorld
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawString
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawWaypointFilled
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.exactLocation
-import net.minecraft.network.chat.Component
-import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.entity.item.EntityArmorStand
 
 @SkyHanniModule
 object AshfangHighlights {
@@ -30,12 +29,12 @@ object AshfangHighlights {
 
     private val BLAZING_SOUL by lazy { SkullTextureHolder.getTexture("ASHFANG_BLAZING_SOUL") }
     private val GRAVITY_ORB by lazy { SkullTextureHolder.getTexture("ASHFANG_GRAVITY_ORB") }
-    private val blazingSouls = mutableSetOf<ArmorStand>()
-    private val gravityOrbs = mutableSetOf<ArmorStand>()
+    private val blazingSouls = mutableSetOf<EntityArmorStand>()
+    private val gravityOrbs = mutableSetOf<EntityArmorStand>()
     private const val MAX_DISTANCE = 15.0
 
     @HandleEvent(onlyOnIsland = IslandType.CRIMSON_ISLE)
-    fun onEntityJoin(event: EntityEnterWorldEvent<ArmorStand>) {
+    fun onEntityJoin(event: EntityEnterWorldEvent<EntityArmorStand>) {
         if (!AshfangManager.active) return
         val entity = event.entity
         DelayedRun.runNextTick {
@@ -47,7 +46,7 @@ object AshfangHighlights {
     }
 
     @HandleEvent(onlyOnIsland = IslandType.CRIMSON_ISLE)
-    fun onEntityLeave(event: EntityLeaveWorldEvent<ArmorStand>) {
+    fun onEntityLeave(event: EntityLeaveWorldEvent<EntityArmorStand>) {
         blazingSouls -= event.entity
         gravityOrbs -= event.entity
     }
@@ -84,19 +83,13 @@ object AshfangHighlights {
     private fun SkyHanniRenderWorldEvent.drawBlendedColorString(location: LorenzVec, text: String) {
         val distance = location.distanceToPlayer()
         if (distance < MAX_DISTANCE) {
-            val string = getColor(distance, text)
-            drawString(location.add(y = 2.5), string)
+            val colorCode = getColorCode(distance)
+            drawString(location.add(y = 2.5), colorCode + text)
         }
     }
 
-    private fun getColor(distance: Double, text: String): Component =
-        ExtendedChatColor(
-            ColorUtils.blendRGB(
-                LorenzColor.GREEN.toColor(),
-                LorenzColor.RED.toColor(),
-                distance / MAX_DISTANCE
-            ).rgb
-        ).asText(text)
+    private fun getColorCode(distance: Double): String =
+        ColorUtils.blendRGB(LorenzColor.GREEN.toColor(), LorenzColor.RED.toColor(), distance / MAX_DISTANCE).getExtendedColorCode()
 
     @HandleEvent
     fun onConfigFix(event: ConfigUpdaterMigrator.ConfigFixEvent) {

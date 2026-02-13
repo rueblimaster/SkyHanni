@@ -25,11 +25,6 @@ object NumberUtil {
 
     private val romanSymbols = TreeMap(
         mapOf(
-            // hannibal numerals (new standard)
-            10000 to "B",
-            9000 to "MB",
-            5000 to "H",
-            4000 to "MH",
             1000 to "M",
             900 to "CM",
             500 to "D",
@@ -115,13 +110,7 @@ object NumberUtil {
         else NumberFormat.getNumberInstance(Locale.US).format(this)
     }
 
-    fun String.romanToDecimalIfNecessary(): Int =
-        toIntOrNull()
-            ?: romanToDecimalOrNull()
-            ?: throw IllegalArgumentException("Failed to parse input string as either Arabic or Roman numerals: '$this'")
-
-    fun String.romanToDecimalIfNecessaryOrNull(): Int? =
-        runCatching { romanToDecimalIfNecessary() }.getOrElse { null }
+    fun String.romanToDecimalIfNecessary() = toIntOrNull() ?: romanToDecimal()
 
     /**
      * This code was converted to Kotlin and taken under CC BY-SA 3.0 license
@@ -132,7 +121,7 @@ object NumberUtil {
         var lastNumber = 0
         val romanNumeral = this.uppercase()
         for (x in romanNumeral.length - 1 downTo 0) {
-            when (val c = romanNumeral[x]) {
+            when (romanNumeral[x]) {
                 'M' -> {
                     decimal = processDecimal(1000, lastNumber, decimal)
                     lastNumber = 1000
@@ -167,17 +156,10 @@ object NumberUtil {
                     decimal = processDecimal(1, lastNumber, decimal)
                     lastNumber = 1
                 }
-
-                else -> {
-                    throw IllegalArgumentException("Encountered invalid character '$c' while parsing Roman numeral: '$this'")
-                }
             }
         }
         return decimal
     }
-
-    fun String.romanToDecimalOrNull(): Int? =
-        runCatching { romanToDecimal() }.getOrElse { null }
 
     fun Int.toRoman(): String {
         if (this <= 0) error("$this must be positive!")
@@ -256,8 +238,6 @@ object NumberUtil {
     }
 
     fun String.formatIntOrNull(): Int? = formatDoubleOrNull()?.toInt()
-
-    fun String.formatLongOrNull(): Long? = formatDoubleOrNull()?.toLong()
 
     fun String.formatDoubleOrNull(): Double? {
         var text = lowercase().replace(",", "")

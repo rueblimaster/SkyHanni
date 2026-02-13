@@ -5,6 +5,7 @@ import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
+import at.hannibal2.skyhanni.utils.ConfigUtils.jumpToEditor
 import at.hannibal2.skyhanni.utils.InventoryUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.getLore
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
@@ -35,9 +36,10 @@ object HuntrapMisclickPrevention {
 
         if (lastNotified.passedSince() < 10.seconds) return
         lastNotified = SimpleTimeMark.now()
-        ChatUtils.notifyOrDisable(
-            "Prevented clicking an empty trap in Hunting Toolkit!",
-            config::huntrapMisclick,
+        ChatUtils.clickableChat(
+            "Prevented clicking an empty trap in Hunting Toolkit! Click here to disable this feature.",
+            { config::huntrapMisclick.jumpToEditor() },
+            replaceSameMessage = true,
         )
     }
 }

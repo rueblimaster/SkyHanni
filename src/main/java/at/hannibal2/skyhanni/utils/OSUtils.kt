@@ -2,12 +2,17 @@ package at.hannibal2.skyhanni.utils
 
 import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.test.command.ErrorManager
-import net.minecraft.util.Util
+import at.hannibal2.skyhanni.utils.system.PlatformUtils
+import java.awt.Desktop
 import java.io.File
 import java.io.IOException
+import java.net.URI
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 import kotlin.time.Duration
+//#if MC > 1.21
+//$$ import net.minecraft.util.Util
+//#endif
 
 object OSUtils {
 
@@ -48,14 +53,41 @@ object OSUtils {
 
     @JvmStatic
     fun openBrowser(url: String) {
-        Util.getPlatform().openUri(url)
+        //#if MC < 1.21
+        val desktopSupported = Desktop.isDesktopSupported()
+        val supportedActionBrowse = Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)
+        if (desktopSupported && supportedActionBrowse) {
+            try {
+                Desktop.getDesktop().browse(URI(url))
+            } catch (e: IOException) {
+                ErrorManager.logErrorWithData(
+                    e,
+                    "Error while opening website.",
+                    "url" to url,
+                )
+            }
+        } else {
+            copyToClipboard(url)
+            ErrorManager.logErrorStateWithData(
+                "Cannot open website! Copied url to clipboard instead", "Web browser is not supported",
+                "url" to url,
+                "desktopSupported" to desktopSupported,
+                "supportedActionBrowse" to supportedActionBrowse,
+            )
+        }
+        //#else
+        //$$ Util.getOperatingSystem().open(url)
+        //#endif
     }
 
     @JvmStatic
     @Suppress("MaxLineLength")
     fun openSoundsListInBrowser() {
-        val url = "https://misode.github.io/sounds/"
-
+        val url = if (PlatformUtils.IS_LEGACY) {
+            "https://www.minecraftforum.net/forums/mapping-and-modding-java-edition/mapping-and-modding-tutorials/2213619-1-8-all-playsound-sound-arguments"
+        } else {
+            "https://misode.github.io/sounds/"
+        }
         openBrowser(url)
     }
 
@@ -63,7 +95,7 @@ object OSUtils {
         ClipboardUtils.copyToClipboard(text)
     }
 
-    fun readFromClipboard() = ClipboardUtils.readFromClipboard()
+    suspend fun readFromClipboard() = ClipboardUtils.readFromClipboard()
 
     private fun File.isExpired(
         expiryDuration: Duration,
@@ -98,7 +130,7 @@ object OSUtils {
      * @param expiryDuration the duration threshold used to determine if a file is expired.
      */
     fun deleteExpiredFiles(root: File, expiryDuration: Duration) {
-        SkyHanniMod.launchCoroutine("deleteExpiredFiles") {
+        SkyHanniMod.launchCoroutine {
             val allFiles = root.walk().filter { it.isFile }.toList()
             val lastModified = allFiles.associateWith { file ->
                 file.lastModifiedTime()

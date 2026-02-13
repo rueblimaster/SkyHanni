@@ -28,7 +28,7 @@ class ColeweightWaypointFormat : WaypointFormat {
         override fun copy() = ColeweightWaypoint(x, y, z, r, g, b, options)
     }
 
-    override fun load(string: String): Waypoints<SkyHanniWaypoint>? {
+    override fun load(string: String): Waypoints<SkyhanniWaypoint>? {
         val type = object : TypeToken<Waypoints<ColeweightWaypoint>>() {}.type
         return try {
             ConfigManager.gson.fromJson<Waypoints<ColeweightWaypoint>>(string, type).transform { it.load() }
@@ -38,7 +38,7 @@ class ColeweightWaypointFormat : WaypointFormat {
         }
     }
 
-    private fun ColeweightWaypoint.load() = SkyHanniWaypoint(
+    private fun ColeweightWaypoint.load() = SkyhanniWaypoint(
         LorenzVec(x, y, z),
         @Suppress("UnsafeCallOnNullableType")
         options["name"]!!.toInt(),
@@ -49,11 +49,11 @@ class ColeweightWaypointFormat : WaypointFormat {
         return load(string) != null
     }
 
-    override fun export(waypoints: Waypoints<SkyHanniWaypoint>): String {
+    override fun export(waypoints: Waypoints<SkyhanniWaypoint>): String {
         return ConfigManager.gson.toJson(waypoints.transform { it.export() }, Waypoints<ColeweightWaypoint>()::class.java)
     }
 
-    private fun SkyHanniWaypoint.export(): ColeweightWaypoint = with(location) {
+    private fun SkyhanniWaypoint.export(): ColeweightWaypoint = with(location) {
         ColeweightWaypoint(
             x.toInt(),
             y.toInt(),

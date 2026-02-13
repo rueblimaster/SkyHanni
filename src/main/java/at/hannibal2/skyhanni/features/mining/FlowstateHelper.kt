@@ -17,10 +17,9 @@ import at.hannibal2.skyhanni.features.mining.FlowstateHelper.personalBest
 import at.hannibal2.skyhanni.features.mining.FlowstateHelper.streakEndTimer
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
-import at.hannibal2.skyhanni.utils.ColorUtils
+import at.hannibal2.skyhanni.utils.ExtendedChatColor
 import at.hannibal2.skyhanni.utils.InventoryUtils
 import at.hannibal2.skyhanni.utils.ItemUtils
-import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.NumberUtil.roundTo
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
@@ -28,19 +27,12 @@ import at.hannibal2.skyhanni.utils.SimpleTimeMark.Companion.fromNow
 import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.getHypixelEnchantments
 import at.hannibal2.skyhanni.utils.TimeUnit
 import at.hannibal2.skyhanni.utils.TimeUtils.format
+import at.hannibal2.skyhanni.utils.compat.Text
 import at.hannibal2.skyhanni.utils.compat.append
-import at.hannibal2.skyhanni.utils.compat.appendWithColor
-import at.hannibal2.skyhanni.utils.compat.bold
-import at.hannibal2.skyhanni.utils.compat.componentBuilder
-import at.hannibal2.skyhanni.utils.compat.withColor
-import at.hannibal2.skyhanni.utils.inPartialSeconds
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.primitives.empty
 import at.hannibal2.skyhanni.utils.renderables.primitives.text
-import net.minecraft.ChatFormatting
-import net.minecraft.network.chat.Component
-import net.minecraft.world.item.Items
-import java.awt.Color
+import net.minecraft.init.Items
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -93,20 +85,10 @@ object FlowstateHelper {
             if (personalBest > 200 && config.personalBestMessage) {
                 val newLuck = calculateFlowstateLuck(blockBreakStreak)
                 val oldLuck = calculateFlowstateLuck(personalBest)
+                val userLuckSegment = if (personalBest > 500) " §aYou Gained +${newLuck - oldLuck}✴ SkyHanni User Luck" else ""
                 ChatUtils.chat(
-                    componentBuilder {
-                        appendWithColor("NEW FLOWSTATE PERSONAL BEST!", ChatFormatting.LIGHT_PURPLE) {
-                            bold = true
-                        }
-                        withColor(ChatFormatting.WHITE)
-                        append(" Streak: $blockBreakStreak.")
-                        append(" You beat your old personal best by ${blockBreakStreak - personalBest} Blocks!")
-                        if (personalBest > 500) {
-                            append(" You Gained +${newLuck - oldLuck}✴ SkyHanni User Luck") {
-                                withColor(ChatFormatting.GREEN)
-                            }
-                        }
-                    }
+                    "§d§lNEW FLOWSTATE PERSONAL BEST!§f Streak: $blockBreakStreak." +
+                        " You beat your old personal best by ${blockBreakStreak - personalBest} Blocks!" + userLuckSegment,
                 )
             }
             personalBest = blockBreakStreak
@@ -176,45 +158,15 @@ object FlowstateHelper {
         attemptClearDisplay()
     }
 
-    fun getTimerColor(timeRemaining: Duration): Int {
-        if (!config.colorfulTimer) return LorenzColor.AQUA.toColor().rgb
+    fun getTimerColor(timeRemaining: Duration): Text {
+        if (!config.colorfulTimer) return Text.of("§b")
         return when (timeRemaining) {
-            in 0.seconds..2.seconds -> {
-                ColorUtils.blendRGB(
-                    LorenzColor.RED.toColor(),
-                    Color(Integer.decode("#ec7b36")),
-                    timeRemaining.inPartialSeconds / 2.0
-                ).rgb
-            }
-
-            in 2.seconds..4.seconds -> {
-                ColorUtils.blendRGB(
-                    Color(Integer.decode("#ec7b36")),
-                    LorenzColor.YELLOW.toColor(),
-                    (timeRemaining.inPartialSeconds - 2) / 2.0
-                ).rgb
-            }
-
-            in 4.seconds..6.seconds -> {
-                ColorUtils.blendRGB(
-                    LorenzColor.YELLOW,
-                    LorenzColor.GREEN,
-                    (timeRemaining.inPartialSeconds - 4) / 2.0
-                ).rgb
-            }
-
-            in 6.seconds..8.seconds -> {
-                ColorUtils.blendRGB(
-                    LorenzColor.GREEN,
-                    LorenzColor.DARK_GREEN,
-                    (timeRemaining.inPartialSeconds - 6) / 2.0
-                ).rgb
-            }
-
-            in 8.seconds..10.seconds -> {
-                LorenzColor.DARK_GREEN.toColor().rgb
-            }
-            else -> LorenzColor.GOLD.toColor().rgb
+            in 0.seconds..2.seconds -> Text.of("§c")
+            in 2.seconds..4.seconds -> ExtendedChatColor("#ec7b36", false).asText()
+            in 4.seconds..6.seconds -> Text.of("§e")
+            in 6.seconds..8.seconds -> Text.of("§a")
+            in 8.seconds..10.seconds -> Text.of("§2")
+            else -> Text.of("§6")
         }
     }
 
@@ -264,7 +216,7 @@ object FlowstateHelper {
         val luck = calculateFlowstateLuck(personalBest)
         event.addLuck(luck)
         val stack = ItemUtils.createItemStack(
-            Items.ENCHANTED_BOOK,
+            Items.enchanted_book,
             "§a✴ Flowstate Personal Best",
             arrayOf(
                 "§8Enchantment",
@@ -297,12 +249,7 @@ enum class FlowstateElements(val label: String, var renderable: Renderable = Ren
             TIMER -> {
                 val timeRemaining = streakEndTimer.timeUntil().coerceAtLeast(0.seconds)
 
-                Renderable.text(
-                    componentBuilder {
-                        append("§7Time Remaining: ")
-                        append(timeRemaining.formatTime())
-                    }
-                )
+                Renderable.text(Text.of("§7Time Remaining: ").append(timeRemaining.formatTime()))
             }
 
             STREAK -> {
@@ -319,10 +266,11 @@ enum class FlowstateElements(val label: String, var renderable: Renderable = Ren
                 val timeRemaining = streakEndTimer.timeUntil().coerceAtLeast(0.seconds)
 
                 Renderable.text(
-                    componentBuilder {
-                        append("§7x${getStreakColor()}$blockBreakStreak " + "§6+${getSpeedBonus()}⸕ ")
-                        append(timeRemaining.formatTime())
-                    }
+                    Text.of(
+                        "§7x${getStreakColor()}$blockBreakStreak " + "§6+${getSpeedBonus()}⸕ ",
+                    ).append(
+                        timeRemaining.formatTime(),
+                    ),
                 )
             }
 
@@ -343,11 +291,8 @@ enum class FlowstateElements(val label: String, var renderable: Renderable = Ren
     companion object {
         private val config get() = SkyHanniMod.feature.mining.flowstateHelper
 
-        private fun Duration.formatTime(): Component {
-            return componentBuilder {
-                append(format(TimeUnit.SECOND, true, maxUnits = 2, showSmallerUnits = true))
-                withColor(getTimerColor(this@formatTime))
-            }
+        private fun Duration.formatTime(): Text {
+            return getTimerColor(this).append(format(TimeUnit.SECOND, true, maxUnits = 2, showSmallerUnits = true))
         }
 
         @JvmField

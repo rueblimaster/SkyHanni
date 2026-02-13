@@ -45,7 +45,7 @@ object HotxFeatures {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         val claimMap: Map<HotxHandler<*, *, *>, Boolean?> = listOf(
             HotmData, HotfData,
         ).associateWith { data ->
@@ -91,7 +91,7 @@ object HotxFeatures {
             else -> return
         }
         handler.data.firstOrNull {
-            event.stack.hoverName.string == it.item?.hoverName?.string
+            event.stack.displayName == it.item?.displayName
         }?.let {
             event.stackTip = if (it.activeLevel == 0 || it.activeLevel == it.maxLevel) "" else "§e${it.activeLevel}"
             it.activeLevel.toString()
@@ -104,7 +104,7 @@ object HotxFeatures {
             HotfData.inInventory && configHotf.tokenStackSize -> HotfData
             else -> return
         }
-        if (event.stack.hoverName.string != handler.heartItem?.item?.hoverName?.string) return
+        if (event.stack.displayName != handler.heartItem?.stack?.displayName) return
         event.stackTip = handler.availableTokens.takeIf { it != 0 }?.let { "§b$it" }.orEmpty()
     }
 

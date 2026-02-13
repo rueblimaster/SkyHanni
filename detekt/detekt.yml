@@ -11,7 +11,7 @@ CompatRules:
 
 FormattingRules:
     CustomCommentSpacing:
-        active: false
+        active: true
     CustomAnnotationSpacing:
         active: true
     StorageVarOrVal:
@@ -29,7 +29,7 @@ RepoRules:
 
 ImportRules:
     CustomImportOrdering:
-        active: false
+        active: true
     PreprocessingImportOrdering:
         active: true
 
@@ -113,10 +113,6 @@ formatting:
         maxLineLength: 140
     Wrapping:
         maxLineLength: 140
-    BlockCommentInitialStarAlignment:
-        active: false
-    CommentWrapping:
-        active: false
 
 complexity:
     CyclomaticComplexMethod: # default threshold of 15, caught almost every complex method
@@ -167,6 +163,4 @@ potential-bugs:
         active: true
     ImmutableTypesWithExpectedInteriorMutabilityInConfig:
         active: true
-    UnreachableCode:
-        active: false
 

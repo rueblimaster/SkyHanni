@@ -1,18 +1,18 @@
-#version 150
+// Textured Chroma Fragment Shader
+// Modified from SkyblockAddons
+// Credit: https://github.com/BiscuitDevelopment/SkyblockAddons/blob/main/src/main/resources/assets/skyblockaddons/shaders/program/chroma_screen_textured.fsh
 
-in vec4 vertexColor;
-in vec2 texCoord0;
+#version 120
 
-layout(std140) uniform SkyHanniChromaUniforms {
-    float chromaSize;
-    float timeOffset;
-    float saturation;
-    int forwardDirection;
-};
+uniform float chromaSize;
+uniform float timeOffset;
+uniform float saturation;
+uniform bool forwardDirection;
 
-uniform sampler2D Sampler0;
+uniform sampler2D outTexture;
 
-out vec4 fragColor;
+varying vec2 outTextureCoords;
+varying vec4 outColor;
 
 float rgb2b(vec3 rgb) {
     return max(max(rgb.r, rgb.g), rgb.b);
@@ -25,15 +25,11 @@ vec3 hsb2rgb_smooth(vec3 c) {
 }
 
 void main() {
-    vec4 originalColor = texture(Sampler0, texCoord0) * vertexColor;
-
-    if (originalColor.a < 0.1) {
-        discard;
-    }
+    vec4 originalColor = texture2D(outTexture, outTextureCoords) * outColor;
 
     // Determine the direction chroma moves
     float fragCoord;
-    if (forwardDirection == 1) {
+    if (forwardDirection) {
         fragCoord = gl_FragCoord.x - gl_FragCoord.y;
     } else {
         fragCoord = gl_FragCoord.x + gl_FragCoord.y;
@@ -43,5 +39,5 @@ void main() {
     float hue = mod(((fragCoord) / chromaSize) - timeOffset, 1.0);
 
     // Set the color to use the new hue & original saturation/value/alpha values
-    fragColor = vec4(hsb2rgb_smooth(vec3(hue, saturation, rgb2b(originalColor.rgb))), originalColor.a);
+    gl_FragColor = vec4(hsb2rgb_smooth(vec3(hue, saturation, rgb2b(originalColor.rgb))), originalColor.a);
 }

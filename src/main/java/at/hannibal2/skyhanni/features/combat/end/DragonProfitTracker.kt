@@ -9,10 +9,9 @@ import at.hannibal2.skyhanni.data.jsonobjects.repo.DragonProfitTrackerItemDataJs
 import at.hannibal2.skyhanni.data.jsonobjects.repo.DragonProfitTrackerItemsJson
 import at.hannibal2.skyhanni.events.ItemAddEvent
 import at.hannibal2.skyhanni.events.RepositoryReloadEvent
-import at.hannibal2.skyhanni.features.combat.end.DragonProfitTracker.drawDisplay
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
-import at.hannibal2.skyhanni.utils.ItemPriceUtils.getPriceName
+import at.hannibal2.skyhanni.utils.ItemUtils.repoItemName
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
@@ -25,30 +24,34 @@ import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addSearc
 import at.hannibal2.skyhanni.utils.renderables.Searchable
 import at.hannibal2.skyhanni.utils.tracker.BucketedItemTrackerData
 import at.hannibal2.skyhanni.utils.tracker.SkyHanniBucketedItemTracker
+import at.hannibal2.skyhanni.utils.tracker.SkyHanniTracker
 import com.google.gson.annotations.Expose
 import java.util.EnumMap
 
 @SkyHanniModule
-object DragonProfitTracker : SkyHanniBucketedItemTracker<DragonType, DragonProfitTracker.BucketData>(
-    "Dragon Profit Tracker",
-    ::BucketData,
-    { it.dragonProfitTracker },
-    { drawDisplay(it) },
-    trackerConfig = { SkyHanniMod.feature.combat.endIsland.dragon.dragonProfitTracker.perTrackerConfig }
-) {
+object DragonProfitTracker {
     private val config get() = SkyHanniMod.feature.combat.endIsland.dragon.dragonProfitTracker
 
     private var lastPlaced: Int = 0
     private val SUMMONING_EYE = "SUMMONING_EYE".toInternalName()
 
-    data class BucketData(
-        @Expose var dragonKills: MutableMap<DragonType, Long> = EnumMap(DragonType::class.java),
-        @Expose var eyesPlaced: Long = 0,
-    ) : BucketedItemTrackerData<DragonType>(DragonType::class) {
+    private val tracker = SkyHanniBucketedItemTracker(
+        "Dragon Profit Tracker",
+        { BucketData() },
+        { it.dragonProfitTracker },
+        { drawDisplay(it) },
+    )
+
+    class BucketData : BucketedItemTrackerData<DragonType>(DragonType::class) {
         override fun getCoinName(bucket: DragonType?, item: TrackedItem) = "<no coins>"
         override fun getCoinDescription(bucket: DragonType?, item: TrackedItem): List<String> = listOf("<no coins>")
 
         override fun DragonType.isBucketSelectable(): Boolean = this.selectable
+
+        override fun resetItems() {
+            dragonKills.clear()
+            eyesPlaced = 0
+        }
 
         override fun getDescription(bucket: DragonType?, timesGained: Long): List<String> {
             val percentage = timesGained.toDouble() / getTotalDragonCount()
@@ -59,26 +62,32 @@ object DragonProfitTracker : SkyHanniBucketedItemTracker<DragonType, DragonProfi
             )
         }
 
-        override fun bucketName(): String = "Dragon"
+        override fun bucketName(): String {
+            return "Dragon"
+        }
 
         fun getTotalDragonCount(): Long {
-            return if (selectedBucket == null || selectedBucket !in DragonType.entries) {
+            return if (selectedBucket == null || selectedBucket !in DragonType.values()) {
                 dragonKills.values.sum()
             } else {
                 dragonKills[selectedBucket] ?: 0
             }
         }
+
+        @Expose
+        var dragonKills: MutableMap<DragonType, Long> = EnumMap(DragonType::class.java)
+
+        @Expose
+        var eyesPlaced: Long = 0
     }
 
     private fun drawDisplay(bucketData: BucketData): List<Searchable> = buildList {
         addSearchString("§b§lDragon Profit Tracker")
-        addBucketSelector(this, bucketData, "Dragon Type")
+        tracker.addBucketSelector(this, bucketData, "Dragon Type")
 
-        val duration = bucketData.getTotalUptime()
+        var profit = tracker.drawItems(bucketData, { true }, this)
 
-        var profit = drawItems(bucketData, { true }, this)
-
-        val eyePrice = getPricePer(SUMMONING_EYE)
+        val eyePrice = SkyHanniTracker.getPricePer(SUMMONING_EYE)
         val totalEyePrice = eyePrice * bucketData.eyesPlaced
         profit -= totalEyePrice
         val eyeFormat = "§7${bucketData.eyesPlaced}x §5Summoning Eye §c${(-totalEyePrice).shortFormat()}"
@@ -90,9 +99,9 @@ object DragonProfitTracker : SkyHanniBucketedItemTracker<DragonType, DragonProfi
         val dragonString = "${colorCode.getChatColor()}$displayName §r§bkills: $killAmount"
         addSearchString(dragonString)
 
-        addAll(addTotalProfit(profit, bucketData.getTotalDragonCount(), "Dragon", duration, "Dragons"))
+        add(tracker.addTotalProfit(profit, bucketData.getTotalDragonCount(), "Dragon"))
 
-        addPriceFromButton(this)
+        tracker.addPriceFromButton(this)
     }
 
     var allowedItems = emptyMap<NeuInternalName, DragonProfitTrackerItemDataJson>()
@@ -107,28 +116,28 @@ object DragonProfitTracker : SkyHanniBucketedItemTracker<DragonType, DragonProfi
     @HandleEvent
     fun onItemAdd(event: ItemAddEvent) {
         if (!DragonFightAPI.inNestArea() || event.source != ItemAddManager.Source.COMMAND) return
-        event.addItemFromEvent()
+        with(tracker) { event.addItemFromEvent() }
         ChatUtils.debug("Added item to tracker: ${event.internalName} (amount: ${event.amount})")
     }
 
     init {
-        initRenderer({ config.position }) { config.enabled && DragonFightAPI.inNestArea() }
+        tracker.initRenderer({ config.position }) { config.enabled && DragonFightAPI.inNestArea() }
     }
 
     fun addEyes(amount: Int) {
-        modify { it.eyesPlaced += amount }
+        tracker.modify { it.eyesPlaced += amount }
         ChatUtils.debug("Added $amount eyes to tracker")
         lastPlaced = amount
     }
 
     fun addDragonKill(type: DragonType) {
-        modify { it.dragonKills.addOrPut(type, 1) }
+        tracker.modify { it.dragonKills.addOrPut(type, 1) }
         lastDragonKill = type
         ChatUtils.debug("Added $type to tracker, lastDragonKill: $lastDragonKill")
     }
 
     fun addDragonLoot(type: DragonType, item: NeuInternalName, amount: Int, command: Boolean = false) {
-        addItem(type, item, amount, command)
+        tracker.addItem(type, item, amount, command)
         ChatUtils.debug("Added $item to tracker (amount: $amount, type: $type)")
     }
 
@@ -139,16 +148,17 @@ object DragonProfitTracker : SkyHanniBucketedItemTracker<DragonType, DragonProfi
         val lootMap = mutableMapOf<String, Double>()
         var totalProfit = 0.0
         items.forEach { (internalName, amount) ->
-            getPricePer(internalName).takeIf { price: Double -> price != -1.0 }?.let { pricePer: Double ->
+            SkyHanniTracker.getPricePer(internalName).takeIf { price: Double -> price != -1.0 }?.let { pricePer: Double ->
                 val profit: Double = amount * pricePer
-                val text = "§eFound ${internalName.getPriceName(amount)}"
+                val nameFormat = internalName.repoItemName
+                val text = "§eFound $nameFormat §8${amount}x §7(§6${profit.shortFormat()}§7)"
                 lootMap.addOrPut(text, profit)
                 totalProfit += profit
             }
         }
 
 
-        val eyePrice = getPricePer(SUMMONING_EYE)
+        val eyePrice = SkyHanniTracker.getPricePer(SUMMONING_EYE)
         totalProfit -= eyePrice * lastPlaced
 
         val hover = lootMap.sortedDesc().keys.toMutableList()
@@ -164,10 +174,10 @@ object DragonProfitTracker : SkyHanniBucketedItemTracker<DragonType, DragonProfi
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerBrigadier("shresetdragonprofittracker") {
+        event.register("shresetdragonprofittracker") {
             description = "Resets the Dragon Profit Tracker."
             category = CommandCategory.USERS_RESET
-            simpleCallback { resetCommand() }
+            callback { tracker.resetCommand() }
         }
     }
 }

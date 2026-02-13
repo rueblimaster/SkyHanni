@@ -17,11 +17,9 @@ import at.hannibal2.skyhanni.utils.api.ApiUtils
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.containsKeys
 import at.hannibal2.skyhanni.utils.json.fromJson
 import at.hannibal2.skyhanni.utils.system.ModVersion
-import kotlinx.coroutines.Job
 import net.minecraft.client.Minecraft
 import java.util.NavigableMap
 import java.util.TreeMap
-import kotlin.time.Duration.Companion.minutes
 
 @SkyHanniModule
 object ChangelogViewer {
@@ -33,7 +31,6 @@ object ChangelogViewer {
     internal lateinit var endVersion: ModVersion
 
     internal var shouldMakeNewList = false
-    private var fetchJob: Job? = null
 
     internal var shouldShowBeta = SkyHanniMod.isBetaVersion
     internal var showTechnicalDetails = false
@@ -56,17 +53,14 @@ object ChangelogViewer {
         }
         startVersion = currentVersion
         endVersion = targetVersion
-        if (!cache.containsKeys(startVersion, endVersion)) setupFetchJob()
+        if (!cache.containsKeys(startVersion, endVersion)) {
+            SkyHanniMod.launchIOCoroutine { getChangelog() }
+        }
         openChangelog()
     }
 
-    private fun setupFetchJob() {
-        if (fetchJob?.isActive == true) return
-        fetchJob = SkyHanniMod.launchIOCoroutine("changelog viewer fetch data", timeout = 1.minutes) { getChangelog() }
-    }
-
     private fun openChangelog() {
-        if (Minecraft.getInstance().screen !is ChangeLogViewerScreen) SkyHanniMod.screenToOpen = ChangeLogViewerScreen()
+        if (Minecraft.getMinecraft().currentScreen !is ChangeLogViewerScreen) SkyHanniMod.screenToOpen = ChangeLogViewerScreen()
     }
 
     private suspend fun getChangelog() {
@@ -133,12 +127,13 @@ object ChangelogViewer {
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerComplex<CommandContext>("shchangelog") {
+        event.registerComplex("shchangelog") {
             description = "Shows the specified changelog. No arguments shows the latest changelog."
             category = CommandCategory.USERS_ACTIVE
-            // context = { CommandContext() }
-
-            specifiers = listOf(
+            //#if TODO
+            context = { CommandContext() }
+            //#endif
+            specifiers = listOf<CommandArgument<CommandContext>>(
                 CommandArgument(
                     documentation = "<version> - Shows the changelog of the versions until this, " +
                         "or only that version if no since is specified.",

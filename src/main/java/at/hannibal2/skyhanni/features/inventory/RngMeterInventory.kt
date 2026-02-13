@@ -12,7 +12,6 @@ import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.RegexUtils.firstMatcher
 import at.hannibal2.skyhanni.utils.RenderUtils.highlight
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 
 @SkyHanniModule
@@ -34,7 +33,7 @@ object RngMeterInventory {
 
         val stack = event.stack
         if (config.floorName && chestName == "Catacombs RNG Meter") {
-            if (stack.hoverName.string.removeColor() == "RNG Meter") {
+            if (stack.displayName.removeColor() == "RNG Meter") {
                 floorPattern.firstMatcher(stack.getLore()) {
                     event.stackTip = group("floor")
                 }
@@ -48,7 +47,7 @@ object RngMeterInventory {
         val chestName = InventoryUtils.openInventoryName()
         if (config.noDrop && chestName == "Catacombs RNG Meter") {
             for (slot in InventoryUtils.getItemsInOpenChest()) {
-                val stack = slot.item
+                val stack = slot.stack
                 if (stack.getLore().any { it.contains("You don't have an RNG drop") }) {
                     slot.highlight(LorenzColor.RED)
                 }
@@ -57,7 +56,7 @@ object RngMeterInventory {
 
         if (config.selectedDrop && chestName.endsWith(" RNG Meter")) {
             for (slot in InventoryUtils.getItemsInOpenChest()) {
-                val stack = slot.item
+                val stack = slot.stack
                 if (stack.getLore().any { it.contains("§a§lSELECTED") }) {
                     slot.highlight(LorenzColor.YELLOW)
                 }

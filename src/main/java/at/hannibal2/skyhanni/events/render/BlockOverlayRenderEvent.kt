@@ -7,5 +7,13 @@ class BlockOverlayRenderEvent(val overlayType: OverlayType) : CancellableSkyHann
 enum class OverlayType {
     FIRE,
     BLOCK,
-    WATER,
+    WATER;
+
+    companion object {
+        //#if FORGE
+        fun fromForge(old: net.minecraftforge.client.event.RenderBlockOverlayEvent.OverlayType): OverlayType {
+            return entries[old.ordinal]
+        }
+        //#endif
+    }
 }

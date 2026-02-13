@@ -205,7 +205,7 @@ object DungeonChatFilter {
     // </editor-fold>
 
     @HandleEvent(onlyOnIsland = IslandType.CATACOMBS)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (config.dungeonFilteredMessageTypes.isEmpty()) return
 
         val blockReason = block(event.message)

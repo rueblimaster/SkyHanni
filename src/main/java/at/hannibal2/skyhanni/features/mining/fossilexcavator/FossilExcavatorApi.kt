@@ -2,11 +2,13 @@ package at.hannibal2.skyhanni.features.mining.fossilexcavator
 
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.data.IslandType
+import at.hannibal2.skyhanni.events.InventoryCloseEvent
+import at.hannibal2.skyhanni.events.InventoryFullyOpenedEvent
 import at.hannibal2.skyhanni.events.InventoryUpdatedEvent
 import at.hannibal2.skyhanni.events.chat.SkyHanniChatEvent
 import at.hannibal2.skyhanni.events.mining.FossilExcavationEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import at.hannibal2.skyhanni.utils.InventoryDetector
+import at.hannibal2.skyhanni.utils.InventoryUtils
 import at.hannibal2.skyhanni.utils.ItemUtils
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
@@ -43,32 +45,46 @@ object FossilExcavatorApi {
     private var inLoot = false
     private val loot = mutableListOf<Pair<String, Int>>()
 
+    var inInventory = false
     var inExcavatorMenu = false
 
     val scrapItem = "SUSPICIOUS_SCRAP".toInternalName()
 
-    val excavatorInventory = InventoryDetector(
-        checkInventoryName = { it == "Fossil Excavator" },
-        onCloseInventory = { inExcavatorMenu = false }
-    )
+    @HandleEvent(onlyOnIsland = IslandType.DWARVEN_MINES)
+    fun onInventoryFullyOpened(event: InventoryFullyOpenedEvent) {
+        if (event.inventoryName != "Fossil Excavator") return
+        inInventory = true
+    }
 
     @HandleEvent
     fun onInventoryUpdated(event: InventoryUpdatedEvent) {
-        if (!excavatorInventory.isInside()) return
-        inExcavatorMenu = event.inventoryItems.values.any {
-            it.hoverName.string.removeColor() == "Start Excavator"
-        }
+        if (!inInventory) return
+        val slots = InventoryUtils.getItemsInOpenChest()
+        val itemNames = slots.map { it.stack.displayName.removeColor() }
+        inExcavatorMenu = itemNames.any { it == "Start Excavator" }
     }
 
     @HandleEvent
     fun onWorldChange() {
+        inInventory = false
+        inExcavatorMenu = false
+    }
+
+    @HandleEvent
+    fun onInventoryClose(event: InventoryCloseEvent) {
+        inInventory = false
         inExcavatorMenu = false
     }
 
     @HandleEvent(onlyOnIsland = IslandType.DWARVEN_MINES)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
+
         val message = event.message
-        if (emptyPattern.matches(message)) FossilExcavationEvent(emptyList()).post()
+
+        if (emptyPattern.matches(message)) {
+            FossilExcavationEvent(emptyList()).post()
+        }
+
 
         if (startPattern.matches(message)) {
             inLoot = true
@@ -94,7 +110,7 @@ object FossilExcavatorApi {
             ItemUtils.readItemAmount(group("item"))
         } ?: return
 
-        ItemUtils.readBookTypeStrippedColor(pair.first)?.let {
+        ItemUtils.readBookType(pair.first)?.let {
             pair = it to pair.second
         }
         loot.add(pair)

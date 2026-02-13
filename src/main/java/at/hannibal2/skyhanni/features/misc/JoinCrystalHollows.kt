@@ -21,7 +21,7 @@ object JoinCrystalHollows {
     private val location = LorenzVec(88, 198, -99)
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
 
         val message = event.message

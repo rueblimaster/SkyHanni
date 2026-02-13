@@ -5,15 +5,14 @@ import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorKeybind
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
-import io.github.notenoughupdates.moulconfig.annotations.SearchTag
-import org.lwjgl.glfw.GLFW
+import org.lwjgl.input.Keyboard
 
 class BetterWikiCommandConfig {
     @Expose
     @ConfigOption(
         name = "Enabled",
         desc = "Improve the functionality of the /wiki command. " +
-            "This is required for all of the below features.",
+            "This is required for all of the below features."
     )
     @ConfigEditorBoolean
     @FeatureToggle
@@ -28,18 +27,18 @@ class BetterWikiCommandConfig {
 
     @Expose
     @ConfigOption(
-        name = "Use Unofficial Wiki",
-        desc = "Use the unofficial wiki instead of the official one in most wiki-related chat messages.",
+        name = "Use Fandom Wiki",
+        desc = "Use Fandom Wiki (§ehypixel-skyblock.fandom.com§7) instead of " +
+            "the Hypixel Wiki (§ewiki.hypixel.net§7) in most wiki-related chat messages."
     )
     @ConfigEditorBoolean
     @FeatureToggle
-    @SearchTag("fandom hypixel")
-    var useUnofficial: Boolean = false
+    var useFandom: Boolean = false
 
     @Expose
     @ConfigOption(
         name = "Auto Open",
-        desc = "Directly open the Wiki when running the command instead of having to click a message in chat.",
+        desc = "Directly open the Wiki when running the command instead of having to click a message in chat."
     )
     @ConfigEditorBoolean
     var autoOpenWiki: Boolean = false
@@ -47,7 +46,7 @@ class BetterWikiCommandConfig {
     @Expose
     @ConfigOption(
         name = "Open from Menus",
-        desc = "Directly open the Wiki from menus instead of having to click a message in chat.",
+        desc = "Directly open the Wiki from menus instead of having to click a message in chat."
     )
     @ConfigEditorBoolean
     var menuOpenWiki: Boolean = false
@@ -55,9 +54,8 @@ class BetterWikiCommandConfig {
     @Expose
     @ConfigOption(
         name = "Wiki Key",
-        desc = "Search for an item's wiki page with this keybind.\n" +
-            "§cFor an optimal experience, do §lNOT §cbind this to a mouse button.",
+        desc = "Search for an item's wiki page with this keybind. §cFor an optimal experience, do §lNOT §cbind this to a mouse button."
     )
-    @ConfigEditorKeybind(defaultKey = GLFW.GLFW_KEY_UNKNOWN)
-    var wikiKeybind: Int = GLFW.GLFW_KEY_UNKNOWN
+    @ConfigEditorKeybind(defaultKey = Keyboard.KEY_NONE)
+    var wikiKeybind: Int = Keyboard.KEY_NONE
 }

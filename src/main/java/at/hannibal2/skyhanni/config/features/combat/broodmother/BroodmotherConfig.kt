@@ -45,7 +45,10 @@ class BroodmotherConfig {
             "§cThe 'Alive!' and 'Imminent' stages are overridden by the \"Spawn Alert\" and \"Imminent Warning\" features."
     )
     @ConfigEditorDraggableList
-    val stages: MutableList<StageEntry> = mutableListOf()
+    val stages: MutableList<StageEntry> = mutableListOf(
+        StageEntry.SLAIN,
+        StageEntry.ALIVE
+    )
 
     @Expose
     @ConfigOption(

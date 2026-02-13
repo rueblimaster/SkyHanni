@@ -8,12 +8,14 @@ import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
 import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.data.ProfileStorageData
 import at.hannibal2.skyhanni.data.WinterApi
+import at.hannibal2.skyhanni.events.SecondPassedEvent
 import at.hannibal2.skyhanni.events.chat.SkyHanniChatEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.NumberUtil.addSeparators
 import at.hannibal2.skyhanni.utils.NumberUtil.shortFormat
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
+import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.addOrPut
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addSearchString
 import at.hannibal2.skyhanni.utils.renderables.Searchable
@@ -37,12 +39,7 @@ object FrozenTreasureTracker {
     private var icePerSecond = mutableListOf<Long>()
     private var icePerHour = 0
     private var stoppedChecks = 0
-    private val tracker = SkyHanniTracker(
-        "Frozen Treasure Tracker",
-        ::Data,
-        { it.frozenTreasureTracker },
-        trackerConfig = { config.perTrackerConfig }
-    ) {
+    private val tracker = SkyHanniTracker("Frozen Treasure Tracker", { Data() }, { it.frozenTreasureTracker }) {
         formatDisplay(drawDisplay(it))
     }
 
@@ -50,11 +47,23 @@ object FrozenTreasureTracker {
         FrozenTreasure.entries.forEach { it.chatPattern }
     }
 
-    data class Data(
-        @Expose var treasuresMined: Long = 0,
-        @Expose var compactProcs: Long = 0,
-        @Expose var treasureCount: MutableMap<FrozenTreasure, Int> = mutableMapOf(),
-    ) : TrackerData()
+    class Data : TrackerData() {
+
+        override fun reset() {
+            treasureCount.clear()
+            treasuresMined = 0
+            compactProcs = 0
+        }
+
+        @Expose
+        var treasuresMined = 0
+
+        @Expose
+        var compactProcs = 0
+
+        @Expose
+        var treasureCount: MutableMap<FrozenTreasure, Int> = mutableMapOf()
+    }
 
     @HandleEvent
     fun onWorldChange() {
@@ -65,7 +74,7 @@ object FrozenTreasureTracker {
     }
 
     @HandleEvent(onlyOnIsland = IslandType.WINTER)
-    fun onSecondPassed() {
+    fun onSecondPassed(event: SecondPassedEvent) {
         val difference = estimatedIce - lastEstimatedIce
         lastEstimatedIce = estimatedIce
 
@@ -102,10 +111,10 @@ object FrozenTreasureTracker {
     }
 
     @HandleEvent(onlyOnIsland = IslandType.WINTER)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!ProfileStorageData.loaded) return
 
-        val message = event.cleanMessage.trim()
+        val message = event.message.removeColor().trim()
 
         compactPattern.matchMatcher(message) {
             tracker.modify {
@@ -123,7 +132,7 @@ object FrozenTreasureTracker {
         }
     }
 
-    private fun drawDisplay(data: Data) = buildList {
+    private fun drawDisplay(data: Data) = buildList<Searchable> {
         calculateIce(data)
         addSearchString("§e§lFrozen Treasure Tracker")
         addSearchString("§6${formatNumber(data.treasuresMined)} Treasures Mined")
@@ -172,10 +181,10 @@ object FrozenTreasureTracker {
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerBrigadier("shresetfrozentreasuretracker") {
+        event.register("shresetfrozentreasuretracker") {
             description = "Resets the Frozen Treasure Tracker"
             category = CommandCategory.USERS_RESET
-            simpleCallback { tracker.resetCommand() }
+            callback { tracker.resetCommand() }
         }
     }
 }

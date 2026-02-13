@@ -22,12 +22,13 @@ import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ConditionalUtils.afterChange
 import at.hannibal2.skyhanni.utils.KeyboardManager.isKeyHeld
 import at.hannibal2.skyhanni.utils.LorenzVec
+import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.screens.inventory.InventoryScreen
+import net.minecraft.client.gui.inventory.GuiInventory
 
 @SkyHanniModule
 object CrimsonIsleReputationHelper {
@@ -44,13 +45,13 @@ object CrimsonIsleReputationHelper {
     var tabListQuestsMissing = false
 
     /**
-     * REGEX-TEST:  ✖ Rescue Mission
-     * REGEX-TEST:  ✔ Digested Mushrooms x20
-     * REGEX-TEST:  ✖ Slugfish x1
+     * REGEX-TEST:  §r§c✖ Rescue Mission
+     * REGEX-TEST:  §r§a✔ Digested Mushrooms §r§8x20
+     * REGEX-TEST:  §r§c✖ Slugfish §r§8x1
      */
     val tabListQuestPattern by RepoPattern.pattern(
-        "crimson.reputationhelper.tablist.quest-no-color",
-        "\\s*(?<status>[✖✔]) (?<name>.+?)(?: x(?<amount>\\d+))?$",
+        "crimson.reputationhelper.tablist.quest",
+        " (?:§.*)?(?<status>[✖✔]) (?<name>.+?)(?: (?:§.)*?x(?<amount>\\d+))?",
     )
 
     @HandleEvent
@@ -147,10 +148,11 @@ object CrimsonIsleReputationHelper {
     }
 
     fun isHotkeyHeld(): Boolean {
-        val isAllowedGui = Minecraft.getInstance().screen.let {
-            it == null || it is InventoryScreen
+        val isAllowedGui = Minecraft.getMinecraft().currentScreen.let {
+            it == null || it is GuiInventory
         }
         if (!isAllowedGui) return false
+        if (NeuItems.neuHasFocus()) return false
 
         return config.hotkey.isKeyHeld()
     }

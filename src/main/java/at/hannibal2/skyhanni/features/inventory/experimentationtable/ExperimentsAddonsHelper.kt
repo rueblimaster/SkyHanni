@@ -13,7 +13,6 @@ import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ColorUtils.addAlpha
 import at.hannibal2.skyhanni.utils.InventoryUtils
-import at.hannibal2.skyhanni.utils.ItemUtils.addEnchantGlint
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.NumberUtil.formatIntOrNull
 import at.hannibal2.skyhanni.utils.RegexUtils.matchGroup
@@ -24,13 +23,13 @@ import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderable
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
+import at.hannibal2.skyhanni.utils.compat.EnchantmentsCompat
 import at.hannibal2.skyhanni.utils.compat.getIdentifierString
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.container.VerticalContainerRenderable.Companion.vertical
 import at.hannibal2.skyhanni.utils.renderables.primitives.emptyText
 import com.google.gson.JsonPrimitive
-import net.minecraft.world.item.ItemStack
+import net.minecraft.item.ItemStack
 
 @SkyHanniModule
 object ExperimentsAddonsHelper {
@@ -108,7 +107,7 @@ object ExperimentsAddonsHelper {
         chronHasBeenEmpty = false
     }
 
-    private fun ItemStack.getLorenzColorOrNull(): LorenzColor? = when (hoverName.string.removeColor()) {
+    private fun ItemStack.getLorenzColorOrNull(): LorenzColor? = when (displayName.removeColor()) {
         "Green" -> LorenzColor.DARK_GREEN
         "Lime" -> LorenzColor.GREEN
         "Pink" -> LorenzColor.LIGHT_PURPLE
@@ -116,7 +115,7 @@ object ExperimentsAddonsHelper {
         "Orange" -> LorenzColor.GOLD
         "Purple" -> LorenzColor.DARK_PURPLE
         else -> try {
-            LorenzColor.valueOf(hoverName.formattedTextCompatLeadingWhiteLessResets().removeColor().uppercase())
+            LorenzColor.valueOf(displayName.removeColor().uppercase())
         } catch (exception: IllegalArgumentException) {
             null
         }
@@ -134,10 +133,10 @@ object ExperimentsAddonsHelper {
     }
 
     private fun tryHighlightUltrasequencer() = InventoryUtils.getItemsInOpenChest().filter {
-        it.item.hoverName.formattedTextCompatLeadingWhiteLessResets().trim().isNotEmpty() && it.index in hypixelUltrasequencerData &&
-            hypixelUltrasequencerData.indexOf(it.index) > (userUltrasequencerProgress.size - 1)
+        it.stack.displayName.trim().isNotEmpty() && it.slotNumber in hypixelUltrasequencerData &&
+            hypixelUltrasequencerData.indexOf(it.slotNumber) > (userUltrasequencerProgress.size - 1)
     }.sortedBy {
-        hypixelUltrasequencerData.indexOf(it.index)
+        hypixelUltrasequencerData.indexOf(it.slotNumber)
     }.forEachIndexed { slotIndex, slot ->
         if (slotIndex == 1) config.nextColor
         val slotColor = if (slotIndex == 0) {
@@ -154,7 +153,7 @@ object ExperimentsAddonsHelper {
         val nextNextColor = hypixelChronomatronData.getOrNull(userChronomatronProgress.size + 1)
 
         InventoryUtils.getItemsInOpenChest().forEach { slot ->
-            val color = slot.item.getLorenzColorOrNull() ?: return@forEach
+            val color = slot.stack.getLorenzColorOrNull() ?: return@forEach
             if (color !in listOf(nextColor, nextNextColor)) return@forEach
             val slotColor = if (color == nextColor) config.nextColor else config.secondColor
             slot.highlight(slotColor)
@@ -188,7 +187,7 @@ object ExperimentsAddonsHelper {
     private fun GuiContainerEvent.SlotClickEvent.handleUltrasequencerClick() {
         if (!ExperimentationTableApi.inUltrasequencer || slot == null) return
         if (userUltrasequencerProgress.size == hypixelUltrasequencerData.size) return
-        val clickedSlot = slot.index.takeIf {
+        val clickedSlot = slot.slotNumber.takeIf {
             val expectedSlot = hypixelUltrasequencerData[userUltrasequencerProgress.size]
             it == expectedSlot
         } ?: run {
@@ -214,7 +213,7 @@ object ExperimentsAddonsHelper {
         val nextClickColor = hypixelChronomatronData.getOrNull(userChronomatronProgress.size) ?: return
         originalItem.getLorenzColorOrNull()?.takeIf { it == nextClickColor } ?: return
         val newItem = originalItem.copy()
-        newItem.addEnchantGlint()
+        newItem.addEnchantment(EnchantmentsCompat.PROTECTION.enchantment, 1)
         replace(newItem)
     }
 
@@ -247,7 +246,7 @@ object ExperimentsAddonsHelper {
     }
 
     private fun InventoryUpdatedEvent.readPhaseOrNull(): HelperPhase? {
-        val phaseItemName = inventoryItems[PHASE_STATUS_SLOT]?.hoverName?.formattedTextCompatLeadingWhiteLessResets() ?: return null
+        val phaseItemName = inventoryItems[PHASE_STATUS_SLOT]?.displayName ?: return null
         return when {
             replicatePhaseItemPattern.matches(phaseItemName) -> HelperPhase.REPLICATE
             readPhaseItemPattern.matches(phaseItemName) -> HelperPhase.READ
@@ -256,7 +255,7 @@ object ExperimentsAddonsHelper {
     }
 
     private fun InventoryUpdatedEvent.readChronomatronRoundOrNull(): Int? {
-        val roundItemName = inventoryItems[ROUND_STATUS_SLOT]?.hoverName?.formattedTextCompatLeadingWhiteLessResets() ?: return null
+        val roundItemName = inventoryItems[ROUND_STATUS_SLOT]?.displayName ?: return null
         return roundItemPattern.matchGroup(roundItemName, "round")?.formatIntOrNull()
     }
 
@@ -305,9 +304,9 @@ object ExperimentsAddonsHelper {
 
     private fun InventoryUpdatedEvent.readUltrasequencer() {
         val orderedUltrasequencerSlots = inventoryItems.filter {
-            it.value.hoverName.formattedTextCompatLeadingWhiteLessResets().trim().isNotEmpty()
+            it.value.displayName.trim().isNotEmpty()
         }.mapNotNull { (slot, stack) ->
-            val sequenceNumber = stack.hoverName.string.removeColor().toIntOrNull() ?: return@mapNotNull null
+            val sequenceNumber = stack.displayName.removeColor().toIntOrNull() ?: return@mapNotNull null
             currentUltraSequencerRound = maxOf(currentUltraSequencerRound, sequenceNumber)
             if (sequenceNumber !in ultrasequencerDyeMap) ultrasequencerDyeMap[sequenceNumber] = stack
             UltraSequencerSlot(

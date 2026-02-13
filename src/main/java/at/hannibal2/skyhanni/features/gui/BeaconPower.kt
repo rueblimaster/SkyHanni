@@ -8,23 +8,15 @@ import at.hannibal2.skyhanni.events.InventoryUpdatedEvent
 import at.hannibal2.skyhanni.events.ProfileJoinEvent
 import at.hannibal2.skyhanni.events.SecondPassedEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import at.hannibal2.skyhanni.utils.ItemUtils.getLoreComponent
-import at.hannibal2.skyhanni.utils.RegexUtils.matchGroup
+import at.hannibal2.skyhanni.utils.ItemUtils.getLore
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
-import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderable
+import at.hannibal2.skyhanni.utils.RenderUtils.renderString
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.TimeUtils
 import at.hannibal2.skyhanni.utils.TimeUtils.format
-import at.hannibal2.skyhanni.utils.compat.append
-import at.hannibal2.skyhanni.utils.compat.componentBuilder
-import at.hannibal2.skyhanni.utils.compat.withColor
-import at.hannibal2.skyhanni.utils.renderables.Renderable
-import at.hannibal2.skyhanni.utils.renderables.primitives.text
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.ChatFormatting
-import net.minecraft.network.chat.Component
 
 @SkyHanniModule
 object BeaconPower {
@@ -32,27 +24,24 @@ object BeaconPower {
     private val storage get() = ProfileStorageData.profileSpecific?.beaconPower
     private val config get() = SkyHanniMod.feature.gui
 
-    private val group = RepoPattern.group("gui.beaconpower-no-color")
+    private val group = RepoPattern.group("gui.beaconpower")
 
+    // TODO add regex tests
     private val deactivatedPattern by group.pattern(
         "deactivated",
-        "Beacon Deactivated - No Power Remaining",
+        "§7Beacon Deactivated §8- §cNo Power Remaining",
     )
-
-    /**
-     * REGEX-TEST: Power Remaining: 0d 5h 53m 12s
-     */
     private val timeRemainingPattern by group.pattern(
         "time",
-        "Power Remaining: (?<time>.+)",
+        "§7Power Remaining: §e(?<time>.+)",
     )
-
-    /**
-     * REGEX-TEST: Current Stat: +5✯ Magic Find
-     */
     private val boostedStatPattern by group.pattern(
         "stat",
-        "Current Stat: (?<stat>.+)",
+        "§7Current Stat: (?<stat>.+)",
+    )
+    private val noBoostedStatPattern by group.pattern(
+        "nostat",
+        "TODO",
     )
 
     private var expiryTime: SimpleTimeMark
@@ -61,13 +50,13 @@ object BeaconPower {
             storage?.beaconPowerExpiryTime = value
         }
 
-    private var stat: Component?
+    private var stat: String?
         get() = storage?.boostedStat
         set(value) {
             storage?.boostedStat = value
         }
 
-    private var display: Component = Component.empty()
+    private var display = ""
 
     private const val BEACON_POWER_SLOT = 22
     private const val STATS_SLOT = 23
@@ -78,7 +67,7 @@ object BeaconPower {
         val items = event.inventoryItems
 
         items[BEACON_POWER_SLOT]?.let { item ->
-            item.getLoreComponent().forEach {
+            item.getLore().forEach {
                 if (deactivatedPattern.matches(it)) {
                     expiryTime = SimpleTimeMark.farPast()
                     return@let
@@ -91,11 +80,15 @@ object BeaconPower {
             }
         }
 
-        items[STATS_SLOT]?.let stats@{ item ->
-            item.getLoreComponent().forEach {
-                boostedStatPattern.matchGroup(it, "stat")?.let { statComponent ->
-                    stat = statComponent
-                    return@stats
+        items[STATS_SLOT]?.let { item ->
+            item.getLore().forEach {
+                if (noBoostedStatPattern.matches(it)) {
+                    stat = null
+                    return@let
+                }
+                boostedStatPattern.matchMatcher(it) {
+                    stat = group("stat")
+                    return@let
                 }
             }
         }
@@ -104,7 +97,7 @@ object BeaconPower {
     @HandleEvent
     fun onRenderOverlay(event: GuiRenderEvent.GuiOverlayRenderEvent) {
         if (!isEnabled()) return
-        config.beaconPowerPosition.renderRenderable(Renderable.text(display), posLabel = "Beacon Power")
+        config.beaconPowerPosition.renderString(display, posLabel = "Beacon Power")
     }
 
     @HandleEvent
@@ -113,26 +106,19 @@ object BeaconPower {
         display = drawDisplay()
     }
 
-    private fun drawDisplay(): Component = componentBuilder {
+    private fun drawDisplay(): String = buildString {
         append("§eBeacon: ")
         if (expiryTime.isInPast()) {
             append("§cNot active")
         } else {
             append("§b${expiryTime.timeUntil().format(maxUnits = 2)}")
-            if (config.beaconPowerStat) {
-                append {
-                    append(" (")
-                    append(stat ?: Component.literal("§cNo stat"))
-                    append(")")
-                    withColor(ChatFormatting.GRAY)
-                }
-            }
+            if (config.beaconPowerStat) append(" §7(${stat ?: "§cNo stat"}§7)")
         }
     }
 
     @HandleEvent
     fun onProfileJoin(event: ProfileJoinEvent) {
-        display = Component.empty()
+        display = ""
     }
 
     private fun isEnabled() = SkyBlockUtils.inSkyBlock && config.beaconPower && !SkyBlockUtils.isBingoProfile

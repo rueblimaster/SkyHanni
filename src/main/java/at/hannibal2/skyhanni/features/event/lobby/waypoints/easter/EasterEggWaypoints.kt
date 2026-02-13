@@ -23,7 +23,7 @@ object EasterEggWaypoints {
     private var isEgg: Boolean = false
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!config.allWaypoints && !config.allEntranceWaypoints) return
         if (!isEgg) return
 

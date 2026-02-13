@@ -4,8 +4,6 @@ import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
-import at.hannibal2.skyhanni.config.commands.brigadier.BrigadierArguments
-import at.hannibal2.skyhanni.data.jsonobjects.repo.IslandGraphSettingsJson
 import at.hannibal2.skyhanni.data.model.Graph
 import at.hannibal2.skyhanni.data.model.GraphNode
 import at.hannibal2.skyhanni.data.repo.SkyHanniRepoManager
@@ -17,17 +15,16 @@ import at.hannibal2.skyhanni.events.entity.EntityMoveEvent
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniRenderWorldEvent
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniTickEvent
 import at.hannibal2.skyhanni.events.skyblock.ScoreboardAreaChangeEvent
-import at.hannibal2.skyhanni.features.misc.pathfind.IslandAreaBackend
-import at.hannibal2.skyhanni.features.misc.pathfind.IslandAreaFeatures
+import at.hannibal2.skyhanni.features.misc.IslandAreas
 import at.hannibal2.skyhanni.features.misc.pathfind.NavigationFeedback
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.test.command.ErrorManager
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.DelayedRun
 import at.hannibal2.skyhanni.utils.GraphUtils
-import at.hannibal2.skyhanni.utils.GraphUtils.distanceSqToPlayer
-import at.hannibal2.skyhanni.utils.GraphUtils.distanceToPlayer
-import at.hannibal2.skyhanni.utils.GraphUtils.playerPosition
+import at.hannibal2.skyhanni.utils.LocationUtils
+import at.hannibal2.skyhanni.utils.LocationUtils.distanceSqToPlayer
+import at.hannibal2.skyhanni.utils.LocationUtils.distanceToPlayer
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.LorenzVec
 import at.hannibal2.skyhanni.utils.NumberUtil.roundTo
@@ -43,15 +40,16 @@ import at.hannibal2.skyhanni.utils.compat.normalizeAsArray
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.draw3DLine
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.draw3DPathWithWaypoint
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.client.player.LocalPlayer
+import net.minecraft.client.entity.EntityPlayerSP
 import java.awt.Color
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * TODO
  * benefits of every island graphs:
  * global:
+ * 	NEU's fairy souls
+ * 	slayer area (not all there yet)
  * 	NEU's NPC's (auto acitvate when searching via neu)
  * 	races (end, park, winter, dungeon hub)
  * 	jump pads between servers
@@ -66,6 +64,7 @@ import kotlin.time.Duration.Companion.seconds
  * rift:
  * 	eyes
  * 	big quests
+ * 	montezuma souls
  * 	blood effigies
  * 	avoid area around enderman
  * spider:
@@ -75,7 +74,7 @@ import kotlin.time.Duration.Companion.seconds
  * 	commssion areas
  * 	events: raffle, goblin slayer, donpieresso
  * deep
- * 	path to the bottom (Rhys NPC) (replace in DeepCavernsGuide.kt)
+ * 	path to the bottom (Rhys NPC)
  * end
  * 	golem spawn
  * 	dragon death spot
@@ -106,13 +105,12 @@ object IslandGraphs {
 
     var currentIslandGraph: Graph? = null
         private set
-    var lastLoadedIslandType = "nothing"
+    private var lastLoadedIslandType = "nothing"
     private var lastLoadedTime = SimpleTimeMark.farPast()
 
     var disabledNodesReason: String? = null
         private set
 
-    // TODO add carnival in hub
     fun disableNodes(reason: String, center: LorenzVec, radius: Double) {
         val graph = currentIslandGraph ?: return
         disabledNodesReason = reason
@@ -127,12 +125,8 @@ object IslandGraphs {
         graph.forEach { it.enabled = true }
     }
 
+    private var pathfindClosestNode: GraphNode? = null
     var closestNode: GraphNode? = null
-        private set
-
-    private var cachedNearbyNodes = listOf<GraphNode>()
-    private var lastCacheUpdate = SimpleTimeMark.farPast()
-
 
     private var currentTarget: LorenzVec? = null
     private var currentTargetNode: GraphNode? = null
@@ -153,7 +147,6 @@ object IslandGraphs {
     private var fastestPath: Graph? = null
     private var condition: () -> Boolean = { true }
     private var inGlaciteTunnels: Boolean? = null
-    private var ignoredIslandTypes = setOf<IslandType>()
 
     private val patternGroup = RepoPattern.group("data.island.navigation")
 
@@ -167,14 +160,9 @@ object IslandGraphs {
         "Glacite Tunnels|Dwarven Base Camp|Great Glacite Lake|Fossil Research Center",
     )
 
-    @HandleEvent
+    @HandleEvent(onlyOnSkyblock = true)
     fun onRepoReload(event: RepositoryReloadEvent) {
-        val data = event.getConstant<IslandGraphSettingsJson>("misc/IslandGraphSettings")
-        ignoredIslandTypes = data.ignoredIslandTypes
-
-        if (SkyBlockUtils.inSkyBlock) {
-            loadIsland(SkyBlockUtils.currentIsland)
-        }
+        loadIsland(SkyBlockUtils.currentIsland)
     }
 
     @HandleEvent
@@ -194,8 +182,8 @@ object IslandGraphs {
 
     private fun isGlaciteTunnelsArea(area: String?): Boolean = glaciteTunnelsPattern.matches(area)
 
-    @HandleEvent(ScoreboardAreaChangeEvent::class)
-    fun onAreaChange() {
+    @HandleEvent
+    fun onAreaChange(event: ScoreboardAreaChangeEvent) {
         if (!IslandType.DWARVEN_MINES.isCurrent()) {
             inGlaciteTunnels = null
             return
@@ -225,14 +213,9 @@ object IslandGraphs {
     private fun loadIsland(newIsland: IslandType) {
         if (newIsland == IslandType.DWARVEN_MINES) {
             loadDwarvenMines()
-            return
+        } else {
+            reloadFromJson(newIsland.name)
         }
-
-        // TODO custom behaviour for mineshaft or catacombs, private island, or garden
-
-        if (newIsland in ignoredIslandTypes) return
-
-        reloadFromJson(newIsland.name)
     }
 
     @HandleEvent
@@ -272,22 +255,15 @@ object IslandGraphs {
     private fun reloadFromJson(islandName: String) {
         lastLoadedIslandType = islandName
         lastLoadedTime = SimpleTimeMark.now()
-        SkyHanniMod.launchCoroutine("load island graph data for $islandName") {
+        SkyHanniMod.launchCoroutine {
             try {
                 val graph = SkyHanniRepoManager.getRepoData<Graph>("constants/island_graphs", islandName, gson = Graph.gson)
-                IslandAreaFeatures.display = null
+                IslandAreas.display = null
                 DelayedRun.runNextTick {
                     setNewGraph(graph)
                 }
             } catch (e: Error) {
                 currentIslandGraph = null
-                if (SkyBlockUtils.debug) {
-                    ErrorManager.logErrorWithData(
-                        e,
-                        "failed to load graph data for island $islandName",
-                        "island name" to islandName,
-                    )
-                }
             }
         }
     }
@@ -308,17 +284,12 @@ object IslandGraphs {
 
     private fun reset() {
         stop()
+        pathfindClosestNode = null
         closestNode = null
-        cachedNearbyNodes = emptyList()
-        lastCacheUpdate = SimpleTimeMark.farPast()
     }
 
-    /**
-     * calling before [at.hannibal2.skyhanni.test.graph.GraphEditor], so that we always have the latest playerPosition.
-     */
-    @HandleEvent(priority = -1)
+    @HandleEvent
     fun onTick(event: SkyHanniTickEvent) {
-        GraphUtils.updatePlayerPosition()
         if (currentIslandGraph == null) return
         if (event.isMod(2)) {
 
@@ -330,16 +301,17 @@ object IslandGraphs {
 
     fun update(force: Boolean = false) {
         if (force) {
-            closestNode = null
+            pathfindClosestNode = null
         }
         handleTick()
         checkMoved()
     }
 
     private fun handleTick() {
-        GraphUtils.updatePlayerPosition()
+        val prevClosest = pathfindClosestNode
+
         currentTarget?.let {
-            if (distanceSqToPlayer(it) < 9) {
+            if (it.distanceToPlayer() < 3) {
                 NavigationFeedback.sendPathFindMessage("§e[SkyHanni] Navigation reached §r$label§e!")
                 reset()
                 onFound()
@@ -350,33 +322,25 @@ object IslandGraphs {
         }
 
         val graph = currentIslandGraph ?: return
-
-        // Update cache every second for normal movement
-        if (lastCacheUpdate.passedSince() > 1.seconds) {
-            updateClosestCache(graph)
-        }
-
-        val newClosest = cachedNearbyNodes.minByOrNull { it.distanceSqToPlayer() } ?: return
-        if (closestNode == newClosest) return
+        val newClosest = graph.minBy { it.position.distanceSqToPlayer() }
+        if (pathfindClosestNode == newClosest) return
         val newPath = !onCurrentPath()
 
         closestNode = newClosest
         onNewNode()
+        if (newClosest == prevClosest) return
         if (newPath) {
+            pathfindClosestNode = closestNode
             findNewPath()
         }
-    }
-
-    private fun updateClosestCache(graph: Graph) {
-        cachedNearbyNodes = graph.sortedBy { it.distanceSqToPlayer() }.take(20)
-        lastCacheUpdate = SimpleTimeMark.now()
     }
 
     private fun onCurrentPath(): Boolean {
         val path = fastestPath ?: return false
         if (path.isEmpty()) return false
         val closest = path.getNearestNode()
-        if (closest.distanceSqToPlayer() > 49) return false
+        val distance = closest.position.distanceToPlayer()
+        if (distance > 7) return false
 
         val index = path.indexOf(closest)
         val newNodes = path.drop(index)
@@ -387,21 +351,24 @@ object IslandGraphs {
     }
 
     private fun skipIfCloser(graph: Graph): Graph = if (graph.size > 1) {
-        val hideNearby = if (MinecraftCompat.localPlayer.onGround()) 9 else 25
-        Graph(graph.takeLastWhile { it.distanceSqToPlayer() > hideNearby })
-    } else graph
+        val hideNearby = if (MinecraftCompat.localPlayer.onGround) 3 else 5
+        Graph(graph.takeLastWhile { it.position.distanceToPlayer() > hideNearby })
+    } else {
+        graph
+    }
 
     private fun findNewPath() {
         val goal = goal ?: return
-        val closest = closestNode ?: return
+        val closest = pathfindClosestNode ?: return
 
         val (path, distance) = GraphUtils.findShortestPathAsGraphWithDistance(closest, goal)
         val first = path.firstOrNull()
         val second = path.getOrNull(1)
 
-        val nodeDistance = first?.distanceToPlayer() ?: 0.0
+        val playerPosition = LocationUtils.playerLocation()
+        val nodeDistance = first?.let { playerPosition.distance(it.position) } ?: 0.0
         if (first != null && second != null) {
-            val direct = second.distanceToPlayer()
+            val direct = playerPosition.distance(second.position)
             val firstPath = first.neighbours[second] ?: 0.0
             val around = nodeDistance + firstPath
             if (direct < around) {
@@ -430,13 +397,9 @@ object IslandGraphs {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onPlayerMove(event: EntityMoveEvent<LocalPlayer>) {
-        val graph = currentIslandGraph
-        if (graph == null || !event.isLocalPlayer) return
-        hasMoved = true
-
-        if (event.distance > 20) {
-            updateClosestCache(graph)
+    fun onPlayerMove(event: EntityMoveEvent<EntityPlayerSP>) {
+        if (currentIslandGraph != null && event.isLocalPlayer) {
+            hasMoved = true
         }
     }
 
@@ -444,8 +407,8 @@ object IslandGraphs {
         // TODO cleanup
         val (fastestPath, _) = path.takeIf { it.first.isNotEmpty() } ?: return
         val nodes = fastestPath.toMutableList()
-        if (MinecraftCompat.localPlayer.onGround()) {
-            nodes.add(0, GraphNode(0, playerPosition))
+        if (MinecraftCompat.localPlayer.onGround) {
+            nodes.add(0, GraphNode(0, LocationUtils.playerLocation()))
         }
         renderPath(setPath, nodes)
     }
@@ -462,7 +425,7 @@ object IslandGraphs {
 
     private fun onNewNode() {
         // TODO create an event
-        IslandAreaBackend.nodeMoved()
+        IslandAreas.nodeMoved()
         if (shouldAllowRerouting) {
             tryRerouting()
         }
@@ -470,7 +433,7 @@ object IslandGraphs {
 
     private fun tryRerouting() {
         val target = currentTargetNode ?: return
-        val closest = closestNode ?: return
+        val closest = pathfindClosestNode ?: return
         val map = GraphUtils.findAllShortestDistances(closest).distances.filter { it.key.sameNameAndTags(target) }
         val newTarget = map.sorted().keys.firstOrNull() ?: return
         if (newTarget != target) {
@@ -480,10 +443,7 @@ object IslandGraphs {
     }
 
     fun stop() {
-        if (currentTarget != null) {
-            NavigationFeedback.sendPathFindMessage("§e[SkyHanni] Navigation stopped!")
-            currentTarget = null
-        }
+        currentTarget = null
         goal = null
         fastestPath = null
         currentTargetNode = null
@@ -491,7 +451,6 @@ object IslandGraphs {
         totalDistance = 0.0
         lastDistance = 0.0
         NavigationFeedback.setNavInactive()
-
     }
 
     /**
@@ -569,7 +528,8 @@ object IslandGraphs {
             for ((a, b) in path.zipWithNext()) {
                 distance += a.position.distance(b.position)
             }
-            distance += path.first().distanceToPlayer()
+            val distanceToPlayer = path.first().position.distanceToPlayer()
+            distance += distanceToPlayer
             distance = distance.roundTo(1)
         }
 
@@ -588,6 +548,7 @@ object IslandGraphs {
     }
 
     fun cancelClick() {
+        NavigationFeedback.sendPathFindMessage("§e[SkyHanni] Navigation stopped!")
         stop()
         onManualCancel()
     }
@@ -601,13 +562,6 @@ object IslandGraphs {
 //         for ((a, b) in path.nodes.zipWithNext()) {
 //             val diff = a.position.distance(b.position)
 //             event.drawString(a.position, "diff: ${diff.roundTo(1)}")
-//         }
-
-        // maybe even more reuse for debuggin, or add a dev toggle for this
-//         closestNode?.let {
-//             it.position
-//             event.drawWaypointFilled(it.position, LorenzColor.WHITE.toColor())
-//             event.drawDynamicText(it.position, "closest node", 1.5)
 //         }
         event.draw3DPathWithWaypoint(
             path,
@@ -664,32 +618,18 @@ object IslandGraphs {
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerBrigadier("shreportlocation") {
+        event.register("shreportlocation") {
             description = "Allows the user to report an error with pathfinding at the current location."
             category = CommandCategory.USERS_BUG_FIX
-            argCallback("reason", BrigadierArguments.greedyString()) { reason ->
-                sendReportLocation(
-                    playerPosition,
-                    reasonForReport = reason,
-                    technicalInfo = "Manual reported graph location error via /shreportlocation",
-                    "reason provided by user" to reason,
-                )
-            }
-            simpleCallback {
-                ChatUtils.userError("Usage: /shreportlocation <reason>")
-                ChatUtils.chat(
-                    "Give a reason that explains what's wrong at this location, e.g.: " +
-                        "pathfinding goes through wall, ignores obvious shortcut, " +
-                        "missing npc/fishing hotspot/skyblock area name in /shnavigate..",
-                )
-            }
+            callback { reportCommand(it) }
         }
-        event.registerBrigadier("shstopnavigation") {
+        event.register("shstopnavigation") {
             description = "Stops the current pathfinding."
             category = CommandCategory.USERS_ACTIVE
-            simpleCallback {
+            callback {
                 if (currentTarget != null) {
                     stop()
+                    NavigationFeedback.sendPathFindMessage("§e[SkyHanni] Navigation stopped!")
                 } else {
                     ChatUtils.userError("No navigation is currently active.")
                 }
@@ -697,55 +637,81 @@ object IslandGraphs {
         }
     }
 
+    private fun reportCommand(args: Array<String>) {
+        if (args.isEmpty()) {
+            ChatUtils.userError("Usage: /shreportlocation <reason>")
+            ChatUtils.chat(
+                "Give a reason that explains what's wrong at this location, e.g.: " +
+                    "pathfinding goes through wall, ignores obvious shortcut, " +
+                    "missing npc/fishing hotspot/skyblock area name in /shnavigate..",
+            )
+            return
+        }
+
+        sendReportLocation(
+            LocationUtils.playerLocation(),
+            reasonForReport = "Manual reported graph location error",
+            userReason = args.joinToString(" "),
+            ignoreCache = true,
+            betaOnly = false,
+        )
+    }
+
     fun reportLocation(
         location: LorenzVec,
         userFacingReason: String,
-        technicalInfo: String? = null,
-        vararg extraData: Pair<String, Any?>,
+        additionalInternalInfo: String? = null,
+        ignoreCache: Boolean = false,
+        betaOnly: Boolean = false,
     ) {
         sendReportLocation(
             location,
-            reasonForReport = userFacingReason,
-            technicalInfo = "Automatic graph location error: $technicalInfo",
-            extraData = extraData,
+            reasonForReport = "Automatic graph location error: $userFacingReason",
+            additionalInternalInfo = additionalInternalInfo,
+            ignoreCache = ignoreCache,
+            betaOnly = betaOnly,
         )
     }
 
     private fun sendReportLocation(
         location: LorenzVec,
         reasonForReport: String,
-        technicalInfo: String? = null,
-        vararg extraData: Pair<String, Any?>,
+        userReason: String? = null,
+        additionalInternalInfo: String? = null,
+        ignoreCache: Boolean,
+        betaOnly: Boolean,
     ) {
         val graphArea = SkyBlockUtils.graphArea
         val scoreboardArea = SkyBlockUtils.scoreboardArea ?: "unknown"
 
-        val data = mutableMapOf<String, Any?>()
-        technicalInfo?.let {
-            data["technical info"] = it
+        val extraData = mutableMapOf<String, Any>()
+        userReason?.let {
+            extraData["reason provided by user"] = it
         }
-        data.putAll(extraData.toMap())
+        additionalInternalInfo?.let {
+            extraData["internal info"] = it
+        }
         val island = SkyBlockUtils.currentIsland.name
-
-        data["generic data"] = "below"
-        data["island"] = island
-        data["reported location"] = with(location.roundTo(1)) { "/shtestwaypoint $x $y $z pathfind" }
+        extraData["island"] = island
+        extraData["location"] = with(location.roundTo(1)) { "/shtestwaypoint $x $y $z pathfind" }
         if (graphArea != scoreboardArea) {
-            data["area graph"] = graphArea.orEmpty()
-            data["area scoreboard"] = scoreboardArea
+            extraData["area graph"] = graphArea.orEmpty()
+            extraData["area scoreboard"] = scoreboardArea
         }
 
         SkyHanniRepoManager.localRepoCommit.let { (hash, time) ->
-            data["repo update time"] = time?.toString() ?: "none"
-            data["repo update age"] = time?.passedSince() ?: "unknown"
-            data["repo update hash"] = hash ?: "none"
+            extraData["repo update time"] = time?.toString() ?: "none"
+            extraData["repo update age"] = time?.passedSince() ?: "unknown"
+            extraData["repo update hash"] = hash ?: "none"
         }
 
         ErrorManager.logErrorStateWithData(
             reasonForReport,
             "",
             noStackTrace = true,
-            extraData = data.map { it.key to it.value }.normalizeAsArray(),
+            extraData = extraData.map { it.key to it.value }.normalizeAsArray(),
+            ignoreErrorCache = ignoreCache,
+            betaOnly = betaOnly,
         )
     }
 

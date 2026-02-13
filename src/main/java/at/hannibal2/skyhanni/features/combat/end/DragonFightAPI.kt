@@ -50,7 +50,7 @@ object DragonFightAPI {
      */
     private val scoreboardYourDamagePattern by group.pattern(
         "scoreboard.your-damage",
-        "Your Damage: (?<damage>[\\d.,]+)",
+        "Your Damage: (?<damage>.*)",
     )
 
     private val nestAreaPattern by group.pattern("area.nest", "Dragon's Nest")
@@ -58,11 +58,11 @@ object DragonFightAPI {
     fun inNestArea() = IslandType.THE_END.isCurrent() && nestAreaPattern.matches(SkyBlockUtils.graphArea)
 
     @HandleEvent
-    fun onChat(event: SystemMessageEvent.Allow) {
-        chatSpawnPattern.matchMatcher(event.cleanMessage) {
+    fun onChat(event: SystemMessageEvent) {
+        chatSpawnPattern.matchMatcher(event.message.removeColor()) {
             currentType = group("type")
         }
-        chatDeath.matchMatcher(event.cleanMessage) {
+        chatDeath.matchMatcher(event.message.removeColor()) {
             reset()
         }
     }

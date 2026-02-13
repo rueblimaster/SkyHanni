@@ -15,23 +15,20 @@ import at.hannibal2.skyhanni.utils.EntityUtils.canBeSeen
 import at.hannibal2.skyhanni.utils.EntityUtils.getBlockInHand
 import at.hannibal2.skyhanni.utils.EntityUtils.hasNameTagWith
 import at.hannibal2.skyhanni.utils.LorenzColor
-import at.hannibal2.skyhanni.utils.compat.deceased
-import at.hannibal2.skyhanni.utils.compat.findHealthReal
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLessResets
 import at.hannibal2.skyhanni.utils.getLorenzVec
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawLineToEye
-import net.minecraft.client.player.RemotePlayer
-import net.minecraft.world.entity.LivingEntity
-import net.minecraft.world.entity.monster.spider.CaveSpider
-import net.minecraft.world.entity.monster.EnderMan
-import net.minecraft.world.entity.monster.spider.Spider
-import net.minecraft.world.level.block.Blocks
+import net.minecraft.client.entity.EntityOtherPlayerMP
+import net.minecraft.entity.EntityLivingBase
+import net.minecraft.entity.monster.EntityCaveSpider
+import net.minecraft.entity.monster.EntityEnderman
+import net.minecraft.entity.monster.EntitySpider
+import net.minecraft.init.Blocks
 
 @SkyHanniModule
 object MobHighlight {
 
     private val config get() = SkyHanniMod.feature.combat.mobs
-    private var arachne: LivingEntity? = null
+    private var arachne: EntityLivingBase? = null
     private val toHighlightRunicMobs: HashSet<Mob> = hashSetOf()
 
     @HandleEvent
@@ -74,21 +71,21 @@ object MobHighlight {
 
         val entity = event.entity
         val maxHealth = event.maxHealth
-        if (config.arachneKeeperHighlight && (maxHealth == 3_000 || maxHealth == 12_000) && entity is CaveSpider) {
+        if (config.arachneKeeperHighlight && (maxHealth == 3_000 || maxHealth == 12_000) && entity is EntityCaveSpider) {
             RenderLivingEntityHelper.setEntityColorWithNoHurtTime(
                 entity,
                 LorenzColor.DARK_BLUE.toColor().addAlpha(127),
             ) { config.arachneKeeperHighlight }
         }
 
-        if (config.corleoneHighlighter && maxHealth == 1_000_000 && entity is RemotePlayer && entity.name.string == "Team Treasurite") {
+        if (config.corleoneHighlighter && maxHealth == 1_000_000 && entity is EntityOtherPlayerMP && entity.name == "Team Treasurite") {
             RenderLivingEntityHelper.setEntityColorWithNoHurtTime(
                 entity,
                 LorenzColor.DARK_PURPLE.toColor().addAlpha(127),
             ) { config.corleoneHighlighter }
         }
 
-        if (entity is EnderMan) {
+        if (entity is EntityEnderman) {
             val isZealot = maxHealth == 13_000 || maxHealth == 13_000 * 4 // runic
             val isBruiser = maxHealth == 65_000 || maxHealth == 65_000 * 4 // runic
 
@@ -102,14 +99,14 @@ object MobHighlight {
             }
 
             val heldItem = entity.getBlockInHand()?.block
-            if (config.chestZealotHighlighter && heldItem == Blocks.ENDER_CHEST) {
+            if (config.chestZealotHighlighter && heldItem == Blocks.ender_chest) {
                 RenderLivingEntityHelper.setEntityColorWithNoHurtTime(
                     entity,
                     LorenzColor.GREEN.toColor().addAlpha(127),
                 ) { config.chestZealotHighlighter }
             }
 
-            if (config.specialZealotHighlighter && heldItem == Blocks.END_PORTAL_FRAME) {
+            if (config.specialZealotHighlighter && heldItem == Blocks.end_portal_frame) {
                 RenderLivingEntityHelper.setEntityColorWithNoHurtTime(
                     entity,
                     LorenzColor.DARK_RED.toColor().addAlpha(50),
@@ -117,7 +114,7 @@ object MobHighlight {
             }
         }
 
-        if (entity is Spider) {
+        if (entity is EntitySpider) {
             checkArachne(entity)
         }
     }
@@ -127,7 +124,7 @@ object MobHighlight {
         if (!config.lineToArachne) return
 
         val arachne = arachne ?: return
-        if (arachne.deceased || arachne.findHealthReal() <= 0) {
+        if (arachne.isDead || arachne.health <= 0) {
             this.arachne = null
             return
         }
@@ -148,7 +145,7 @@ object MobHighlight {
         toHighlightRunicMobs.clear()
     }
 
-    private fun checkArachne(entity: Spider) {
+    private fun checkArachne(entity: EntitySpider) {
         if (!config.arachneBossHighlighter && !config.lineToArachne) return
 
         if (!entity.hasNameTagWith(1, "[§7Lv300§8] §cArachne") &&
@@ -157,7 +154,7 @@ object MobHighlight {
             !entity.hasNameTagWith(1, "[§7Lv500§8] §lArachne")
         ) return
 
-        if (entity is CaveSpider) {
+        if (entity is EntityCaveSpider) {
             markArachneMinis(entity)
         } else if (entity.baseMaxHealth == 20_000 || entity.baseMaxHealth == 100_000) {
             this.arachne = entity
@@ -165,14 +162,14 @@ object MobHighlight {
         }
     }
 
-    private fun markArachneMinis(entity: LivingEntity) {
+    private fun markArachneMinis(entity: EntityLivingBase) {
         RenderLivingEntityHelper.setEntityColorWithNoHurtTime(
             entity,
             LorenzColor.GOLD.toColor().addAlpha(50),
         ) { config.arachneBossHighlighter }
     }
 
-    private fun markArachne(entity: LivingEntity) {
+    private fun markArachne(entity: EntityLivingBase) {
         RenderLivingEntityHelper.setEntityColorWithNoHurtTime(
             entity,
             LorenzColor.RED.toColor().addAlpha(50),

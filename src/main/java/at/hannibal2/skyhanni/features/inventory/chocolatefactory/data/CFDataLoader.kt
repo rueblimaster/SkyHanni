@@ -29,8 +29,7 @@ import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.SoundUtils
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.TimeUtils
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
-import net.minecraft.world.item.ItemStack
+import net.minecraft.item.ItemStack
 
 @SkyHanniModule
 object CFDataLoader {
@@ -177,9 +176,9 @@ object CFDataLoader {
     /**
      * REGEX-TEST: Time Tower I
      */
-    val upgradeTierPattern by CFApi.patternGroup.pattern(
+    private val upgradeTierPattern by CFApi.patternGroup.pattern(
         "upgradetier",
-        "(?<upgrade>.*)\\s(?<tier>[IVXLC]+)",
+        ".*\\s(?<tier>[IVXLC]+)",
     )
 
     /**
@@ -323,7 +322,7 @@ object CFDataLoader {
     private fun processChocolateItem(item: ItemStack) {
         val profileStorage = profileStorage ?: return
 
-        CFApi.chocolateAmountPattern.matchMatcher(item.hoverName.string.removeColor()) {
+        CFApi.chocolateAmountPattern.matchMatcher(item.displayName.removeColor()) {
             profileStorage.currentChocolate = group("amount").formatLong()
         }
         for (line in item.getLore()) {
@@ -339,7 +338,7 @@ object CFDataLoader {
     private fun processPrestigeItem(list: MutableList<CFUpgrade>, item: ItemStack) {
         val profileStorage = profileStorage ?: return
 
-        prestigeLevelPattern.matchMatcher(item.hoverName.formattedTextCompatLeadingWhiteLessResets()) {
+        prestigeLevelPattern.matchMatcher(item.displayName) {
             CFApi.currentPrestige = group("prestige").romanToDecimal()
         }
         var prestigeCost: Long? = null
@@ -470,7 +469,7 @@ object CFDataLoader {
 
         if (slotIndex !in CFApi.otherUpgradeSlots && slotIndex !in CFApi.rabbitSlots) return
 
-        val itemName = item.hoverName.string.removeColor()
+        val itemName = item.displayName.removeColor()
         val lore = item.getLore()
         val upgradeCost = CFApi.getChocolateBuyCost(lore)
         val averageChocolate = ChocolateAmount.averageChocPerSecond().roundTo(2)

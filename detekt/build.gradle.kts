@@ -1,5 +1,4 @@
 import io.gitlab.arturbosch.detekt.Detekt
-import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 
 plugins {
     kotlin("jvm")
@@ -18,9 +17,5 @@ dependencies {
 }
 
 tasks.withType<Detekt>().configureEach {
-    onlyIf { false }
-}
-
-tasks.withType<DetektCreateBaselineTask>().configureEach {
     onlyIf { false }
 }

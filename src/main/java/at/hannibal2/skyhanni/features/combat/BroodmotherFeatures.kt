@@ -16,11 +16,7 @@ import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.SoundUtils
 import at.hannibal2.skyhanni.utils.SoundUtils.playSound
 import at.hannibal2.skyhanni.utils.StringUtils
-import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.TimeUtils.format
-import at.hannibal2.skyhanni.utils.compat.appendWithColor
-import at.hannibal2.skyhanni.utils.compat.componentBuilder
-import net.minecraft.ChatFormatting
 import kotlin.reflect.KProperty0
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -52,11 +48,10 @@ object BroodmotherFeatures {
     fun onWidgetUpdate(event: WidgetUpdateEvent) {
         if (!event.isWidget(TabWidget.BROODMOTHER)) return
         val newStage = event.widget.matchMatcherFirstLine { group("stage") }.orEmpty()
-        if (newStage.isNotEmpty() && newStage != lastStage.toString().removeColor()) {
+        if (newStage.isNotEmpty() && newStage != lastStage.toString()) {
             lastStage = currentStage
             currentStage = StageEntry.valueOf(newStage.replace("!", "").uppercase())
             onStageUpdate()
-            if (lastStage == null) lastStage = currentStage
         }
     }
 
@@ -101,9 +96,7 @@ object BroodmotherFeatures {
             val duration = currentStage?.duration
             var message = "The Broodmother's current stage in this server is ${currentStage.toString().replace("!", "")}§e."
             if (duration != 0.minutes) {
-                val minutes = duration?.inWholeMinutes?.toInt() ?: 0
-                val pluralize = StringUtils.pluralize(minutes, "minute")
-                message += " It will spawn §bwithin ${duration?.inWholeMinutes} $pluralize§e."
+                message += " It will spawn §bwithin $duration§e."
             }
             ChatUtils.chat(message)
             return true
@@ -133,15 +126,7 @@ object BroodmotherFeatures {
 
     private fun playImminentWarning() {
         SoundUtils.repeatSound(100, 2, SoundUtils.createSound("note.pling", 0.5f))
-        ChatUtils.chat(
-            componentBuilder {
-                append("The Broodmother is ")
-                appendWithColor("Imminent", ChatFormatting.DARK_RED)
-                append("! It will spawn in ")
-                appendWithColor("60 seconds", ChatFormatting.AQUA)
-                append("!")
-            }
-        )
+        ChatUtils.chat("The Broodmother is §4Imminent§e! It will spawn in §b60 seconds§e!")
     }
 
     private fun onBroodmotherSlain() {

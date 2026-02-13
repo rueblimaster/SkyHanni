@@ -11,7 +11,7 @@ import at.hannibal2.skyhanni.features.rift.RiftApi
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ConditionalUtils
 import at.hannibal2.skyhanni.utils.ParkourHelper
-import net.minecraft.world.entity.Entity
+import net.minecraft.entity.Entity
 
 @SkyHanniModule
 object RiftUpsideDownParkour {
@@ -44,7 +44,7 @@ object RiftUpsideDownParkour {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
 
         if (event.message == "§c§lOH NO! THE LAVA OOFED YOU BACK TO THE START!") {

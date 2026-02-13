@@ -44,8 +44,8 @@ object ChatClickActionManager {
         event.registerBrigadier("shaction") {
             description = "Internal command for chat click actions"
             category = CommandCategory.INTERNAL
-            argCallback("id", BrigadierArguments.string()) {
-                onCommand(it)
+            arg("id", BrigadierArguments.string()) {
+                callback { onCommand(getArg(it)) }
             }
             simpleCallback {
                 ChatUtils.userError("This command is an internal command. There is no need to manually run this command")

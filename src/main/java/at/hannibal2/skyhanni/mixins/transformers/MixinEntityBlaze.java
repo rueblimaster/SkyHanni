@@ -1,19 +1,21 @@
 package at.hannibal2.skyhanni.mixins.transformers;
 
+import at.hannibal2.skyhanni.SkyHanniMod;
 import at.hannibal2.skyhanni.features.misc.ParticleHider;
-import net.minecraft.world.entity.monster.Blaze;
+import net.minecraft.entity.monster.EntityBlaze;
+import net.minecraft.util.EnumParticleTypes;
+import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin(Blaze.class)
+@Mixin(EntityBlaze.class)
 public class MixinEntityBlaze {
 
-    @Redirect(method = "aiStep", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;addParticle(Lnet/minecraft/core/particles/ParticleOptions;DDDDDD)V"))
-    private void onLivingUpdate(net.minecraft.world.level.Level world, net.minecraft.core.particles.ParticleOptions particleType, double x, double y, double z, double xOffset, double yOffset, double zOffset) {
+    @Redirect(method = "onLivingUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;spawnParticle(Lnet/minecraft/util/EnumParticleTypes;DDDDDD[I)V"))
+    private void onLivingUpdate(World world, EnumParticleTypes particleType, double x, double y, double z, double xOffset, double yOffset, double zOffset, int[] parameters) {
         if (!ParticleHider.shouldHideBlazeParticles()) {
-            world.addParticle(particleType, x, y, z, xOffset, yOffset, zOffset);
+            world.spawnParticle(particleType, x, y, z, xOffset, yOffset, zOffset, parameters);
         }
     }
-
 }

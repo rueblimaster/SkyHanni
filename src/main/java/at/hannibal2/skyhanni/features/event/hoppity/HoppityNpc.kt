@@ -104,7 +104,7 @@ object HoppityNpc {
         if (!isHighlightEnabled()) return
         if (!inShop) return
         for (slot in InventoryUtils.getItemsInOpenChest()) {
-            if (slot.containerSlot in slotsToHighlight) {
+            if (slot.slotIndex in slotsToHighlight) {
                 slot.highlight(LorenzColor.GREEN.addOpacity(200))
             }
         }

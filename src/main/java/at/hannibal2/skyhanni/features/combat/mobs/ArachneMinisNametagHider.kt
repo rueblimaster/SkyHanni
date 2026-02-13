@@ -5,8 +5,7 @@ import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.events.SkyHanniRenderEntityEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLessResets
-import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.entity.item.EntityArmorStand
 
 @SkyHanniModule
 object ArachneMinisNametagHider {
@@ -14,13 +13,13 @@ object ArachneMinisNametagHider {
     private val config get() = SkyHanniMod.feature.combat.mobs
 
     @HandleEvent(priority = HandleEvent.HIGH, onlyOnIsland = IslandType.SPIDER_DEN)
-    fun onRenderLiving(event: SkyHanniRenderEntityEvent.Specials.Pre<ArmorStand>) {
+    fun onRenderLiving(event: SkyHanniRenderEntityEvent.Specials.Pre<EntityArmorStand>) {
         if (!config.hideNameTagArachneMinis) return
 
         val entity = event.entity
         if (!entity.hasCustomName()) return
 
-        val name = entity.name.formattedTextCompatLessResets()
+        val name = entity.name
         if (name.contains("§cArachne's Brood§r")) {
             event.cancel()
         }

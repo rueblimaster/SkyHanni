@@ -10,7 +10,7 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorKeybind
 import io.github.notenoughupdates.moulconfig.annotations.ConfigLink
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 import io.github.notenoughupdates.moulconfig.observer.Property
-import org.lwjgl.glfw.GLFW
+import org.lwjgl.input.Keyboard
 
 class ReputationHelperConfig {
     @Expose
@@ -31,8 +31,8 @@ class ReputationHelperConfig {
 
     @Expose
     @ConfigOption(name = "Hotkey", desc = "Press this hotkey to show the Reputation Helper.")
-    @ConfigEditorKeybind(defaultKey = GLFW.GLFW_KEY_UNKNOWN)
-    var hotkey: Int = GLFW.GLFW_KEY_UNKNOWN
+    @ConfigEditorKeybind(defaultKey = Keyboard.KEY_NONE)
+    var hotkey: Int = Keyboard.KEY_NONE
 
     @Expose
     @ConfigLink(owner = ReputationHelperConfig::class, field = "enabled")

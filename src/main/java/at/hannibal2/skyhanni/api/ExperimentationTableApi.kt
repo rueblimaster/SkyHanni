@@ -47,7 +47,7 @@ import at.hannibal2.skyhanni.utils.collection.CollectionUtils.subtract
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.takeIfNotEmpty
 import at.hannibal2.skyhanni.utils.getLorenzVec
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.entity.item.EntityArmorStand
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -299,7 +299,7 @@ object ExperimentationTableApi {
         var tier: ExperimentationTier? = null,
         var enchantingXpGained: Long = 0L,
         var rareFoundFired: Boolean = false,
-    ) : Resettable {
+    ) : Resettable() {
         private val otherRewards: MutableMap<NeuInternalName, Int> = mutableMapOf()
 
         fun addReward(internalName: NeuInternalName, amount: Int = 1) {
@@ -361,7 +361,7 @@ object ExperimentationTableApi {
     }
 
     @HandleEvent(onlyOnIsland = IslandType.PRIVATE_ISLAND)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (claimMessagePattern.matches(event.message) && ExperimentationMessages.DONE.isSelected()) {
             event.blockedReason = "CLAIM_MESSAGE"
             return
@@ -372,7 +372,7 @@ object ExperimentationTableApi {
         }
     }
 
-    private fun SkyHanniChatEvent.Allow.tryBlockChat(reward: String) {
+    private fun SkyHanniChatEvent.tryBlockChat(reward: String) {
         val rewardInternalName = NeuInternalName.fromItemNameOrNull(reward)
         blockedReason = when {
             enchantingExpPattern.matches(reward) && ExperimentationMessages.EXPERIENCE.isSelected() -> "EXPERIENCE_DROP"
@@ -388,7 +388,7 @@ object ExperimentationTableApi {
             val internalName = itemStack.getInternalNameOrNull()?.takeIf { internalName ->
                 experienceBottlePattern.matches(internalName.asString())
             } ?: return@forEach
-            addOrPut(internalName, itemStack.count)
+            addOrPut(internalName, itemStack.stackSize)
         }
     }
 
@@ -445,7 +445,7 @@ object ExperimentationTableApi {
     }
 
     private fun GuiContainerEvent.SlotClickEvent.tryResetQueuedEvent() {
-        if (item?.hoverName?.string != "Decline") return
+        if (item?.displayName != "§cDecline") return
         queuedCompleteEvent = null
     }
 
@@ -458,9 +458,9 @@ object ExperimentationTableApi {
 
     private fun updateTablePosition() {
         val storage = storage ?: return
-        val tableEntity = EntityUtils.getEntitiesNextToPlayer<ArmorStand>(20.0) {
+        val tableEntity = EntityUtils.getEntities<EntityArmorStand>().find {
             it.wearingSkullTexture(EXPERIMENTATION_TABLE_SKULL)
-        }.firstOrNull() ?: return
+        } ?: return
         storage.tablePos = tableEntity.getLorenzVec()
     }
 
@@ -486,7 +486,7 @@ object ExperimentationTableApi {
             it != lastExpOverHash && it != currentExpOverHash && it != 0
         } ?: return
 
-        currentExperimentData.type = ExperimentationTaskType.fromStringOrNull(item.hoverName.string.removeColor()) ?: return
+        currentExperimentData.type = ExperimentationTaskType.fromStringOrNull(item.displayName.removeColor()) ?: return
         currentExperimentData.tier = expOverStakesLorePattern.firstMatcher(lore) {
             ExperimentationTier.byNameOrNull(group("stakes"))
         } ?: return

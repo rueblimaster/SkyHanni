@@ -19,5 +19,4 @@ data class NeuAttributeShardData(
     @Expose val abilityName: String = "",
     @Expose val family: List<String>,
     @Expose val alignment: String,
-    @Expose val shardId: String,
 )

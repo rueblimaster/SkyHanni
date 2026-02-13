@@ -2,9 +2,7 @@ package at.hannibal2.skyhanni.config.features.mining.nucleus
 
 import at.hannibal2.skyhanni.config.FeatureToggle
 import at.hannibal2.skyhanni.config.core.config.Position
-import at.hannibal2.skyhanni.config.features.misc.tracker.IndividualTrackerConfig
 import com.google.gson.annotations.Expose
-import io.github.notenoughupdates.moulconfig.annotations.Accordion
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDraggableList
 import io.github.notenoughupdates.moulconfig.annotations.ConfigLink
@@ -86,14 +84,6 @@ class PowderTrackerConfig {
 
         override fun toString() = displayName
     }
-
-    @Expose
-    @ConfigOption(
-        name = "Tracker Settings",
-        desc = ""
-    )
-    @Accordion
-    val perTrackerConfig: IndividualTrackerConfig = IndividualTrackerConfig()
 
     @Expose
     @ConfigLink(owner = PowderTrackerConfig::class, field = "enabled")

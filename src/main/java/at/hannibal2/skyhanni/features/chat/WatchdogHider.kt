@@ -8,21 +8,21 @@ import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ChatUtils.chatMessage
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
-import net.minecraft.network.chat.Component
+import net.minecraft.util.IChatComponent
 
 @SkyHanniModule
 object WatchdogHider {
 
     private var inWatchdog = false
     private var blockedLines = 0
-    private var startLineComponent: Component? = null
+    private var startLineComponent: IChatComponent? = null
 
     private const val START_LINE = "§f"
     private const val ANNOUNCEMENT_LINE = "§4[WATCHDOG ANNOUNCEMENT]"
     private const val END_LINE = "§c"
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!SkyBlockUtils.onHypixel || !SkyHanniMod.feature.chat.filterType.watchDog) return
 
         when (event.message) {

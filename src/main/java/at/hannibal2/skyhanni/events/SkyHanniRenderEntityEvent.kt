@@ -1,7 +1,7 @@
 package at.hannibal2.skyhanni.events
 
 import at.hannibal2.skyhanni.api.event.GenericSkyHanniEvent
-import net.minecraft.world.entity.LivingEntity
+import net.minecraft.entity.EntityLivingBase
 
 // TODO replace all "cancel only" usages of this event. the only remaining stuff should be EntityOpacityManager
 /**
@@ -10,40 +10,40 @@ import net.minecraft.world.entity.LivingEntity
  * For normal cases of "hide this entity" rather use [CheckRenderEntityEvent].
  */
 @Deprecated("use CheckRenderEntityEvent instead")
-open class SkyHanniRenderEntityEvent<T : LivingEntity>(
+open class SkyHanniRenderEntityEvent<T : EntityLivingBase>(
     val entity: T,
     val x: Double,
     val y: Double,
     val z: Double
 ) : GenericSkyHanniEvent<T>(entity.javaClass) {
-    class Pre<T : LivingEntity>(
+    class Pre<T : EntityLivingBase>(
         entity: T,
         x: Double,
         y: Double,
         z: Double
     ) : SkyHanniRenderEntityEvent<T>(entity, x, y, z)
 
-    class Post<T : LivingEntity>(
+    class Post<T : EntityLivingBase>(
         entity: T,
         x: Double,
         y: Double,
         z: Double
     ) : SkyHanniRenderEntityEvent<T>(entity, x, y, z)
 
-    open class Specials<T : LivingEntity>(
+    open class Specials<T : EntityLivingBase>(
         entity: T,
         x: Double,
         y: Double,
         z: Double
     ) : SkyHanniRenderEntityEvent<T>(entity, x, y, z) {
-        class Pre<T : LivingEntity>(
+        class Pre<T : EntityLivingBase>(
             entity: T,
             x: Double,
             y: Double,
             z: Double
         ) : Specials<T>(entity, x, y, z)
 
-        class Post<T : LivingEntity>(
+        class Post<T : EntityLivingBase>(
             entity: T,
             x: Double,
             y: Double,

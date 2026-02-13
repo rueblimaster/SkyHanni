@@ -4,8 +4,7 @@ import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.data.ProfileStorageData
 import at.hannibal2.skyhanni.events.InventoryOpenEvent
-import at.hannibal2.skyhanni.events.minecraft.ToolTipTextEvent
-import at.hannibal2.skyhanni.events.minecraft.add
+import at.hannibal2.skyhanni.events.minecraft.ToolTipEvent
 import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.InventoryUtils
@@ -17,37 +16,33 @@ import at.hannibal2.skyhanni.utils.NumberUtil.roundTo
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.network.chat.Component
-import net.minecraft.world.SimpleContainer
-import net.minecraft.world.item.ItemStack
+import net.minecraft.client.player.inventory.ContainerLocalMenu
+import net.minecraft.item.ItemStack
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
 object LimboPlaytime {
-    private lateinit var modifiedList: MutableList<Component>
+    private lateinit var modifiedList: MutableList<String>
     private var setMinutes = false
     private val patternGroup = RepoPattern.group("misc.limbo.tooltip")
 
     /**
-     * REGEX-TEST: 28 minutes
+     * REGEX-TEST: §5§o§a10,032.8 minutes
      */
     private val minutesPattern by patternGroup.pattern(
-        "minutes.new",
-        "(?<minutes>[\\d.,]+) minutes.*$",
+        "minutes",
+        "(?:§5§o)?§a(?<minutes>[\\d.,]+) minutes.*$",
     )
 
     /**
-     * REGEX-TEST: 687.7 hours
-     * REGEX-TEST: 304.7 hours
-     * REGEX-TEST: 61 hours
-     * REGEX-TEST: 21.1 hours
+     * REGEX-TEST: §5§o§b1,000.4 hours
      */
     private val hoursPattern by patternGroup.pattern(
-        "hours.new",
-        "(?<hours>[\\d.,]+) hours.*$",
+        "hours",
+        "(?:§5§o)?§b(?<hours>[\\d.,]+) hours.*$",
     )
 
-    private var tooltipPlaytime = mutableListOf<Component>()
+    var tooltipPlaytime = mutableListOf<String>()
 
     private var wholeMinutes = 0
     private var hoursString: String = ""
@@ -63,7 +58,7 @@ object LimboPlaytime {
     @HandleEvent
     fun replaceItem(event: ReplaceItemEvent) {
         if (!enabled) return
-        if (event.inventory !is SimpleContainer) return
+        if (event.inventory !is ContainerLocalMenu) return
         // TODO replace with InventoryDetector
         if (InventoryUtils.openInventoryName() != "Detailed /playtime") return
         if (event.slot != 43) return
@@ -93,11 +88,11 @@ object LimboPlaytime {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onToolTip(event: ToolTipTextEvent) {
+    fun onToolTip(event: ToolTipEvent) {
         if (!enabled) return
         // TODO replace with InventoryDetector
         if (!InventoryUtils.openInventoryName().startsWith("Detailed /playtime")) return
-        if (event.slot?.containerSlot != 4) return
+        if (event.slot.slotIndex != 4) return
         val playtime = storage?.playtime ?: 0
         if (playtime <= 120) return
 
@@ -128,13 +123,13 @@ object LimboPlaytime {
         }
     }
 
-    private fun addLimbo(hoursList: MutableList<Component>, minutesList: MutableList<Component>) {
+    private fun addLimbo(hoursList: MutableList<String>, minutesList: MutableList<String>) {
         val storedPlaytime = storage?.playtime ?: 0
         if (wholeMinutes >= 60) {
             modifiedList = hoursList
             modifiedList.add("§5§o§b$hoursString hours §7on Limbo")
             modifiedList = modifiedList.sortedByDescending {
-                val matcher = hoursPattern.matcher(it.string)
+                val matcher = hoursPattern.matcher(it)
                 if (matcher.find()) {
                     matcher.group("hours").replace(",", "").toDoubleOrNull() ?: 0.0
                 } else 0.0
@@ -145,7 +140,7 @@ object LimboPlaytime {
             modifiedList = minutesList
             modifiedList.add("§5§o§a$minutes minutes §7on Limbo")
             modifiedList = modifiedList.sortedByDescending {
-                val matcher = minutesPattern.matcher(it.string)
+                val matcher = minutesPattern.matcher(it)
                 if (matcher.find()) {
                     matcher.group("minutes").toDoubleOrNull() ?: 0.0
                 } else 0.0
@@ -155,12 +150,12 @@ object LimboPlaytime {
     }
 
     private fun remakeList(
-        toolTip: MutableList<Component>,
-        minutesList: MutableList<Component>,
-        hoursList: MutableList<Component>,
+        toolTip: MutableList<String>,
+        minutesList: MutableList<String>,
+        hoursList: MutableList<String>,
     ) {
-        val firstList = mutableListOf<Component>()
-        val lastList = mutableListOf<Component>()
+        val firstList = mutableListOf<String>()
+        val lastList = mutableListOf<String>()
         var hasPassed = false
         for (line in toolTip) {
             if (!(hoursPattern.matches(line) || minutesPattern.matches(line)) && !hasPassed) {

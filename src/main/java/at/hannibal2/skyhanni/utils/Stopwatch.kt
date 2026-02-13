@@ -9,39 +9,25 @@ class Stopwatch(
 ) {
     private var startTime = if (paused) SimpleTimeMark.farPast() else SimpleTimeMark.now()
 
-    fun start(lapIfStarted: Boolean = false) {
-        if (!paused) {
-            if (lapIfStarted) lap()
-            return
-        }
+    fun start() {
+        if (!paused) return
         paused = false
         startTime = SimpleTimeMark.now()
     }
 
-    fun pause(revertLap: Boolean = false): Duration {
-        if (paused) return 0.seconds
+    fun pause(revertLap: Boolean = false) {
+        if (paused) return
         paused = true
-        val passedSince = startTime.passedSince()
         if (startTime != SimpleTimeMark.farPast() && !revertLap) {
-            duration += passedSince
+            duration += startTime.passedSince()
         }
         startTime = SimpleTimeMark.farPast()
-        return passedSince
     }
 
     // hard set
     fun set(setDuration: Duration) {
         duration = setDuration
         if (!paused) startTime = SimpleTimeMark.now()
-    }
-
-    fun add(addedDuration: Duration) {
-        val newDuration = duration + addedDuration
-        duration = if (newDuration < 0.seconds) {
-            0.seconds
-        } else {
-            newDuration
-        }
     }
 
     // intended to be used for afk detection, call this whenever the player is detected to not be afk

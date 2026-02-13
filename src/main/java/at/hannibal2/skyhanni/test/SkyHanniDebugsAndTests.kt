@@ -9,18 +9,15 @@ import at.hannibal2.skyhanni.config.ConfigManager
 import at.hannibal2.skyhanni.config.ConfigUpdaterMigrator
 import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
-import at.hannibal2.skyhanni.config.commands.brigadier.arguments.LorenzVecArgumentType
 import at.hannibal2.skyhanni.config.core.config.Position
 import at.hannibal2.skyhanni.data.HypixelData
 import at.hannibal2.skyhanni.data.IslandGraphs
-import at.hannibal2.skyhanni.data.repo.ChatProgressUpdates
 import at.hannibal2.skyhanni.events.GuiKeyPressEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.ReceiveParticleEvent
 import at.hannibal2.skyhanni.events.chat.SkyHanniChatEvent
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniRenderWorldEvent
-import at.hannibal2.skyhanni.events.minecraft.ToolTipTextEvent
-import at.hannibal2.skyhanni.events.minecraft.add
+import at.hannibal2.skyhanni.events.minecraft.ToolTipEvent
 import at.hannibal2.skyhanni.events.mining.OreMinedEvent
 import at.hannibal2.skyhanni.features.garden.GardenNextJacobContest
 import at.hannibal2.skyhanni.features.garden.visitor.GardenVisitorColorNames
@@ -61,15 +58,19 @@ import at.hannibal2.skyhanni.utils.SoundUtils
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addItemStack
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
 import at.hannibal2.skyhanni.utils.compat.MinecraftCompat
-import at.hannibal2.skyhanni.utils.compat.getCompoundOrDefault
 import at.hannibal2.skyhanni.utils.compat.stackUnderCursor
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawDynamicText
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawWaypointFilled
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.addLine
 import at.hannibal2.skyhanni.utils.system.PlatformUtils
-import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.NBTTagCompound
+//#if FORGE
+import net.minecraftforge.common.MinecraftForge
+//#endif
 import java.io.File
+import java.time.LocalDate
+import java.time.Month
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -88,10 +89,10 @@ object SkyHanniDebugsAndTests {
 
     val debugLogger = LorenzLogger("debug/test")
 
-    private fun run(compound: CompoundTag, text: String) {
+    private fun run(compound: NBTTagCompound, text: String) {
         print("$text'$compound'")
-        for (s in compound.keySet()) {
-            val element = compound.getCompoundOrDefault(s)
+        for (s in compound.keySet) {
+            val element = compound.getCompoundTag(s)
             run(element, "$text  ")
         }
     }
@@ -99,6 +100,18 @@ object SkyHanniDebugsAndTests {
     private fun print(text: String) {
         LorenzDebug.log(text)
     }
+
+    private var previousApril = false
+
+    val isAprilFoolsDay: Boolean
+        get() {
+            val itsTime = LocalDate.now().let { it.month == Month.APRIL && it.dayOfMonth == 1 }
+            val always = SkyHanniMod.feature.dev.debug.alwaysFunnyTime
+            val never = SkyHanniMod.feature.dev.debug.neverFunnyTime
+            val result = (!never && (always || itsTime))
+            previousApril = result
+            return result
+        }
 
     private var testLocation: LorenzVec? = null
 
@@ -110,25 +123,29 @@ object SkyHanniDebugsAndTests {
         }
     }
 
-    private fun waypoint(location: LorenzVec? = null, pathfind: Boolean = false) {
+    private fun waypoint(args: Array<String>) {
         SoundUtils.playBeepSound()
 
-        if (location == null) {
+        if (args.isEmpty()) {
             testLocation = null
             ChatUtils.chat("reset test waypoint")
             IslandGraphs.stop()
             return
         }
 
+        val x = args[0].toDouble()
+        val y = args[1].toDouble()
+        val z = args[2].toDouble()
+        val location = LorenzVec(x, y, z)
         testLocation = location
-        if (pathfind) {
+        if (args.getOrNull(3) == "pathfind") {
             IslandGraphs.pathFind(location, "/shtestwaypoint", condition = { true })
         }
         ChatUtils.chat("set test waypoint")
     }
 
     private fun testCommand(args: Array<String>) {
-        SkyHanniMod.launchCoroutine("shtest command") {
+        SkyHanniMod.launchCoroutine {
             asyncTest(args)
         }
     }
@@ -136,12 +153,6 @@ object SkyHanniDebugsAndTests {
     @Suppress("UNUSED_PARAMETER")
     private fun asyncTest(args: Array<String>) {
         ChatUtils.chat("§fTest successful!")
-
-        val group = ChatProgressUpdates.category("Test")
-        group.enabled = true
-        val progress = group.start("a")
-        progress.update("b")
-        progress.end("c")
     }
 
     private fun findNull(obj: Any, path: String) {
@@ -209,14 +220,14 @@ object SkyHanniDebugsAndTests {
         var errors = 0
 
         displayList = buildList {
-            for (item in GardenVisitorColorNames.visitorMap) {
+            for (item in GardenVisitorColorNames.visitorItems) {
                 val name = item.key
 
                 addLine {
                     val coloredName = GardenVisitorColorNames.getColoredName(name)
                     addString("$coloredName§7 (")
 
-                    for (itemName in item.value.needItems) {
+                    for (itemName in item.value) {
                         try {
                             val internalName = NeuInternalName.fromItemName(itemName)
                             addItemStack(internalName.getItemStack())
@@ -225,7 +236,7 @@ object SkyHanniDebugsAndTests {
                             errors++
                         }
                     }
-                    if (item.value.needItems.isEmpty()) {
+                    if (item.value.isEmpty()) {
                         addString("Any")
                     }
                     addString("§7) ")
@@ -252,12 +263,18 @@ object SkyHanniDebugsAndTests {
         for (original in modules.toMutableList()) {
             val javaClass = original.javaClass
             val simpleName = javaClass.simpleName
+            //#if FORGE
+            MinecraftForge.EVENT_BUS.unregister(original)
+            //#endif
             SkyHanniEvents.unregister(original)
             println("Unregistered listener $simpleName")
 
             if (simpleName !in blockedFeatures) {
                 modules.remove(original)
                 modules.add(original)
+                //#if FORGE
+                MinecraftForge.EVENT_BUS.register(original)
+                //#endif
                 SkyHanniEvents.register(original)
                 println("Registered listener $simpleName")
             } else {
@@ -275,13 +292,16 @@ object SkyHanniDebugsAndTests {
                 for (original in modules.toMutableList()) {
                     val javaClass = original.javaClass
                     val simpleName = javaClass.simpleName
+                    //#if FORGE
+                    MinecraftForge.EVENT_BUS.unregister(original)
+                    //#endif
                     SkyHanniEvents.unregister(original)
                     println("Unregistered listener $simpleName")
                 }
                 ChatUtils.clickableChat(
                     "Stopped ${modules.size} listener classes. " +
                         "If you want to re-enable them, run /shreloadlisteners or click this message.",
-                    onClick = ::reloadListeners,
+                    onClick = { reloadListeners() },
                 )
             },
         )
@@ -296,15 +316,15 @@ object SkyHanniDebugsAndTests {
         }
         lastManualContestDataUpdate = SimpleTimeMark.now()
 
-        GardenNextJacobContest.resetContestData(true)
+        GardenNextJacobContest.resetContestData()
     }
 
-    private fun copyLocation(parameter: String? = null) {
+    private fun copyLocation(args: Array<String>) {
         val location = LocationUtils.playerLocation()
         val x = (location.x + 0.001).roundTo(1)
         val y = (location.y + 0.001).roundTo(1)
         val z = (location.z + 0.001).roundTo(1)
-        val (clipboard, format) = formatLocation(x, y, z, parameter)
+        val (clipboard, format) = formatLocation(x, y, z, args.getOrNull(0))
         OSUtils.copyToClipboard(clipboard)
         ChatUtils.chat("Copied the current location to clipboard ($format format)!", replaceSameMessage = true)
     }
@@ -326,7 +346,7 @@ object SkyHanniDebugsAndTests {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onShowInternalName(event: ToolTipTextEvent) {
+    fun onShowInternalName(event: ToolTipEvent) {
         if (!debugConfig.showInternalName) return
         val itemStack = event.itemStack
         val internalName = itemStack.getInternalName()
@@ -335,7 +355,7 @@ object SkyHanniDebugsAndTests {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun showItemRarity(event: ToolTipTextEvent) {
+    fun showItemRarity(event: ToolTipEvent) {
         if (!debugConfig.showItemRarity) return
         val itemStack = event.itemStack
 
@@ -344,7 +364,7 @@ object SkyHanniDebugsAndTests {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun showItemCategory(event: ToolTipTextEvent) {
+    fun showItemCategory(event: ToolTipEvent) {
         if (!debugConfig.showItemCategory) return
         val itemStack = event.itemStack
 
@@ -353,7 +373,7 @@ object SkyHanniDebugsAndTests {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onShowNpcPrice(event: ToolTipTextEvent) {
+    fun onShowNpcPrice(event: ToolTipEvent) {
         if (!debugConfig.showNpcPrice) return
         val internalName = event.itemStack.getInternalNameOrNull() ?: return
 
@@ -362,7 +382,7 @@ object SkyHanniDebugsAndTests {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onShowBaseStats(event: ToolTipTextEvent) {
+    fun onShowBaseStats(event: ToolTipEvent) {
         if (!debugConfig.showBaseValues) return
         val internalName = event.itemStack.getInternalNameOrNull() ?: return
 
@@ -377,7 +397,7 @@ object SkyHanniDebugsAndTests {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onShowCraftPrice(event: ToolTipTextEvent) {
+    fun onShowCraftPrice(event: ToolTipEvent) {
         if (!debugConfig.showCraftPrice) return
         val price = event.itemStack.getInternalNameOrNull()?.getRawCraftCostOrNull() ?: return
 
@@ -385,7 +405,7 @@ object SkyHanniDebugsAndTests {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onShowBzPrice(event: ToolTipTextEvent) {
+    fun onShowBzPrice(event: ToolTipEvent) {
         if (!debugConfig.showBZPrice) return
         val internalName = event.itemStack.getInternalNameOrNull() ?: return
 
@@ -398,7 +418,7 @@ object SkyHanniDebugsAndTests {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onShowBinPrice(event: ToolTipTextEvent) {
+    fun onShowBinPrice(event: ToolTipEvent) {
         if (!debugConfig.showBinPrice) return
         val internalName = event.itemStack.getInternalNameOrNull() ?: return
         if (!internalName.isAuctionHouseItem()) return
@@ -409,7 +429,7 @@ object SkyHanniDebugsAndTests {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onShowItemName(event: ToolTipTextEvent) {
+    fun onShowItemName(event: ToolTipEvent) {
         if (!debugConfig.showItemName) return
         val itemStack = event.itemStack
         val internalName = itemStack.getInternalName()
@@ -421,7 +441,7 @@ object SkyHanniDebugsAndTests {
         event.toolTip.add("Item name: '$name§7'")
     }
 
-    @HandleEvent(SkyHanniChatEvent.Allow::class)
+    @HandleEvent(SkyHanniChatEvent::class)
     @Suppress("EmptyFunctionBlock")
     fun onChat() {
     }
@@ -506,12 +526,12 @@ object SkyHanniDebugsAndTests {
     @Suppress("LongMethod")
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerBrigadier("shresetconfig") {
+        event.register("shresetconfig") {
             description = "Reloads the config manager and rendering processors of MoulConfig. " +
                 "This §cWILL RESET §7your config, but also update the config files " +
                 "(names, description, orderings and stuff)."
             category = CommandCategory.DEVELOPER_TEST
-            simpleCallback {
+            callback {
                 ChatUtils.clickableChat(
                     "§cTHIS WILL RESET YOUR SkyHanni CONFIG! Click here to proceed.",
                     onClick = { resetConfig() },
@@ -552,15 +572,7 @@ object SkyHanniDebugsAndTests {
         event.registerBrigadier("shcopylocation") {
             description = "Copies the player location as LorenzVec format to the clipboard"
             category = CommandCategory.DEVELOPER_DEBUG
-            literalCallback("json") {
-                copyLocation("json")
-            }
-            literalCallback("pathfind") {
-                copyLocation("pathfind")
-            }
-            simpleCallback {
-                copyLocation()
-            }
+            legacyCallbackArgs { copyLocation(it) }
         }
         event.registerBrigadier("shtest") {
             description = "Unused test command."
@@ -570,7 +582,7 @@ object SkyHanniDebugsAndTests {
         event.registerBrigadier("shfindnullconfig") {
             description = "Find config elements that are null and prints them into the console"
             category = CommandCategory.DEVELOPER_TEST
-            simpleCallback {
+            legacyCallbackArgs {
                 println("start null finder")
                 findNull(SkyHanniMod.feature, "config")
                 println("stop null finder")
@@ -579,14 +591,7 @@ object SkyHanniDebugsAndTests {
         event.registerBrigadier("shtestwaypoint") {
             description = "Set a waypoint on that location"
             category = CommandCategory.DEVELOPER_TEST
-            arg("waypoint", LorenzVecArgumentType.double()) { vec ->
-                literalCallback("pathfind") {
-                    waypoint(getArg(vec), true)
-                }
-                callback { waypoint(getArg(vec)) }
-
-            }
-            simpleCallback { waypoint() }
+            legacyCallbackArgs { waypoint(it) }
         }
         event.registerBrigadier("shstoplisteners") {
             description = "Unregistering all loaded event listeners"

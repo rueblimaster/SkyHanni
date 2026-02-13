@@ -1,6 +1,5 @@
 package at.hannibal2.skyhanni.features.garden.visitor
 
-import at.hannibal2.skyhanni.data.model.TabWidget
 import at.hannibal2.skyhanni.events.garden.visitor.VisitorAcceptedEvent
 import at.hannibal2.skyhanni.events.garden.visitor.VisitorArrivalEvent
 import at.hannibal2.skyhanni.events.garden.visitor.VisitorLeftEvent
@@ -18,10 +17,8 @@ import at.hannibal2.skyhanni.utils.NumberUtil.isInt
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.editCopy
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompat
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.network.chat.Component
-import net.minecraft.world.item.ItemStack
+import net.minecraft.item.ItemStack
 import java.awt.Color
 
 @SkyHanniModule
@@ -38,6 +35,14 @@ object VisitorApi {
     const val REFUSE_SLOT = 33
 
     val patternGroup = RepoPattern.group("garden.visitor.api")
+
+    /**
+     * REGEX-TEST: §b§lVisitors: §r§f(5)
+     */
+    val visitorCountPattern by patternGroup.pattern(
+        "visitor.count",
+        "§b§lVisitors: §r§f\\((?<info>.*)\\)",
+    )
 
     /**
      * REGEX-TEST:  §r§aEmissary Carlton
@@ -145,7 +150,7 @@ object VisitorApi {
         var lore: List<String> = emptyList()
         var allRewards = listOf<NeuInternalName>()
         var lastLore = listOf<String>()
-        var blockedLore = listOf<Component>()
+        var blockedLore = listOf<String>()
         var blockReason: VisitorBlockReason? = null
 
         fun getEntity() = EntityUtils.getEntityByID(entityId)
@@ -169,19 +174,19 @@ object VisitorApi {
         REFUSED("§cRefused", LorenzColor.RED.toColor().addAlpha(60)),
     }
 
-    fun visitorsInTabList(tabList: List<Component>): List<String> {
+    fun visitorsInTabList(tabList: List<String>): List<String> {
         var visitorCount = 0
         var found = false
         var visitorsRemaining = 0
 
         val visitorsInTab = mutableListOf<String>()
         loop@ for (line in tabList) {
-            TabWidget.VISITORS.pattern.matchMatcher(line) {
+            visitorCountPattern.matchMatcher(line) {
                 found = true
-                val countInfo = group("count")
+                val countInfo = group("info")
                 if (countInfo.isInt()) {
                     visitorCount = countInfo.toInt()
-                }
+                } else if (countInfo == "§r§c§lQueue Full!§r§f") visitorCount = 5
 
                 visitorsRemaining = visitorCount
                 continue@loop
@@ -193,7 +198,7 @@ object VisitorApi {
                 continue
             }
 
-            visitorNamePattern.matchMatcher(line.formattedTextCompat()) {
+            visitorNamePattern.matchMatcher(line) {
                 visitorsInTab.add(group("name").trim())
             }
 

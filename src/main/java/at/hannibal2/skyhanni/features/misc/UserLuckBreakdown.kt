@@ -9,8 +9,7 @@ import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.InventoryCloseEvent
 import at.hannibal2.skyhanni.events.InventoryOpenEvent
 import at.hannibal2.skyhanni.events.UserLuckCalculateEvent
-import at.hannibal2.skyhanni.events.minecraft.ToolTipTextEvent
-import at.hannibal2.skyhanni.events.minecraft.add
+import at.hannibal2.skyhanni.events.minecraft.ToolTipEvent
 import at.hannibal2.skyhanni.events.render.gui.ReplaceItemEvent
 import at.hannibal2.skyhanni.features.skillprogress.SkillType
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
@@ -24,13 +23,13 @@ import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.addOrPut
-import at.hannibal2.skyhanni.utils.compat.InventoryCompat.orNull
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.network.chat.Component
-import net.minecraft.world.SimpleContainer
-import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.Items
-import net.minecraft.world.level.block.Blocks
+import at.hannibal2.skyhanni.utils.system.PlatformUtils
+import net.minecraft.client.player.inventory.ContainerLocalMenu
+import net.minecraft.init.Blocks
+import net.minecraft.init.Items
+import net.minecraft.item.Item
+import net.minecraft.item.ItemStack
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -43,11 +42,15 @@ object UserLuckBreakdown {
     private val storage get() = ProfileStorageData.playerSpecific
     private val config get() = SkyHanniMod.feature.misc
 
-    private val mainLuckID = Items.ENDER_PEARL
+    private val mainLuckID = Items.ender_pearl
     private const val MAIN_LUCK_NAME = "§a✴ SkyHanni User Luck"
 
     private var fillerItem: ItemStack? = null
-    private val fillerID = Blocks.BLACK_STAINED_GLASS_PANE.asItem()
+    //#if MC < 1.21
+    private val fillerID = Item.getItemFromBlock(Blocks.stained_glass_pane)
+    //#else
+    //$$ private val fillerID = Blocks.BLACK_STAINED_GLASS_PANE.asItem()
+    //#endif
 
     private var showAllStats = true
 
@@ -71,7 +74,7 @@ object UserLuckBreakdown {
     @HandleEvent
     fun replaceItem(event: ReplaceItemEvent) {
         if (!config.userLuck) return
-        if (event.inventory !is SimpleContainer) return
+        if (event.inventory !is ContainerLocalMenu) return
         if (!inMiscStats) return
 
         if (event.slot == replaceSlot && !inCustomBreakdown) {
@@ -118,10 +121,10 @@ object UserLuckBreakdown {
             inMiscStats = false
             return
         }
-        val inventoryName = event.inventoryItems[4]?.hoverName?.string.orEmpty()
-        if (inventoryName != "Miscellaneous Stats") return
+        val inventoryName = event.inventoryItems[4]?.displayName.orEmpty()
+        if (inventoryName != "§dMisc Stats") return
         inMiscStats = true
-        replaceSlot = findValidSlot(event.inventoryItemsWithNull)
+        replaceSlot = findValidSlot(event.inventoryItems)
         val showAllStatsLore = event.inventoryItems[50]?.getLore() ?: listOf("")
         for (line in showAllStatsLore) {
             showAllStatsPattern.matchMatcher(line) {
@@ -140,10 +143,11 @@ object UserLuckBreakdown {
         inCustomBreakdown = false
     }
 
-    private fun findValidSlot(input: Map<Int, ItemStack?>): Int? {
+    private fun findValidSlot(input: Map<Int, ItemStack>): Int? {
         for (slot in input.keys) {
             if (slot !in validItemSlots && slot < 44) continue
-            if (input[slot].orNull() == null) {
+            val itemStack = input[slot]
+            if (itemStack?.displayName == " ") {
                 return slot
             }
         }
@@ -151,9 +155,8 @@ object UserLuckBreakdown {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onTooltip(event: ToolTipTextEvent) {
+    fun onTooltip(event: ToolTipEvent) {
         if (!config.userLuck) return
-        event.slot ?: return
         if (!event.slot.isTopInventory()) return
         if (skillCalcCoolDown.passedSince() > 3.seconds) {
             skillCalcCoolDown = SimpleTimeMark.now()
@@ -166,27 +169,25 @@ object UserLuckBreakdown {
         }
     }
 
-    private fun equipmentMenuTooltip(event: ToolTipTextEvent) {
-        event.slot ?: return
-        if (event.slot.containerSlot != 25) return
+    private fun equipmentMenuTooltip(event: ToolTipEvent) {
+        if (event.slot.slotIndex != 25) return
         val luckEvent = getOrPostLuckEvent()
         val totalLuck = luckEvent.getTotalLuck()
         if (totalLuck == 0f && !showAllStats) return
 
-        val lastIndex = event.toolTip.indexOfLast { it.string.removeColor().isEmpty() }
+        val lastIndex = event.toolTip.indexOfLast { it.removeColor().isEmpty() }
         if (lastIndex == -1) return
 
         val luckString = tryTruncateFloat(totalLuck)
         event.toolTip.add(lastIndex, "$LUCK_TOOLTIP$luckString")
     }
 
-    private fun statsBreakdownLoreTooltip(event: ToolTipTextEvent) {
-        event.slot ?: return
+    private fun statsBreakdownLoreTooltip(event: ToolTipEvent) {
         if (!inMiscStats) return
-        if (inCustomBreakdown && event.slot.containerSlot == 48) {
-            event.toolTip[1] = Component.literal("§7To Your Stats Breakdown")
+        if (inCustomBreakdown && event.slot.slotIndex == 48) {
+            event.toolTip[1] = "§7To Your Stats Breakdown"
         }
-        if (event.slot.containerSlot != 4 || inCustomBreakdown) return
+        if (event.slot.slotIndex != 4 || inCustomBreakdown) return
         val luckEvent = getOrPostLuckEvent()
         val totalLuck = luckEvent.getTotalLuck()
         if (totalLuck == 0f && !showAllStats) return
@@ -195,11 +196,10 @@ object UserLuckBreakdown {
         event.toolTip.add("$LUCK_TOOLTIP$luckString")
     }
 
-    private fun skyblockMenuTooltip(event: ToolTipTextEvent) {
-        event.slot ?: return
-        if (event.slot.containerSlot != 13) return
+    private fun skyblockMenuTooltip(event: ToolTipEvent) {
+        if (event.slot.slotIndex != 13) return
         val luckEvent = getOrPostLuckEvent()
-        val lastIndex = event.toolTip.indexOfLast { it.string.removeColor() == " and more..." }
+        val lastIndex = event.toolTip.indexOfLast { it.removeColor() == "" }
         if (lastIndex == -1) return
 
         val luckString = tryTruncateFloat(luckEvent.getTotalLuck())
@@ -237,7 +237,13 @@ object UserLuckBreakdown {
     }
 
     private fun createFillerItem(): ItemStack {
-        return ItemUtils.createItemStack(fillerID, " ", listOf(), 1)
+        return ItemUtils.createItemStack(
+            fillerID,
+            " ",
+            listOf(),
+            1,
+            15,
+        )
     }
 
     private fun createItemLore(type: String, luckInput: Float = 0f): Array<String> {
@@ -355,7 +361,7 @@ object UserLuckBreakdown {
         val luck = skillOverflowLuck.values.sum().toFloat()
         event.addLuck(luck)
         val stack = ItemUtils.createItemStack(
-            Items.DIAMOND_SWORD,
+            Items.diamond_sword,
             "§a✴ Category: Skills",
             lore,
         )
@@ -367,11 +373,32 @@ object UserLuckBreakdown {
         val luck = storage?.limbo?.userLuck ?: 0f
         event.addLuck(luck)
         val stack = ItemUtils.createItemStack(
-            Items.ENDER_PEARL,
+            Items.ender_pearl,
             "§a✴ Limbo Personal Best",
             createItemLore("limbo", luck),
         )
         event.addItem(stack)
+    }
+
+    @HandleEvent
+    fun modernLuck(event: UserLuckCalculateEvent) {
+        if (PlatformUtils.IS_LEGACY) return
+        event.addLuck(5f)
+        //#if MC > 1.21
+        //$$ val stack = ItemUtils.createItemStack(
+        //$$     Items.TRIDENT,
+        //$$     "§a✴ Modern Minecraft Bonus",
+        //$$     arrayOf(
+        //$$         "§8Minecraft",
+        //$$         "",
+        //$$         "§7Value: §a+5✴",
+        //$$         "",
+        //$$         "§8We put a lot of effort into updating SkyHanni.",
+        //$$         "§8This is a small bonus for using modern Minecraft.",
+        //$$     ),
+        //$$ )
+        //$$ event.addItem(stack)
+        //#endif
     }
 
     @HandleEvent(priority = HandleEvent.LOWEST)
@@ -380,7 +407,7 @@ object UserLuckBreakdown {
         val jerryLuck = event.getTotalLuck() * .1f
         event.addLuck(jerryLuck)
         val stack = ItemUtils.createItemStack(
-            Items.PAPER,
+            Items.paper,
             "§a✴ Statspocalypse",
             createItemLore("jerry", jerryLuck),
         )

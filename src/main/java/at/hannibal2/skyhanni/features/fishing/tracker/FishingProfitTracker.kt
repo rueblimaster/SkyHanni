@@ -18,7 +18,6 @@ import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.test.command.ErrorManager
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.DelayedRun
-import at.hannibal2.skyhanni.utils.ItemCategory
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.NumberUtil.addSeparators
@@ -62,20 +61,22 @@ object FishingProfitTracker {
     private var lastCatchTime = SimpleTimeMark.farPast()
     private val tracker = SkyHanniItemTracker(
         "Fishing Profit Tracker",
-        ::Data,
+        { Data() },
         { it.fishing.fishingProfitTracker },
-        trackerConfig = { config.perTrackerConfig }
     ) { drawDisplay(it) }
 
-    data class Data(
-        @Expose var totalCatchAmount: Long = 0L
-    ) : ItemTrackerData() {
-        override fun getDescription(timesGained: Long): List<String> {
-            val percentage = timesGained.toDouble() / totalCatchAmount
+    class Data : ItemTrackerData() {
+
+        override fun resetItems() {
+            totalCatchAmount = 0
+        }
+
+        override fun getDescription(timesCaught: Long): List<String> {
+            val percentage = timesCaught.toDouble() / totalCatchAmount
             val catchRate = percentage.coerceAtMost(1.0).formatPercentage()
 
             return listOf(
-                "§7Caught §e${timesGained.addSeparators()} §7times.",
+                "§7Caught §e${timesCaught.addSeparators()} §7times.",
                 "§7Your catch rate: §c$catchRate",
             )
         }
@@ -89,12 +90,20 @@ object FishingProfitTracker {
             )
         }
 
-        override fun getCustomPricePer(internalName: NeuInternalName, tracker: SkyHanniTracker<*, *>): Double {
-            return if (internalName.getItemCategoryOrNull() == ItemCategory.TROPHY_FISH) {
-                tracker.getPricePer(MAGMA_FISH) * FishingApi.getFilletPerTrophy(internalName)
-            } else super.getCustomPricePer(internalName, tracker)
+        override fun getCustomPricePer(internalName: NeuInternalName): Double {
+            // TODO find better way to tell if the item is a trophy
+            val neuInternalNames = itemCategories["Trophy Fish"].orEmpty()
+
+            return if (internalName in neuInternalNames) {
+                SkyHanniTracker.getPricePer(MAGMA_FISH) * FishingApi.getFilletPerTrophy(internalName)
+            } else super.getCustomPricePer(internalName)
         }
+
+        @Expose
+        var totalCatchAmount = 0L
     }
+
+    private val ItemTrackerData.TrackedItem.timesCaught get() = timesGained
 
     private val MAGMA_FISH = "MAGMA_FISH".toInternalName()
 
@@ -135,8 +144,7 @@ object FishingProfitTracker {
             ).toSearchable(),
         )
 
-        val duration = data.getTotalUptime()
-        addAll(tracker.addTotalProfit(profit, data.totalCatchAmount, "catch", duration, "Catches"))
+        add(tracker.addTotalProfit(profit, data.totalCatchAmount, "catch"))
 
         tracker.addPriceFromButton(this)
     }
@@ -150,7 +158,7 @@ object FishingProfitTracker {
         }
 
         if (tracker.isInventoryOpen()) {
-            addButton(
+            addButton<String>(
                 label = "Category",
                 current = currentCategory,
                 getName = { it + " §7(" + amounts[it] + ")" },
@@ -206,7 +214,7 @@ object FishingProfitTracker {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         coinsChatPattern.matchMatcher(event.message) {
             tryAddItem(NeuInternalName.SKYBLOCK_COIN, group("coins").formatInt(), command = false)
             addCatch()
@@ -273,10 +281,10 @@ object FishingProfitTracker {
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerBrigadier("shresetfishingtracker") {
+        event.register("shresetfishingtracker") {
             description = "Resets the Fishing Profit Tracker"
             category = CommandCategory.USERS_RESET
-            simpleCallback { tracker.resetCommand() }
+            callback { tracker.resetCommand() }
         }
     }
 }

@@ -31,7 +31,7 @@ object GardenYawAndPitch {
 
         val player = MinecraftCompat.localPlayer
         val yaw = LocationUtils.calculatePlayerYaw()
-        val pitch = player.xRot
+        val pitch = player.rotationPitch
 
         if (yaw != lastYaw || pitch != lastPitch) {
             lastChange = SimpleTimeMark.now()

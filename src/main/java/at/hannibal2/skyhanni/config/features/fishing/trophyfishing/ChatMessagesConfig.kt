@@ -71,13 +71,11 @@ class ChatMessagesConfig {
     @Expose
     @ConfigOption(name = "Gold Alert", desc = "Send an alert upon catching a gold Trophy Fish.")
     @ConfigEditorBoolean
-    @FeatureToggle
     var goldAlert: Boolean = false
 
     @Expose
     @ConfigOption(name = "Diamond Alert", desc = "Send an alert upon catching a diamond Trophy Fish.")
     @ConfigEditorBoolean
-    @FeatureToggle
     var diamondAlert: Boolean = false
 
     @Expose

@@ -3,8 +3,7 @@ package at.hannibal2.skyhanni.features.misc
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.data.HypixelData
 import at.hannibal2.skyhanni.events.GuiContainerEvent
-import at.hannibal2.skyhanni.events.minecraft.ToolTipTextEvent
-import at.hannibal2.skyhanni.events.minecraft.add
+import at.hannibal2.skyhanni.events.minecraft.ToolTipEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ClipboardUtils
@@ -18,10 +17,9 @@ import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 object CopyPlaytime {
 
     @HandleEvent(priority = HandleEvent.LOWEST)
-    fun onTooltip(event: ToolTipTextEvent) {
-        event.slot ?: return
+    fun onTooltip(event: ToolTipEvent) {
         if (InventoryUtils.openInventoryName() != "Detailed /playtime") return
-        if (event.slot.index != 4) return
+        if (event.slot.slotNumber != 4) return
 
         event.toolTip.add("")
         event.toolTip.add("§eClick to Copy!")

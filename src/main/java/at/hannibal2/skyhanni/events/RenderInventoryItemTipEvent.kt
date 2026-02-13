@@ -1,8 +1,8 @@
 package at.hannibal2.skyhanni.events
 
 import at.hannibal2.skyhanni.api.event.SkyHanniEvent
-import net.minecraft.world.inventory.Slot
-import net.minecraft.world.item.ItemStack
+import net.minecraft.inventory.Slot
+import net.minecraft.item.ItemStack
 
 class RenderInventoryItemTipEvent(
     val inventoryName: String,

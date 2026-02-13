@@ -102,14 +102,6 @@ object HoppityEggsManager {
         "§7§lDUPLICATE RABBIT! §6\\+(?<amount>[\\d,]+) Chocolate",
     )
 
-    /**
-     * REGEX-TEST: [NPC] Hoppity: Simply exquisite! I don't think I'll ever get tired of chocolate.
-     */
-    val hoppityVisitorAccepted by CFApi.patternGroup.pattern(
-        "hoppity.visitor.accepted",
-        "\\[NPC\\] Hoppity: Simply exquisite.+"
-    )
-
     private val noEggsLeftPattern by CFApi.patternGroup.pattern(
         "egg.noneleft",
         "§cThere are no hidden Chocolate Rabbit Eggs nearby! Try again later!",
@@ -191,7 +183,7 @@ object HoppityEggsManager {
         lastNote = event.note
     }
 
-    private fun SkyHanniChatEvent.Allow.sendNextEggAvailable() {
+    private fun SkyHanniChatEvent.sendNextEggAvailable() {
         val nextEgg = HoppityEggType.resettingEntries.minByOrNull { it.timeUntil } ?: return
         val currentYear = SkyBlockTime.now().year
         val spawnedEggs = HoppityEventSummary.getSpawnedEggCounts(currentYear).sumAllValues().toInt()
@@ -202,7 +194,7 @@ object HoppityEggsManager {
         blockedReason = "hoppity_egg"
     }
 
-    private fun SkyHanniChatEvent.Allow.sendNextHuntIn(
+    private fun SkyHanniChatEvent.sendNextHuntIn(
         reason: String = "Hoppity's Hunt is not active",
     ) {
         val currentYear = SkyBlockTime.now().year
@@ -212,7 +204,7 @@ object HoppityEggsManager {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         hoppityEventNotOn.matchMatcher(event.message) {
             if (!chatConfig.eggLocatorTimeInChat) return@matchMatcher
             return event.sendNextHuntIn()

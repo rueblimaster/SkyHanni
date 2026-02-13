@@ -29,9 +29,9 @@ value class SimpleTimeMark(private val millis: Long) : Comparable<SimpleTimeMark
 
     fun isInFuture() = timeUntil().isPositive()
 
-    fun isFarPast() = millis == FAR_PAST_MS
+    fun isFarPast() = millis == 0L
 
-    fun isFarFuture() = millis == FAR_FUTURE_MS
+    fun isFarFuture() = millis == Long.MAX_VALUE
 
     fun takeIfInitialized() = if (isFarPast() || isFarFuture()) null else this
 
@@ -71,16 +71,10 @@ value class SimpleTimeMark(private val millis: Long) : Comparable<SimpleTimeMark
 
         fun now() = SimpleTimeMark(System.currentTimeMillis())
 
-        private const val FAR_PAST_MS = 0L
-        private const val FAR_FUTURE_MS = Long.MAX_VALUE
-
-        private val FAR_PAST = SimpleTimeMark(FAR_PAST_MS)
-        private val FAR_FUTURE = SimpleTimeMark(FAR_FUTURE_MS)
-
         @JvmStatic
         @JvmName("farPast")
-        fun farPast() = FAR_PAST
-        fun farFuture() = FAR_FUTURE
+        fun farPast() = SimpleTimeMark(0)
+        fun farFuture() = SimpleTimeMark(Long.MAX_VALUE)
 
         fun Duration.fromNow() = now() + this
 

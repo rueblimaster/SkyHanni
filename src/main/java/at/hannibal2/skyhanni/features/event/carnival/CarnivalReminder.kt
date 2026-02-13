@@ -71,7 +71,7 @@ object CarnivalReminder {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled() && !claimedToday) return
         if (!ticketClaimedPattern.matches(event.message) && !alreadyClaimedPattern.matches(event.message)) return
         claimedToday = true

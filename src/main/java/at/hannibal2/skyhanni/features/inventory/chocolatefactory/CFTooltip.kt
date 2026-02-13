@@ -1,8 +1,7 @@
 package at.hannibal2.skyhanni.features.inventory.chocolatefactory
 
 import at.hannibal2.skyhanni.api.event.HandleEvent
-import at.hannibal2.skyhanni.events.minecraft.ToolTipTextEvent
-import at.hannibal2.skyhanni.events.minecraft.add
+import at.hannibal2.skyhanni.events.minecraft.ToolTipEvent
 import at.hannibal2.skyhanni.features.inventory.chocolatefactory.CFApi.profileStorage
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.NumberUtil.addSeparators
@@ -14,11 +13,11 @@ object CFTooltip {
     private val config get() = CFApi.config
 
     @HandleEvent(priority = HandleEvent.HIGH)
-    fun onTooltip(event: ToolTipTextEvent) {
+    fun onTooltip(event: ToolTipEvent) {
         if (!CFApi.inChocolateFactory) return
         if (!config.extraTooltipStats) return
 
-        val slotIndex = event.slot?.index ?: return
+        val slotIndex = event.slot.slotNumber
         if (slotIndex !in CFApi.otherUpgradeSlots && slotIndex !in CFApi.rabbitSlots) return
 
         val upgradeInfo = CFApi.factoryUpgrades.find { it.slotIndex == slotIndex } ?: return

@@ -105,9 +105,9 @@ object TiaRelayHelper {
         if (!inInventory) return
 
         val slot = event.slot
-        val stack = slot.item
+        val stack = slot.stack
 
-        val slotNumber = slot.index
+        val slotNumber = slot.slotNumber
 
         val position = resultDisplay.getOrDefault(slotNumber, null)
         if (position != null) {

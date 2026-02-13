@@ -2,12 +2,11 @@ package at.hannibal2.skyhanni.features.mining.fossilexcavator
 
 import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
-import at.hannibal2.skyhanni.events.minecraft.ToolTipTextEvent
+import at.hannibal2.skyhanni.events.minecraft.ToolTipEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.world.SimpleContainer
+import net.minecraft.client.player.inventory.ContainerLocalMenu
 
 @SkyHanniModule
 object ExcavatorTooltipHider {
@@ -19,27 +18,26 @@ object ExcavatorTooltipHider {
      */
     private val dirtPattern by RepoPattern.pattern(
         "excavator.dirt.name",
-        "Dirt",
+        "§6Dirt",
     )
 
     @HandleEvent
-    fun onToolTip(event: ToolTipTextEvent) {
+    fun onToolTip(event: ToolTipEvent) {
         if (!isEnabled()) return
-        event.slot ?: return
 
-        if (event.slot.container !is SimpleContainer) return
+        if (event.slot.inventory !is ContainerLocalMenu) return
         if (config.hideEverything) {
             event.cancel()
             return
         }
 
         if (config.hideDirt) {
-            val isDirt = dirtPattern.matches(event.itemStack.hoverName)
+            val isDirt = dirtPattern.matches(event.itemStack.displayName)
             if (isDirt) {
                 event.cancel()
             }
         }
     }
 
-    fun isEnabled() = FossilExcavatorApi.excavatorInventory.isInside() && !FossilExcavatorApi.inExcavatorMenu
+    fun isEnabled() = FossilExcavatorApi.inInventory && !FossilExcavatorApi.inExcavatorMenu
 }

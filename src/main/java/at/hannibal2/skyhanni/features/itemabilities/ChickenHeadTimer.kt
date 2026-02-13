@@ -40,7 +40,7 @@ object ChickenHeadTimer {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
         if (!hasChickenHead) return
         if (event.message == "§aYou laid an egg!") {

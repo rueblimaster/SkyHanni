@@ -5,7 +5,6 @@ import at.hannibal2.skyhanni.api.pet.CurrentPetApi
 import at.hannibal2.skyhanni.config.ConfigManager
 import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
-import at.hannibal2.skyhanni.config.commands.brigadier.BrigadierArguments
 import at.hannibal2.skyhanni.data.PetData
 import at.hannibal2.skyhanni.data.jsonobjects.repo.PetsJson
 import at.hannibal2.skyhanni.data.jsonobjects.repo.neu.AnimatedSkinJson
@@ -298,11 +297,11 @@ object PetUtils {
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerBrigadier("shtesthashigher") {
+        event.register("shtesthashigher") {
             description = "Test has higher tier"
             category = CommandCategory.DEVELOPER_DEBUG
-            argCallback("id", BrigadierArguments.greedyString()) {
-                ChatUtils.chat("${it.toInternalName().hasValidHigherTier()}")
+            callback {
+                ChatUtils.chat("${it[0].toInternalName().hasValidHigherTier()}")
             }
         }
     }

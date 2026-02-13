@@ -6,7 +6,6 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 
 class EasterEggConfig {
-
     @Expose
     @ConfigOption(
         name = "Egg Waypoints",

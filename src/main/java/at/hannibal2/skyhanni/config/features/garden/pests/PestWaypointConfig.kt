@@ -15,7 +15,7 @@ class PestWaypointConfig {
     )
     @ConfigEditorBoolean
     @FeatureToggle
-    var enabled: Boolean = false
+    var enabled: Boolean = true
 
     @Expose
     @ConfigOption(name = "Hide Particles", desc = "Hide the particles of the ability.")

@@ -8,12 +8,11 @@ import at.hannibal2.skyhanni.events.InventoryCloseEvent
 import at.hannibal2.skyhanni.events.InventoryFullyOpenedEvent
 import at.hannibal2.skyhanni.events.chat.SkyHanniChatEvent
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniTickEvent
-import at.hannibal2.skyhanni.events.minecraft.ToolTipTextEvent
-import at.hannibal2.skyhanni.events.minecraft.add
+import at.hannibal2.skyhanni.events.minecraft.ToolTipEvent
 import at.hannibal2.skyhanni.features.rift.RiftApi
 import at.hannibal2.skyhanni.features.rift.RiftApi.motesNpcPrice
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import at.hannibal2.skyhanni.utils.ChatUtils
+import at.hannibal2.skyhanni.utils.ChatUtils.chat
 import at.hannibal2.skyhanni.utils.InventoryUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.getInternalName
 import at.hannibal2.skyhanni.utils.NeuInternalName
@@ -24,7 +23,6 @@ import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addItemStack
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.RenderableUtils.addRenderableButton
 import at.hannibal2.skyhanni.utils.renderables.addLine
@@ -64,7 +62,7 @@ object ShowMotesNpcSellPrice {
     }
 
     @HandleEvent
-    fun onToolTip(event: ToolTipTextEvent) {
+    fun onToolTip(event: ToolTipEvent) {
         if (!isShowPriceEnabled()) return
 
         val itemStack = event.itemStack
@@ -72,7 +70,7 @@ object ShowMotesNpcSellPrice {
         val baseMotes = itemStack.motesNpcPrice() ?: return
         val burgerStacks = config.burgerStacks
         val burgerText = if (burgerStacks > 0) "(${burgerStacks}x≡) " else ""
-        val size = itemStack.count
+        val size = itemStack.stackSize
         if (size > 1) {
             event.toolTip.add(
                 "§6NPC price: $burgerText§d${baseMotes.addSeparators()} Motes " +
@@ -103,7 +101,7 @@ object ShowMotesNpcSellPrice {
     private fun processItems() {
         val inventoryName = InventoryUtils.openInventoryName()
         if (!inventoryName.contains("Rift Storage")) return
-        val stacks = InventoryUtils.getItemsInOpenChest().map { it.containerSlot to it.item }
+        val stacks = InventoryUtils.getItemsInOpenChest().map { it.slotIndex to it.stack }
         itemMap.clear()
         for ((index, stack) in stacks) {
             val itemValue = stack.motesNpcPrice() ?: continue
@@ -121,10 +119,10 @@ object ShowMotesNpcSellPrice {
     }
 
     @HandleEvent(onlyOnIsland = IslandType.THE_RIFT)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         burgerPattern.matchMatcher(event.message) {
             config.burgerStacks = group("amount").toInt()
-            ChatUtils.chat("Set your McGrubber's burger stacks to ${group("amount")}.")
+            chat("Set your McGrubber's burger stacks to ${group("amount")}.")
         }
     }
 
@@ -145,7 +143,7 @@ object ShowMotesNpcSellPrice {
                 addString("  §7- ")
                 addItemStack(stack)
                 val tips = buildList {
-                    add("§6Item: ${stack.hoverName.formattedTextCompatLeadingWhiteLessResets()}")
+                    add("§6Item: ${stack.displayName}")
                     add("§6Value per: §d$valuePer Motes")
                     add("§6Total in chest: §d${(value / valuePer).toInt()}")
                     add("")
@@ -153,7 +151,7 @@ object ShowMotesNpcSellPrice {
                 }
                 add(
                     Renderable.hoverTips(
-                        "§6${stack.hoverName.formattedTextCompatLeadingWhiteLessResets()}: §b$price",
+                        "§6${stack.displayName}: §b$price",
                         tips,
                         highlightsOnHoverSlots = index,
                         stack = stack,

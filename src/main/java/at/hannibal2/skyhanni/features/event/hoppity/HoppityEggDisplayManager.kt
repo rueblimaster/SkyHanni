@@ -19,7 +19,7 @@ import at.hannibal2.skyhanni.utils.compat.MinecraftCompat.isLocalPlayer
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.container.VerticalContainerRenderable.Companion.vertical
 import at.hannibal2.skyhanni.utils.renderables.primitives.StringRenderable
-import net.minecraft.world.entity.player.Player
+import net.minecraft.entity.player.EntityPlayer
 
 @SkyHanniModule
 object HoppityEggDisplayManager {
@@ -29,7 +29,7 @@ object HoppityEggDisplayManager {
 
     private var display = listOf<Renderable>()
 
-    private fun canChangeOpacity(entity: Player): Boolean {
+    private fun canChangeOpacity(entity: EntityPlayer): Boolean {
         if (entity.isLocalPlayer) return false
         if (!entity.isRealPlayer()) return false
 
@@ -45,7 +45,7 @@ object HoppityEggDisplayManager {
     }
 
     @HandleEvent
-    fun onEntityOpacity(event: EntityOpacityEvent<Player>) {
+    fun onEntityOpacity(event: EntityOpacityEvent<EntityPlayer>) {
         if (canChangeOpacity(event.entity)) {
             event.opacity = config.playerOpacity
         }

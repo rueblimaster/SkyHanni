@@ -21,10 +21,9 @@ import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.sublistAfter
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLessResets
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 import io.github.notenoughupdates.moulconfig.ChromaColour
-import net.minecraft.world.item.ItemStack
+import net.minecraft.item.ItemStack
 import kotlin.time.Duration.Companion.milliseconds
 
 @SkyHanniModule
@@ -149,7 +148,7 @@ object CenturyPartyInvitation {
     }
 
     private fun addPlayer(mob: Mob) {
-        val displayName = mob.baseEntity.name.formattedTextCompatLessResets()
+        val displayName = mob.baseEntity.name
         val colorCode = playerRankColorPattern.matchMatcher(displayName) {
             group("color")
         } ?: run {
@@ -173,7 +172,7 @@ object CenturyPartyInvitation {
     }
 
     @HandleEvent
-    fun onSystemMessage(event: SystemMessageEvent.Allow) {
+    fun onSystemMessage(event: SystemMessageEvent) {
         if (!isEnabled()) return
 
         val message = event.message

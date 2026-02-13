@@ -11,10 +11,11 @@ import at.hannibal2.skyhanni.utils.LorenzVec
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
+import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.TimeUtils.format
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawDynamicText
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.core.particles.ParticleTypes
+import net.minecraft.util.EnumParticleTypes
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -68,9 +69,9 @@ object ArachneSpawnTimer {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
-        val message = event.cleanMessage.lowercase()
+        val message = event.message.removeColor().lowercase()
 
         if (arachneFragmentPattern.matches(message) || arachneCrystalPattern.matches(message)) {
             if (arachneCrystalPattern.matches(message)) {
@@ -101,7 +102,7 @@ object ArachneSpawnTimer {
 
         val location = event.location.roundTo(2)
         if (arachneAltarLocation.distance(location) > 30) return
-        if (event.type == ParticleTypes.DUST && event.speed == 1f) {
+        if (event.type == EnumParticleTypes.REDSTONE && event.speed == 1f) {
             particleCounter += 1
         }
     }

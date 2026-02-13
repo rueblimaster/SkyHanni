@@ -2,9 +2,7 @@ package at.hannibal2.skyhanni.config.features.mining.nucleus
 
 import at.hannibal2.skyhanni.config.FeatureToggle
 import at.hannibal2.skyhanni.config.core.config.Position
-import at.hannibal2.skyhanni.config.features.misc.tracker.IndividualItemTrackerConfig
 import com.google.gson.annotations.Expose
-import io.github.notenoughupdates.moulconfig.annotations.Accordion
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDropdown
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorSlider
@@ -53,12 +51,4 @@ class CrystalNucleusTrackerConfig {
 
         override fun toString(): String = displayName
     }
-
-    @Expose
-    @ConfigOption(
-        name = "Tracker Settings",
-        desc = ""
-    )
-    @Accordion
-    val perTrackerConfig: IndividualItemTrackerConfig = IndividualItemTrackerConfig()
 }

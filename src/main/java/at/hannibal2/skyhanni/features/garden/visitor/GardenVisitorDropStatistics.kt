@@ -26,6 +26,7 @@ import at.hannibal2.skyhanni.utils.NumberUtil.shortFormat
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
+import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.add
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.addAll
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.addOrPut
@@ -34,7 +35,6 @@ import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addStrin
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.addLine
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import com.google.gson.JsonPrimitive
 import java.util.regex.Pattern
 import kotlin.time.Duration.Companion.seconds
 
@@ -146,12 +146,12 @@ object GardenVisitorDropStatistics {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!GardenApi.onBarnPlot) return
         if (!ProfileStorageData.loaded) return
         if (lastAccept.passedSince() > 1.seconds) return
 
-        val message = event.cleanMessage.trim()
+        val message = event.message.removeColor().trim()
         val storage = GardenApi.storage?.visitorDrops ?: return
 
         patternStorageAccessorMap.forEach { (pattern, accessor) ->
@@ -329,21 +329,14 @@ object GardenVisitorDropStatistics {
 
             ConfigManager.gson.toJsonTree(map, MutableMap::class.java)
         }
-
-        event.transform(113, "${newPrefix}textFormat") { element ->
-            element.asJsonArray.apply {
-                add(JsonPrimitive("HYPERCHARGE_CHIP"))
-                add(JsonPrimitive("QUICKDRAW_CHIP"))
-            }
-        }
     }
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerBrigadier("shresetvisitordrops") {
+        event.register("shresetvisitordrops") {
             description = "Resets the Visitors Drop Statistics"
             category = CommandCategory.USERS_RESET
-            simpleCallback { resetCommand() }
+            callback { resetCommand() }
         }
     }
 }

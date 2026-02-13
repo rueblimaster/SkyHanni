@@ -26,7 +26,7 @@ object AshfangFreezeCooldown {
     private val duration = 3.seconds
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
         if (cryogenicBlastPattern.matches(event.message)) unfrozenTime = SimpleTimeMark.now() + duration
     }

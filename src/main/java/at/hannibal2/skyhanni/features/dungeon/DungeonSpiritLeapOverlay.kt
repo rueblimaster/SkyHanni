@@ -6,12 +6,10 @@ import at.hannibal2.skyhanni.config.ConfigUpdaterMigrator
 import at.hannibal2.skyhanni.config.core.config.Position
 import at.hannibal2.skyhanni.config.features.dungeon.spiritleap.SpiritLeapColorConfig
 import at.hannibal2.skyhanni.events.GuiContainerEvent
-import at.hannibal2.skyhanni.events.GuiContainerEvent.ClickType
 import at.hannibal2.skyhanni.events.minecraft.KeyDownEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.ColorUtils.toColor
-import at.hannibal2.skyhanni.utils.InventoryDetector
 import at.hannibal2.skyhanni.utils.InventoryUtils
 import at.hannibal2.skyhanni.utils.InventoryUtils.getUpperItems
 import at.hannibal2.skyhanni.utils.ItemUtils.getLore
@@ -20,8 +18,7 @@ import at.hannibal2.skyhanni.utils.RenderUtils.HorizontalAlignment
 import at.hannibal2.skyhanni.utils.RenderUtils.VerticalAlignment
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderable
 import at.hannibal2.skyhanni.utils.StringUtils.cleanPlayerName
-import at.hannibal2.skyhanni.utils.compat.container
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
+import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.container.HorizontalContainerRenderable.Companion.horizontal
 import at.hannibal2.skyhanni.utils.renderables.container.VerticalContainerRenderable.Companion.vertical
@@ -31,9 +28,9 @@ import at.hannibal2.skyhanni.utils.renderables.primitives.WrappedStringRenderabl
 import at.hannibal2.skyhanni.utils.renderables.primitives.placeholder
 import at.hannibal2.skyhanni.utils.renderables.primitives.text
 import io.github.notenoughupdates.moulconfig.ChromaColour
-import net.minecraft.client.gui.screens.inventory.ContainerScreen
-import net.minecraft.world.inventory.ChestMenu
-import net.minecraft.world.item.ItemStack
+import net.minecraft.client.gui.inventory.GuiChest
+import net.minecraft.inventory.ContainerChest
+import net.minecraft.item.ItemStack
 import java.awt.Color
 import kotlin.math.max
 import kotlin.math.min
@@ -49,7 +46,6 @@ object DungeonSpiritLeapOverlay {
     private var containerHeight = 0
     private var playerList = emptyList<PlayerStackInfo>()
     private val validInventoryNames = setOf("Spirit Leap", "Teleport to Player")
-    private val inventory = InventoryDetector { it in validInventoryNames }
 
     data class PlayerStackInfo(val playerInfo: DungeonApi.TeamMember?, val stack: ItemStack, val slotNumber: Int)
 
@@ -59,18 +55,18 @@ object DungeonSpiritLeapOverlay {
 
         val gui = event.gui
         // TODO find a way to make InventoryDetector usable here.
-        if (gui !is ContainerScreen || !inventory.isInside()) return
+        if (gui !is GuiChest || InventoryUtils.openInventoryName().removeColor() !in validInventoryNames) return
         containerWidth = gui.width
         containerHeight = gui.height
         scaleFactor = min(containerWidth, containerHeight).toDouble() / max(containerWidth, containerHeight).toDouble()
 
-        val chest = gui.container as ChestMenu
+        val chest = gui.inventorySlots as ContainerChest
         playerList = buildList {
             for ((slot, stack) in chest.getUpperItems()) {
                 val lore = stack.getLore()
                 if (lore.isNotEmpty()) {
-                    val playerInfo = DungeonApi.getPlayerInfo(stack.hoverName.formattedTextCompatLeadingWhiteLessResets().cleanPlayerName())
-                    add(PlayerStackInfo(playerInfo, stack, slot.index))
+                    val playerInfo = DungeonApi.getPlayerInfo(stack.displayName.cleanPlayerName())
+                    add(PlayerStackInfo(playerInfo, stack, slot.slotNumber))
                 }
             }
         }.sortedBy { it.playerInfo?.dungeonClass?.ordinal }
@@ -93,7 +89,6 @@ object DungeonSpiritLeapOverlay {
     @HandleEvent
     fun onKeyPress(event: KeyDownEvent) {
         if (!isEnabled() || !config.spiritLeapKeybindConfig.enableKeybind) return
-        if (!inventory.isInside()) return
         val index = getKeybindIndex(event.keyCode)
         if (index !in 0..<playerList.count()) return
         leapToPlayer(playerList[index])
@@ -217,7 +212,7 @@ object DungeonSpiritLeapOverlay {
             ChatUtils.chat("§cCannot leap — §e${playerInfo.username} §cis dead.")
             return
         }
-        InventoryUtils.clickSlot(player.slotNumber, mouseButton = 2, mode = ClickType.MIDDLE)
+        InventoryUtils.clickSlot(player.slotNumber, mouseButton = 2, mode = 3)
     }
 
     private val deadTeammateColor = colorConfig.deadTeammateColor

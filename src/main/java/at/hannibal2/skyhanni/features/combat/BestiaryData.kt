@@ -27,12 +27,11 @@ import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.RenderableUtils.addRenderableButton
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.Items
+import net.minecraft.init.Items
+import net.minecraft.item.ItemStack
 
 @SkyHanniModule
 object BestiaryData {
@@ -105,7 +104,7 @@ object BestiaryData {
     fun onBackgroundDrawn(event: GuiContainerEvent.BackgroundDrawnEvent) {
         if (!isEnabled() || !inInventory) return
         for (slot in InventoryUtils.getItemsInOpenChest()) {
-            val lore = slot.item.getLore()
+            val lore = slot.stack.getLore()
             if (lore.any { it == "§7Overall Progress: §b100% §7(§c§lMAX!§7)" || it == "§7Families Completed: §a100%" }) {
                 slot.highlight(LorenzColor.GREEN)
             }
@@ -158,9 +157,9 @@ object BestiaryData {
 
     private fun inCategory() {
         for ((index, stack) in stackList) {
-            if (stack.hoverName.string == " ") continue
+            if (stack.displayName == " ") continue
             if (!indexes.contains(index)) continue
-            val name = stack.hoverName.formattedTextCompatLeadingWhiteLessResets()
+            val name = stack.displayName
             var familiesFound: Long = 0
             var totalFamilies: Long = 0
             var familiesCompleted: Long = 0
@@ -186,10 +185,10 @@ object BestiaryData {
 
     private fun notInCategory() {
         for ((index, stack) in stackList) {
-            if (stack.hoverName.formattedTextCompatLeadingWhiteLessResets() == " ") continue
+            if (stack.displayName == " ") continue
             if (!indexes.contains(index)) continue
-            val name = " [IVX0-9]+$".toPattern().matcher(stack.hoverName.formattedTextCompatLeadingWhiteLessResets()).replaceFirst("")
-            val level = " ([IVX0-9]+$)".toRegex().find(stack.hoverName.formattedTextCompatLeadingWhiteLessResets())?.groupValues?.get(1) ?: "0"
+            val name = " [IVX0-9]+$".toPattern().matcher(stack.displayName).replaceFirst("")
+            val level = " ([IVX0-9]+$)".toRegex().find(stack.displayName)?.groupValues?.get(1) ?: "0"
             var totalKillToMax: Long = 0
             var currentTotalKill: Long = 0
             var totalKillToTier: Long = 0
@@ -399,7 +398,7 @@ object BestiaryData {
     }
 
     private fun isOverallProgressEnabled(inventoryItems: Map<Int, ItemStack>): Boolean {
-        if (inventoryItems[52]?.item == Items.ENDER_EYE) {
+        if (inventoryItems[52]?.item == Items.ender_eye) {
             return inventoryItems[52]?.getLore()?.any { it == "§7Overall Progress: §aSHOWN" } == true
         }
 

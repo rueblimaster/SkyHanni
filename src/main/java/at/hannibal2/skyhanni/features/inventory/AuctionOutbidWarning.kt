@@ -21,7 +21,7 @@ object AuctionOutbidWarning {
     )
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!SkyHanniMod.feature.inventory.auctions.auctionOutbid) return
         if (!outbidPattern.matches(event.message)) return
 

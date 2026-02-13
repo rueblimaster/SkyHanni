@@ -8,11 +8,9 @@ import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.ProfileJoinEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.test.command.ErrorManager
-import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
+import at.hannibal2.skyhanni.utils.RenderUtils.renderStrings
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.StringUtils.allLettersFirstUppercase
-import at.hannibal2.skyhanni.utils.renderables.Renderable
-import at.hannibal2.skyhanni.utils.renderables.primitives.text
 
 enum class TabWidgetDisplay(
     private val configName: String?,
@@ -56,8 +54,6 @@ enum class TabWidgetDisplay(
     AGATHA_CONTEST("Agatha's Contest", TabWidget.AGATHA_CONTEST),
     COMMISSIONS("Mining Commissions", TabWidget.COMMISSIONS),
     SLAYER("Slayer", TabWidget.SLAYER),
-    PITY("Pity", TabWidget.PITY),
-    PICKAXE_COOLDOWN("Pickaxe Cooldown", TabWidget.PICKAXE_COOLDOWN),
     ;
 
     val position get() = config.displayPositions[ordinal]
@@ -77,12 +73,11 @@ enum class TabWidgetDisplay(
             if (!isEnabled()) return
             if (config.displayPositions.isEmpty()) return
             config.display.get().forEach { widget ->
-                widget.position.renderRenderables(
+                widget.position.renderStrings(
                     widget.widgets.flatMap { subWidget ->
-                        subWidget.lines.map { Renderable.text(it) }
+                        subWidget.lines
                     },
                     posLabel = "Display Widget: ${widget.name}",
-                    extraSpace = -2
                 )
             }
         }

@@ -65,7 +65,6 @@ object GitHubUtils {
                 ApiUtils.getZipResponse(destinationZip, fullArchiveUrl, apiName, !shouldError)
                 true
             } catch (e: Exception) {
-                ErrorManager.logErrorWithData(e, "Failed to download archive from $fullArchiveUrl")
                 SkyHanniMod.logger.error("Failed to download archive from $fullArchiveUrl", e)
                 false
             }
@@ -139,10 +138,9 @@ object GitHubUtils {
         @Expose val payload: String? = null,
         @Expose @field:SerializedName("verified_at") private val verifiedAtString: String? = null,
     ) {
-        val verifiedAt: SimpleTimeMark?
-            get() = verifiedAtString?.let {
-                Instant.parse(it).toEpochMilli().asTimeMark()
-            }
+        val verifiedAt: SimpleTimeMark? get() = verifiedAtString?.let {
+            Instant.parse(it).toEpochMilli().asTimeMark()
+        }
     }
 
     data class CommitStats(

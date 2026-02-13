@@ -21,6 +21,10 @@ import java.util.NavigableMap
 import java.util.TreeMap
 import java.util.regex.Pattern
 import java.util.regex.PatternSyntaxException
+//#if FORGE
+import net.minecraft.launchwrapper.Launch
+import net.minecraftforge.fml.common.FMLCommonHandler
+//#endif
 
 /**
  * Manages [RepoPattern]s.
@@ -57,8 +61,12 @@ object RepoPatternManager {
 
     private var wasPreInitialized = false
 
-    // idk what this is for
-    private val insideTest = false
+    private val insideTest =
+        //#if FORGE
+        Launch.blackboard == null
+    //#else
+    //$$ false
+    //#endif
 
     var inTestDuplicateUsage = true
 
@@ -152,7 +160,7 @@ object RepoPatternManager {
 
     @HandleEvent
     fun onRepoReload(event: RepositoryReloadEvent) {
-        loadPatternsFromDump(event.getConstant<RepoPatternDump>("regexesModern"))
+        loadPatternsFromDump(event.getConstant<RepoPatternDump>("regexes"))
     }
 
     fun loadPatternsFromDump(dump: RepoPatternDump) {
@@ -263,6 +271,17 @@ object RepoPatternManager {
     @HandleEvent
     fun onPreInitFinished(event: PreInitFinishedEvent) {
         wasPreInitialized = true
+        // no reason to do this on 1.21
+        //#if FORGE
+        val dumpDirective = System.getenv("SKYHANNI_DUMP_REGEXES")
+        if (dumpDirective.isNullOrBlank()) return
+        val (sourceLabel, path) = dumpDirective.split(":", limit = 2)
+        dump(sourceLabel, File(path))
+        if (System.getenv("SKYHANNI_DUMP_REGEXES_EXIT") != null) {
+            logger.info("Exiting after dumping RepoPattern regex patterns to $path")
+            FMLCommonHandler.instance().exitJava(0, false)
+        }
+        //#endif
     }
 
     fun of(key: String, fallback: String, parentKeyHolder: RepoPatternKeyOwner? = null): RepoPattern {

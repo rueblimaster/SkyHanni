@@ -8,7 +8,6 @@ import at.hannibal2.skyhanni.events.SecondPassedEvent
 import at.hannibal2.skyhanni.events.chat.SkyHanniChatEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLessResets
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 
 @SkyHanniModule
@@ -51,7 +50,7 @@ object BacteApi {
     private var bacte: Mob? = null
 
     @HandleEvent(onlyOnIsland = IslandType.THE_RIFT)
-    fun onChatMessage(event: SkyHanniChatEvent.Allow) {
+    fun onChatMessage(event: SkyHanniChatEvent) {
         nameChatPattern.matchMatcher(event.message) {
             currentPhase = Phase.fromNumber(group("name").length)
         }
@@ -75,7 +74,7 @@ object BacteApi {
     fun onSecondPassed(event: SecondPassedEvent) {
         val bacte = bacte ?: return
 
-        val name = bacte.armorStand?.name?.formattedTextCompatLessResets() ?: return
+        val name = bacte.armorStand?.name ?: return
 
         namePattern.matchMatcher(name) {
             currentPhase = Phase.fromNumber(group("name").length)

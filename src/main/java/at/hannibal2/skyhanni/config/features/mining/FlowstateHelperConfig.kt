@@ -41,7 +41,6 @@ class FlowstateHelperConfig {
     @Expose
     @ConfigOption(name = "Personal Best Message", desc = "Sends a message when you beat your flowstate record.")
     @ConfigEditorBoolean
-    @FeatureToggle
     var personalBestMessage: Boolean = true
 
     @Expose

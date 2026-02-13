@@ -53,7 +53,6 @@ class ExperimentsAddonsConfig {
         desc = "Display an alert when you reach the maximum clicks gained from Chronomatron or Ultrasequencer.",
     )
     @ConfigEditorBoolean
-    @FeatureToggle
     var maxSequenceAlert: Boolean = true
 
 }

@@ -9,11 +9,9 @@ import at.hannibal2.skyhanni.data.Perk.Companion.getPerkFromName
 import at.hannibal2.skyhanni.data.jsonobjects.other.MayorCandidate
 import at.hannibal2.skyhanni.data.jsonobjects.other.MayorElection
 import at.hannibal2.skyhanni.data.jsonobjects.other.MayorJson
-import at.hannibal2.skyhanni.data.jsonobjects.repo.ForcedRepoPerksJson
 import at.hannibal2.skyhanni.events.ConfigLoadEvent
 import at.hannibal2.skyhanni.events.DebugDataCollectEvent
 import at.hannibal2.skyhanni.events.InventoryFullyOpenedEvent
-import at.hannibal2.skyhanni.events.RepositoryReloadEvent
 import at.hannibal2.skyhanni.events.SecondPassedEvent
 import at.hannibal2.skyhanni.events.chat.SkyHanniChatEvent
 import at.hannibal2.skyhanni.features.fame.ReminderUtils
@@ -33,19 +31,17 @@ import at.hannibal2.skyhanni.utils.api.ApiStaticGetPath
 import at.hannibal2.skyhanni.utils.api.ApiUtils
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.nextAfter
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.put
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
 import at.hannibal2.skyhanni.utils.json.fromJson
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.world.item.ItemStack
+import net.minecraft.item.ItemStack
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 
 @SkyHanniModule
 object ElectionApi {
+
     private val group = RepoPattern.group("mayorapi")
-    private val config get() = SkyHanniMod.feature.dev.debug
-    private val assumeMayorConfig get() = config.assumeMayor
 
     /**
      * REGEX-TEST: Schedules an extra §bFishing Festival §7event during the year.
@@ -88,15 +84,8 @@ object ElectionApi {
         "§9Perkpocalypse Perks:",
     )
 
-    /**
-     * Current mayor on the main server. Mayor and perks set from the Hypixel Election API.
-     *
-     * Custom Setter: Overridden with max-perk assumed mayor if option enabled.
-     */
     var currentMayor: ElectionCandidate? = null
-        private set(value) {
-            field = if (shouldAssumeMayor()) assumeMayorConfig.get().addAllPerks() else value
-        }
+        private set
     var currentMinister: ElectionCandidate? = null
         private set
     private var lastMayor: ElectionCandidate? = null
@@ -165,7 +154,7 @@ object ElectionApi {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (electionOverPattern.matches(event.message)) {
             lastMayor = currentMayor
             currentMayor = ElectionCandidate.UNKNOWN
@@ -179,7 +168,7 @@ object ElectionApi {
         if (!calendarGuiPattern.matches(event.inventoryName)) return
 
         val stack: ItemStack = event.inventoryItems.values.firstOrNull {
-            mayorHeadPattern.matchMatcher(it.hoverName.formattedTextCompatLeadingWhiteLessResets()) {
+            mayorHeadPattern.matchMatcher(it.displayName) {
                 group("name") == "Jerry"
             } ?: false
         } ?: return
@@ -230,9 +219,8 @@ object ElectionApi {
             }
         }
         lastUpdate = SimpleTimeMark.now()
-        if (assumeMayorConfig.get() != ElectionCandidate.DISABLED) return
 
-        SkyHanniMod.launchIOCoroutine("election api fetch", timeout = 1.minutes) {
+        SkyHanniMod.launchIOCoroutine {
             val (_, jsonObject) = ApiUtils.getJsonResponse(hypixelElectionApiStatic).assertSuccessWithData() ?: return@launchIOCoroutine
             rawMayorData = ConfigManager.gson.fromJson<MayorJson>(jsonObject)
             val data = rawMayorData ?: return@launchIOCoroutine
@@ -258,21 +246,17 @@ object ElectionApi {
 
     private fun List<MayorCandidate>.bestCandidate() = maxBy { it.votes }
 
-    private fun shouldAssumeMayor() = assumeMayorConfig.get() != ElectionCandidate.DISABLED
-
     @HandleEvent
     fun onConfigLoad(event: ConfigLoadEvent) {
-        if (event.firstLoad && config.disableAssumeMayor) {
-            assumeMayorConfig.set(ElectionCandidate.DISABLED)
-        }
-        if (shouldAssumeMayor()) currentMayor = assumeMayorConfig.get().addAllPerks()
-        assumeMayorConfig.onToggle {
-            val mayor = assumeMayorConfig.get()
+        val config = SkyHanniMod.feature.dev.debug.assumeMayor
+        config.onToggle {
+            val mayor = config.get()
 
-            if (!shouldAssumeMayor()) {
+            if (mayor == ElectionCandidate.DISABLED) {
                 checkHypixelApi(forceReload = true)
             } else {
-                currentMayor = mayor.addAllPerks()
+                mayor.addPerks(mayor.perks.toList())
+                currentMayor = mayor
             }
         }
     }
@@ -281,7 +265,7 @@ object ElectionApi {
     fun onDebug(event: DebugDataCollectEvent) {
         event.title("Mayor Election")
 
-        val assumeMayor = assumeMayorConfig.get()
+        val assumeMayor = SkyHanniMod.feature.dev.debug.assumeMayor.get()
 
         val list = buildList {
             add("Current Mayor: ${currentMayor?.name ?: "Unknown"}")
@@ -305,23 +289,8 @@ object ElectionApi {
     }
 
     val isDerpy get() = Perk.DOUBLE_MOBS_HP.isActive
-    val isAura get() = Perk.WORK_HARDER.isActive
 
-    fun Int.derpy() = if (isDerpy) this / 2 else if (isAura) (this / 11 * 10) else this
+    fun Int.derpy() = if (isDerpy) this / 2 else this
 
-    fun Int.ignoreDerpy() = if (isDerpy) this * 2 else if (isAura) (this * 1.1).toInt() else this
-
-    var repoPerks: List<Perk>? = null
-
-    @HandleEvent
-    fun onRepoReload(event: RepositoryReloadEvent) {
-        val data = event.getConstant<ForcedRepoPerksJson>("misc/ForcedRepoPerks")
-        repoPerks?.forEach { it.isActive = false }
-        repoPerks = data.perks
-        if (data.perks != null) {
-            val mayor = currentMayor
-            mayor?.addAdditionalPerks(data.perks)
-            currentMayor = mayor
-        }
-    }
+    fun Int.ignoreDerpy() = if (isDerpy) this * 2 else this
 }

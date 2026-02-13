@@ -9,9 +9,11 @@ import at.hannibal2.skyhanni.events.GuiContainerEvent
 import at.hannibal2.skyhanni.events.GuiRenderEvent
 import at.hannibal2.skyhanni.events.InventoryCloseEvent
 import at.hannibal2.skyhanni.events.InventoryUpdatedEvent
+import at.hannibal2.skyhanni.events.minecraft.ToolTipEvent
 import at.hannibal2.skyhanni.features.inventory.wardrobe.WardrobeApi.MAX_PAGES
 import at.hannibal2.skyhanni.features.inventory.wardrobe.WardrobeApi.MAX_SLOT_PER_PAGE
 import at.hannibal2.skyhanni.features.misc.items.EstimatedItemValue
+import at.hannibal2.skyhanni.mixins.transformers.gui.AccessorGuiContainer
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.test.command.ErrorManager
 import at.hannibal2.skyhanni.utils.ColorUtils
@@ -31,19 +33,16 @@ import at.hannibal2.skyhanni.utils.RenderUtils.VerticalAlignment
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderable
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.compat.DrawContextUtils
-import at.hannibal2.skyhanni.utils.compat.SkyHanniGuiContainer
-import at.hannibal2.skyhanni.utils.compat.getTooltip
 import at.hannibal2.skyhanni.utils.compat.getTooltipCompat
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.container.HorizontalContainerRenderable.Companion.horizontal
 import at.hannibal2.skyhanni.utils.renderables.container.VerticalContainerRenderable.Companion.vertical
-import at.hannibal2.skyhanni.utils.renderables.fakePlayer
 import at.hannibal2.skyhanni.utils.renderables.primitives.WrappedStringRenderable.Companion.wrappedText
 import at.hannibal2.skyhanni.utils.renderables.primitives.placeholder
 import at.hannibal2.skyhanni.utils.renderables.primitives.text
 import net.minecraft.client.Minecraft
-import net.minecraft.network.chat.Component
-import net.minecraft.world.item.ItemStack
+import net.minecraft.client.gui.inventory.GuiContainer
+import net.minecraft.item.ItemStack
 import java.awt.Color
 import kotlin.math.min
 import kotlin.time.Duration.Companion.milliseconds
@@ -111,12 +110,12 @@ object CustomWardrobe {
         }
 
         DrawContextUtils.pushMatrix()
-        DrawContextUtils.translate(0f, 0f)
+        DrawContextUtils.translate(0f, 0f, 100f)
 
         position.renderRenderable(renderable, posLabel = GUI_NAME, addToGuiManager = false)
 
         if (EstimatedItemValue.config.enabled) {
-            DrawContextUtils.translate(0f, 0f)
+            DrawContextUtils.translate(0f, 0f, 400f)
             EstimatedItemValue.tryRendering()
         }
         DrawContextUtils.popMatrix()
@@ -128,10 +127,11 @@ object CustomWardrobe {
     fun onBackgroundDraw(event: GuiRenderEvent.ChestGuiOverlayRenderEvent) {
         if (!isEnabled()) return
         if (!editMode) return
-        val gui = Minecraft.getInstance().screen as? SkyHanniGuiContainer ?: return
+        val gui = Minecraft.getMinecraft().currentScreen as? GuiContainer ?: return
         val renderable = inventoryButton ?: addReEnableButton().also { inventoryButton = it }
-        val posX = gui.leftPos + (1.05 * gui.imageWidth).toInt()
-        val posY = gui.topPos + (gui.imageHeight - renderable.height) / 2
+        val accessorGui = gui as AccessorGuiContainer
+        val posX = accessorGui.guiLeft + (1.05 * accessorGui.width).toInt()
+        val posY = accessorGui.guiTop + (accessorGui.height - renderable.height) / 2
         inventoryButtonPosition.moveTo(posX, posY)
             .renderRenderable(renderable, posLabel = GUI_NAME, addToGuiManager = false)
     }
@@ -230,10 +230,10 @@ object CustomWardrobe {
         }
 
         for (armorIndex in 0 until 4) {
-            val stack = slot.armor.getOrNull(armorIndex)?.copy()
+            val stack = slot.armor[armorIndex]?.copy()
             var renderable = Renderable.placeholder(containerWidth, hoverableSizes[armorIndex])
             if (stack != null) {
-                val toolTip = getToolTip(stack, slot)
+                val toolTip = getToolTip(stack, slot, armorIndex)
                 if (toolTip != null) {
                     renderable = Renderable.hoverTips(
                         renderable,
@@ -253,10 +253,21 @@ object CustomWardrobe {
         return Renderable.vertical(loreList, spacing = 1)
     }
 
-    private fun getToolTip(stack: ItemStack, slot: WardrobeSlot): List<Component>? {
+    private fun getToolTip(
+        stack: ItemStack,
+        slot: WardrobeSlot,
+        armorIndex: Int,
+    ): List<String>? {
         try {
             // Get tooltip from minecraft and other mods
-            val toolTips = stack.getTooltip(Minecraft.getInstance().options.advancedItemTooltips)
+            // TODO add support for advanced tooltip (F3+H)
+            val toolTips = stack.getTooltipCompat(false)
+
+            // Modify tooltip via SkyHanni Events
+            val mcSlotId = slot.inventorySlots[armorIndex]
+            // if the slot is null, we don't fire LorenzToolTipEvent at all.
+            val mcSlot = InventoryUtils.getSlotAtIndex(mcSlotId) ?: return toolTips
+            ToolTipEvent(mcSlot, stack, toolTips).post()
 
             return toolTips
         } catch (e: Exception) {
@@ -280,13 +291,17 @@ object CustomWardrobe {
         val fakePlayer = FakePlayer()
         var scale = playerWidth
 
-        for (equipment in net.minecraft.world.entity.player.Inventory.EQUIPMENT_SLOT_MAPPING.values) {
-            val armorOrdinal = equipment.ordinal - 2
-            if (armorOrdinal < 0 || armorOrdinal > 3) continue
-            var stack = slot.armor.reversed()[armorOrdinal]?.copy()?.removeEnchants()
-            if (stack == null) stack = ItemStack.EMPTY
-            fakePlayer.equipment.set(equipment, stack)
-        }
+        //#if MC < 1.16
+        fakePlayer.inventory.armorInventory = slot.armor.map { it?.copy()?.removeEnchants() }.reversed().toTypedArray()
+        //#else
+        //$$ for (equipment in net.minecraft.entity.player.PlayerInventory.EQUIPMENT_SLOTS.values) {
+        //$$     val armorOrdinal = equipment.ordinal - 2
+        //$$     if (armorOrdinal < 0 || armorOrdinal > 3) continue
+        //$$     var stack = slot.armor.reversed()[armorOrdinal]?.copy()?.removeEnchants()
+        //$$     if (stack == null) stack = ItemStack.EMPTY
+        //$$     fakePlayer.inventory.equipment.put(equipment, stack)
+        //$$ }
+        //#endif
 
         val playerColor = if (!slot.isInCurrentPage()) {
             scale *= 0.9

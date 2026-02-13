@@ -1,15 +1,24 @@
 package at.hannibal2.skyhanni.utils.compat
 
-import net.minecraft.core.Holder
-import net.minecraft.core.registries.Registries
-import net.minecraft.resources.Identifier
-import net.minecraft.world.item.enchantment.Enchantment
+import net.minecraft.enchantment.Enchantment
+//#if MC > 1.21
+//$$ import net.minecraft.registry.RegistryKeys
+//$$ import net.minecraft.registry.entry.RegistryEntry
+//$$ import net.minecraft.util.Identifier
+//#endif
 
 enum class EnchantmentsCompat(
-    val enchantment: Holder<Enchantment>,
+    //#if MC < 1.21
+    val enchantment: Enchantment
+    //#else
+    //$$ val enchantment: RegistryEntry<Enchantment>
+    //#endif
 ) {
     PROTECTION(
-        MinecraftCompat.localWorld.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
-            .get(Identifier.withDefaultNamespace("protection")).get(),
+        //#if MC < 1.16
+        Enchantment.protection
+        //#else
+        //$$ MinecraftCompat.localWorld.registryManager.getOrThrow(RegistryKeys.ENCHANTMENT).getEntry(Identifier.ofVanilla("protection")).get()
+        //#endif
     ),
 }

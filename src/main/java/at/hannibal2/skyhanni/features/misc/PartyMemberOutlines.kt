@@ -9,9 +9,8 @@ import at.hannibal2.skyhanni.features.dungeon.DungeonApi
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ColorUtils.toColor
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLessResets
-import net.minecraft.client.player.RemotePlayer
-import net.minecraft.world.entity.Entity
+import net.minecraft.client.entity.EntityOtherPlayerMP
+import net.minecraft.entity.Entity
 import java.awt.Color
 
 @SkyHanniModule
@@ -30,7 +29,7 @@ object PartyMemberOutlines {
         (SkyBlockUtils.inSkyBlock || OutsideSBFeature.HIGHLIGHT_PARTY_MEMBERS.isSelected()) && !DungeonApi.inDungeon()
 
     private fun getEntityOutlineColor(entity: Entity): Color? {
-        if (entity !is RemotePlayer || !PartyApi.partyMembers.contains(entity.name.string)) return null
+        if (entity !is EntityOtherPlayerMP || !PartyApi.partyMembers.contains(entity.name)) return null
         return config.outlineColor.toColor()
     }
 }

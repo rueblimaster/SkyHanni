@@ -8,7 +8,6 @@ import at.hannibal2.skyhanni.events.SecondPassedEvent
 import at.hannibal2.skyhanni.events.chat.SkyHanniChatEvent
 import at.hannibal2.skyhanni.features.inventory.chocolatefactory.data.ChocolateAmount
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import at.hannibal2.skyhanni.utils.DelayedRun
 import at.hannibal2.skyhanni.utils.DisplayTableEntry
 import at.hannibal2.skyhanni.utils.ItemPriceUtils.getPrice
 import at.hannibal2.skyhanni.utils.ItemPriceUtils.getPriceOrNull
@@ -30,12 +29,10 @@ import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.StringUtils.addStrikethorugh
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.UtilsPatterns
-import at.hannibal2.skyhanni.utils.chat.TextHelper.asComponent
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
-import at.hannibal2.skyhanni.utils.compat.mapToComponents
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.RenderableUtils
-import net.minecraft.world.item.ItemStack
+import net.minecraft.item.ItemStack
 
 @SkyHanniModule
 object CFShopPrice {
@@ -96,9 +93,7 @@ object CFShopPrice {
         if (!callUpdate) {
             products.forEach { it.slot = null }
         }
-        DelayedRun.runOrNextTick {
-            update()
-        }
+        update()
     }
 
     private fun updateProducts() {
@@ -159,11 +154,11 @@ object CFShopPrice {
             }
             table.add(
                 DisplayTableEntry(
-                    product.name.addStrikethorugh(!product.canBeBought).asComponent(),
-                    "§6§l$perFormat".asComponent(),
+                    product.name.addStrikethorugh(!product.canBeBought),
+                    "§6§l$perFormat",
                     factor,
                     product.item,
-                    hover.mapToComponents(),
+                    hover,
                     highlightsOnHoverSlots = product.slot?.let { listOf(it) }.orEmpty(),
                 ),
             )
@@ -198,7 +193,7 @@ object CFShopPrice {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!inInventory) return
         itemBoughtPattern.matchMatcher(event.message) {
             val item = group("item")

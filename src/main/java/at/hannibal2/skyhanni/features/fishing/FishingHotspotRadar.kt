@@ -23,7 +23,7 @@ import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawDynamicText
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawLineToEye
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.exactPlayerEyeLocation
-import net.minecraft.core.particles.ParticleTypes
+import net.minecraft.util.EnumParticleTypes
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -43,7 +43,7 @@ object FishingHotspotRadar {
     fun onReceiveParticle(event: ReceiveParticleEvent) {
         if (!isEnabled()) return
         val type = event.type
-        if (type != ParticleTypes.FLAME) return
+        if (type != EnumParticleTypes.FLAME) return
         if (event.count != 1 || event.speed != 0f) return
 
         lastParticle = SimpleTimeMark.now()
@@ -107,7 +107,9 @@ object FishingHotspotRadar {
         IslandGraphs.reportLocation(
             location,
             userFacingReason = "Found no path to fishing hotspot",
-            technicalInfo = "no node with tag 'fishing hotspot' found near the radar hotspot target",
+            additionalInternalInfo = "no node with tag 'fishing hotspot' found near the radar hotspot target",
+            ignoreCache = true,
+            betaOnly = true,
         )
     }
 

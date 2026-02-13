@@ -14,12 +14,10 @@ import at.hannibal2.skyhanni.utils.NumberUtil.addSeparators
 import at.hannibal2.skyhanni.utils.NumberUtil.formatLong
 import at.hannibal2.skyhanni.utils.RegexUtils.firstMatcher
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
-import at.hannibal2.skyhanni.utils.StringUtils.takeIfNotEmpty
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.world.item.Items
+import net.minecraft.init.Items
 
 @SkyHanniModule
 object LogBookStats {
@@ -67,7 +65,7 @@ object LogBookStats {
         val list = mutableListOf<VisitorInfo>()
 
         for ((index, item) in event.inventoryItems) {
-            val visitorName = item.hoverName.formattedTextCompatLeadingWhiteLessResets().takeIfNotEmpty() ?: continue
+            val visitorName = item.displayName ?: continue
             var timesVisited = 0L
             var timesAccepted = 0L
             val lore = item.getLore()
@@ -120,12 +118,12 @@ object LogBookStats {
 
     private fun checkPages(event: InventoryFullyOpenedEvent) {
         val next = event.inventoryItems[53]
-        if (next?.item != Items.ARROW) {
+        if (next?.item != Items.arrow) {
             currentPage++
             return
         }
         for (item in event.inventoryItems.values) {
-            if (item.hoverName.string != "Next Page") continue
+            if (item.displayName != "§aNext Page") continue
             pagePattern.firstMatcher(item.getLore()) {
                 currentPage = group("page").toInt() - 1
             }

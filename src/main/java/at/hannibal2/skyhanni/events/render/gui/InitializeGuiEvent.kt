@@ -1,7 +1,7 @@
 package at.hannibal2.skyhanni.events.render.gui
 
 import at.hannibal2.skyhanni.api.event.SkyHanniEvent
-import net.minecraft.client.gui.layouts.LayoutElement
-import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.gui.GuiButton
+import net.minecraft.client.gui.GuiScreen
 
-class InitializeGuiEvent(val gui: Screen, val buttonList: MutableList<LayoutElement>) : SkyHanniEvent()
+class InitializeGuiEvent(val gui: GuiScreen, val buttonList: MutableList<GuiButton>) : SkyHanniEvent()

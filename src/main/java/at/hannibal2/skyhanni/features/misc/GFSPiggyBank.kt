@@ -37,7 +37,7 @@ object GFSPiggyBank {
     private val patternList = listOf(crackedPattern, brokePattern)
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
         patternList.matchMatchers(event.message) {
             GetFromSackApi.getFromChatMessageSackItems(ENCHANTED_PORK)

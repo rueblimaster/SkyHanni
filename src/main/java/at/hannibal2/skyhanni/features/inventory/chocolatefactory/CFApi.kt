@@ -32,13 +32,9 @@ import at.hannibal2.skyhanni.utils.StringUtils
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
 import at.hannibal2.skyhanni.utils.TimeUtils.format
 import at.hannibal2.skyhanni.utils.UtilsPatterns
-import at.hannibal2.skyhanni.utils.chat.TextHelper.asComponent
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.nextAfter
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompat
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.network.chat.Component
-import net.minecraft.world.item.ItemStack
+import net.minecraft.item.ItemStack
 import java.util.TreeSet
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
@@ -142,21 +138,19 @@ object CFApi {
 
     @HandleEvent(onlyOnSkyblock = true)
     fun onInventoryFullyOpened(event: InventoryFullyOpenedEvent) {
-        DelayedRun.runNextTick {
-            if (chocolateFactoryInventoryNamePattern.matches(event.inventoryName)) {
-                if (config.enabled) {
-                    chocolateFactoryPaused = true
-                    CFStats.updateDisplay()
-                }
-                return@runNextTick
-            }
-            if (!mainInventory.isInside()) return@runNextTick
-
+        if (chocolateFactoryInventoryNamePattern.matches(event.inventoryName)) {
             if (config.enabled) {
-                factoryUpgrades = emptyList()
-                DelayedRun.runNextTick {
-                    CFDataLoader.updateInventoryItems(event.inventoryItems)
-                }
+                chocolateFactoryPaused = true
+                CFStats.updateDisplay()
+            }
+            return
+        }
+        if (!mainInventory.isInside()) return
+
+        if (config.enabled) {
+            factoryUpgrades = emptyList()
+            DelayedRun.runNextTick {
+                CFDataLoader.updateInventoryItems(event.inventoryItems)
             }
         }
     }
@@ -223,11 +217,9 @@ object CFApi {
     }
 
     fun getNextLevelName(stack: ItemStack): String? = upgradeLorePattern.firstMatcher(stack.getLore()) {
-        val isEmployee = stack.getLore().any { it == "§8Employee" }
-        val upgradeName = if (!isEmployee) groupOrNull("upgradename")
-        else employeeNamePattern.matchMatcher(stack.hoverName.formattedTextCompatLeadingWhiteLessResets()) {
+        val upgradeName = if (stack.getLore().any { it == "§8Employee" }) employeeNamePattern.matchMatcher(stack.displayName) {
             groupOrNull("employee")
-        }
+        } else groupOrNull("upgradename")
         val nextLevel = groupOrNull("nextlevel") ?: groupOrNull("nextlevelalt")
         if (upgradeName == null || nextLevel == null) null
         else "$upgradeName $nextLevel"
@@ -287,12 +279,6 @@ object CFApi {
     fun partyModeReplace(text: String): String {
         return if (config.partyMode.get() && inChocolateFactory && chromaEnabled) {
             text.replace(partyModeRegex, "§z")
-        } else text
-    }
-
-    fun partyModeReplace(text: Component): Component {
-        return if (config.partyMode.get() && inChocolateFactory && chromaEnabled) {
-            text.formattedTextCompat().replace(partyModeRegex, "§z").asComponent()
         } else text
     }
 

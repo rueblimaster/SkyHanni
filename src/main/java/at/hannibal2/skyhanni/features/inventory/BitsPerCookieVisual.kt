@@ -3,8 +3,7 @@ package at.hannibal2.skyhanni.features.inventory
 import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.data.BitsApi
-import at.hannibal2.skyhanni.events.minecraft.ToolTipTextEvent
-import at.hannibal2.skyhanni.events.minecraft.add
+import at.hannibal2.skyhanni.events.minecraft.ToolTipEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.ItemUtils.getInternalNameOrNull
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
@@ -13,7 +12,6 @@ import at.hannibal2.skyhanni.utils.RegexUtils.firstMatcherWithIndex
 import at.hannibal2.skyhanni.utils.RegexUtils.indexOfFirstMatch
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 
 @SkyHanniModule
@@ -23,7 +21,7 @@ object BitsPerCookieVisual {
 
     private val boosterCookie = "BOOSTER_COOKIE".toInternalName()
 
-    private val patternGroup = RepoPattern.group("cookie.bits.new")
+    private val patternGroup = RepoPattern.group("cookie.bits")
 
     /**
      * REGEX-TEST: §dBooster Cookie
@@ -34,33 +32,34 @@ object BitsPerCookieVisual {
     )
 
     /**
-     * REGEX-TEST: Amount: 1x
-     * REGEX-TEST: Amount: 1x
-     * REGEX-TEST: Booster Cookie x6
+     * REGEX-TEST: §7Amount: §a1§7x
+     * REGEX-TEST: §5§o§7Amount: §a1§7x
+     * REGEX-TEST: §5§o§6Booster Cookie §8x6
      */
     private val amountPattern by patternGroup.pattern(
-        "amount", "(?:Booster Cookie x|Amount: )(?<amount>\\d+).*",
+        "amount", "(?:§5§o)?(?:§6Booster Cookie §8x|§7Amount: §a)(?<amount>\\d+).*",
     )
 
     /**
-     * REGEX-TEST: 4 days:
+     * REGEX-TEST: §7§b4 §7days:
+     * REGEX-TEST: §5§o§7§b4 §7days:
      */
     private val timePattern by patternGroup.pattern(
-        "time", "4 days:",
+        "time", "(?:§5§o)?§7§b4 §7days:",
     )
 
     @HandleEvent
-    fun onToolTip(event: ToolTipTextEvent) {
+    fun onToolTip(event: ToolTipEvent) {
         if (!isEnabled()) return
         if (event.itemStack.getInternalNameOrNull() != boosterCookie) return
-        if (wrongCookiePattern.matches(event.itemStack.hoverName.formattedTextCompatLeadingWhiteLessResets())) return
+        if (wrongCookiePattern.matches(event.itemStack.displayName)) return
         var timeReplaced = false
 
         val toolTip = event.toolTip
-        val (cookieAmount, loreIndex) = amountPattern.firstMatcherWithIndex(toolTip.map { it.string }) {
+        val (cookieAmount, loreIndex) = amountPattern.firstMatcherWithIndex(toolTip) {
             group("amount").toInt() to it
         } ?: (1 to 0)
-        val positionIndex = timePattern.indexOfFirstMatch(toolTip.map { it.string })?.also {
+        val positionIndex = timePattern.indexOfFirstMatch(toolTip)?.also {
             timeReplaced = true
             if (config.bulkBuyCookieTime) {
                 toolTip.removeAt(it)

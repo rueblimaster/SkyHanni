@@ -18,7 +18,6 @@ import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawColor
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawString
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 import io.github.notenoughupdates.moulconfig.ChromaColour
-import net.minecraft.network.chat.Component
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -55,7 +54,7 @@ object DungeonHighlightClickedBlocks {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
 
         if (leverPattern.matches(event.message)) {
@@ -63,7 +62,7 @@ object DungeonHighlightClickedBlocks {
         }
 
         if (lockedPattern.matches(event.message)) {
-            blocks.values.lastOrNull { it.displayText.string.contains("Chest") }?.color = config.lockedChestColor
+            blocks.values.lastOrNull { it.displayText.contains("Chest") }?.color = config.lockedChestColor
         }
     }
 
@@ -75,7 +74,7 @@ object DungeonHighlightClickedBlocks {
         val type = event.blockType
 
         val color = if (config.randomColor) getRandomColor().toChromaColor() else getBlockProperties(type).color
-        val displayText = ExtendedChatColor(color.rgb).asText("Clicked ${getBlockProperties(type).name}")
+        val displayText = ExtendedChatColor(color.rgb, false).toString() + "Clicked " + getBlockProperties(type).name
         blocks[event.position] = ClickedBlock(displayText, color)
 
     }
@@ -106,7 +105,7 @@ object DungeonHighlightClickedBlocks {
         event.move(56, "dungeon.highlightClickedBlocks", "dungeon.clickedBlocks.enabled")
     }
 
-    private data class ClickedBlock(val displayText: Component, var color: ChromaColour)
+    private data class ClickedBlock(val displayText: String, var color: ChromaColour)
     private data class BlockProperties(val name: String, val color: ChromaColour)
 
     private fun isEnabled() = !DungeonApi.inBossRoom && DungeonApi.inDungeon() && config.enabled

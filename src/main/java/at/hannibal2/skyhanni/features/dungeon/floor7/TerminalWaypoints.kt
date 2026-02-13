@@ -7,15 +7,13 @@ import at.hannibal2.skyhanni.events.minecraft.SkyHanniRenderWorldEvent
 import at.hannibal2.skyhanni.features.dungeon.DungeonApi
 import at.hannibal2.skyhanni.features.dungeon.DungeonBossApi
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import at.hannibal2.skyhanni.utils.AllEntitiesGetter
 import at.hannibal2.skyhanni.utils.EntityUtils
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLessResets
 import at.hannibal2.skyhanni.utils.getLorenzVec
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawDynamicText
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawWaypointFilled
-import net.minecraft.server.level.ServerPlayer
+import net.minecraft.entity.player.EntityPlayerMP
 
 @SkyHanniModule
 object TerminalWaypoints {
@@ -38,17 +36,15 @@ object TerminalWaypoints {
         TerminalInfo.resetTerminals()
     }
 
-    // Only calls getEntities when terminals get completed, so the performance impact is minimal
-    @OptIn(AllEntitiesGetter::class)
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!inBoss()) return
 
         val playerName = DungeonBossApi.goldorTerminalPattern.matchMatcher(event.message) {
             group("playerName")
         } ?: return
 
-        val playerEntity = EntityUtils.getEntities<ServerPlayer>().find { it.name.formattedTextCompatLessResets() == playerName } ?: return
+        val playerEntity = EntityUtils.getEntities<EntityPlayerMP>().find { it.name == playerName } ?: return
         val terminal = TerminalInfo.getClosestTerminal(playerEntity.getLorenzVec())
         terminal?.highlight = false
     }

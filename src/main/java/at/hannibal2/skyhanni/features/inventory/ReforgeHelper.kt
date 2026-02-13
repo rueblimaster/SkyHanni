@@ -16,7 +16,6 @@ import at.hannibal2.skyhanni.utils.ItemUtils.cleanName
 import at.hannibal2.skyhanni.utils.ItemUtils.getInternalName
 import at.hannibal2.skyhanni.utils.ItemUtils.getItemCategoryOrNull
 import at.hannibal2.skyhanni.utils.ItemUtils.getItemRarityOrNull
-import at.hannibal2.skyhanni.utils.ItemUtils.getLoreComponent
 import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.LorenzRarity
 import at.hannibal2.skyhanni.utils.NumberUtil.toStringWithPlus
@@ -37,9 +36,9 @@ import at.hannibal2.skyhanni.utils.renderables.primitives.WrappedStringRenderabl
 import at.hannibal2.skyhanni.utils.renderables.primitives.emptyText
 import at.hannibal2.skyhanni.utils.renderables.primitives.text
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.world.inventory.AbstractContainerMenu
-import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.Items
+import net.minecraft.init.Items
+import net.minecraft.inventory.Container
+import net.minecraft.item.ItemStack
 import java.awt.Color
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -84,7 +83,7 @@ object ReforgeHelper {
     private fun isEnabled() = SkyBlockUtils.inSkyBlock && config.enabled && isInReforgeMenu
 
     private var itemToReforge: ItemStack? = null
-    private var inventoryContainer: AbstractContainerMenu? = null
+    private var inventoryContainer: Container? = null
 
     private var currentReforge: ReforgeApi.Reforge? = null
     private var reforgeToSearch: ReforgeApi.Reforge? = null
@@ -113,7 +112,7 @@ object ReforgeHelper {
     private val finishedColor = LorenzColor.GREEN.addOpacity(75)
 
     private fun itemUpdate() {
-        val newItem = inventoryContainer?.getSlot(reforgeItem)?.item
+        val newItem = inventoryContainer?.getSlot(reforgeItem)?.stack
         if (newItem?.getInternalName() != itemToReforge?.getInternalName()) {
             reforgeToSearch = null
         }
@@ -127,8 +126,8 @@ object ReforgeHelper {
     @HandleEvent
     fun onSlotClick(event: GuiContainerEvent.SlotClickEvent) {
         if (!isEnabled()) return
-        if (event.slot?.index == reforgeButton) {
-            if (event.slot.item?.getLoreComponent()?.last()?.string != "Click to reforge!") return
+        if (event.slot?.slotNumber == reforgeButton) {
+            if (event.slot.stack?.displayName == "§eReforge Item" || event.slot.stack?.displayName == "§cError!") return
             if (handleReforgeButtonClick(event)) return
         }
 
@@ -158,7 +157,7 @@ object ReforgeHelper {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
         when {
             reforgeChatMessage.matches(event.message) -> {
@@ -202,7 +201,7 @@ object ReforgeHelper {
         isInReforgeMenu = true
         waitForChat.set(false)
         DelayedRun.runNextTick {
-            inventoryContainer = MinecraftCompat.localPlayer.containerMenu
+            inventoryContainer = MinecraftCompat.localPlayer.openContainer
         }
     }
 
@@ -388,7 +387,7 @@ object ReforgeHelper {
         if (currentReforge == null) return
 
         inventoryContainer?.getSlot(reforgeItem)?.let {
-            event.drawSlotText(it.x - 5, it.y, "§e${currentReforge?.name}", 1f)
+            event.drawSlotText(it.xDisplayPosition - 5, it.yDisplayPosition, "§e${currentReforge?.name}", 1f)
         }
     }
 
@@ -422,13 +421,13 @@ object ReforgeHelper {
     }
 
     private fun colorReforgeStone(color: Color, reforgeStone: String?) {
-        val inventory = inventoryContainer?.slots ?: return
-        val slot = inventory.firstOrNull { it?.item?.cleanName() == reforgeStone }
+        val inventory = inventoryContainer?.inventorySlots ?: return
+        val slot = inventory.firstOrNull { it?.stack?.cleanName() == reforgeStone }
         if (slot != null) {
             slot.highlight(color)
         } else {
-            inventory[HEX_REFORGE_NEXT_DOWN_BUTTON].takeIf { it.item?.item == Items.PLAYER_HEAD }?.highlight(color)
-            inventory[HEX_REFORGE_NEXT_UP_BUTTON].takeIf { it.item?.item == Items.PLAYER_HEAD }?.highlight(color)
+            inventory[HEX_REFORGE_NEXT_DOWN_BUTTON]?.takeIf { it.stack?.item == Items.skull }?.highlight(color)
+            inventory[HEX_REFORGE_NEXT_UP_BUTTON]?.takeIf { it.stack?.item == Items.skull }?.highlight(color)
         }
     }
 

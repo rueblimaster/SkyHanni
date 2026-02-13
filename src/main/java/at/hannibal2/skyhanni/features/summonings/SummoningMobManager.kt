@@ -21,15 +21,11 @@ import at.hannibal2.skyhanni.utils.RegexUtils.matches
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderable
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
-import at.hannibal2.skyhanni.utils.compat.appendWithColor
-import at.hannibal2.skyhanni.utils.compat.componentBuilder
-import at.hannibal2.skyhanni.utils.compat.findHealthReal
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.container.VerticalContainerRenderable.Companion.vertical
 import at.hannibal2.skyhanni.utils.renderables.primitives.StringRenderable
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.ChatFormatting
-import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.entity.item.EntityArmorStand
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -75,7 +71,7 @@ object SummoningMobManager {
     )
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!config.summonMessages) return
         if (spawnPattern.matches(event.message)) event.blockedReason = "summoning_soul"
 
@@ -108,18 +104,13 @@ object SummoningMobManager {
         if (!mob.isInRender()) return
         DelayedRun.runNextTick {
             if (lastChatTime.passedSince() > timeOut) {
-                ChatUtils.chat(
-                    componentBuilder {
-                        append("Your Summoning Mob just ")
-                        appendWithColor("died!", ChatFormatting.RED)
-                    }
-                )
+                ChatUtils.chat("Your Summoning Mob just §cdied!")
             }
         }
     }
 
     @HandleEvent(priority = HandleEvent.HIGH, onlyOnSkyblock = true)
-    fun onRenderLiving(event: SkyHanniRenderEntityEvent.Specials.Pre<ArmorStand>) {
+    fun onRenderLiving(event: SkyHanniRenderEntityEvent.Specials.Pre<EntityArmorStand>) {
         if (!config.summoningMobHideNametag) return
         if (event.entity.mob !in mobs) return
         event.cancel()
@@ -134,7 +125,7 @@ object SummoningMobManager {
             add("Summoning mobs: " + mobs.size)
             mobs.forEachIndexed { index, mob ->
                 val entity = mob.baseEntity
-                val health = entity.findHealthReal()
+                val health = entity.health
                 val maxHealth = entity.baseMaxHealth
                 val color = NumberUtil.percentageColor(health.toLong(), maxHealth.toLong()).getChatColor()
                 add("#${index + 1} §a${mob.name} $color${health.shortFormat()}§2/${maxHealth.shortFormat()}§c❤")

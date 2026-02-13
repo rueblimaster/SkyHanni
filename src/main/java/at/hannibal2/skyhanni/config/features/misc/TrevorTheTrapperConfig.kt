@@ -8,7 +8,7 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDraggableLi
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorKeybind
 import io.github.notenoughupdates.moulconfig.annotations.ConfigLink
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
-import org.lwjgl.glfw.GLFW
+import org.lwjgl.input.Keyboard
 
 class TrevorTheTrapperConfig {
     @Expose
@@ -83,7 +83,6 @@ class TrevorTheTrapperConfig {
     @Expose
     @ConfigOption(name = "Mob Dead Warning", desc = "Show a message when Trevor's mob dies.")
     @ConfigEditorBoolean
-    @FeatureToggle
     var mobDiedMessage: Boolean = true
 
     @Expose
@@ -107,8 +106,8 @@ class TrevorTheTrapperConfig {
         desc = "Press this key to warp to Trevor's Den or to accept the quest. " +
             "§eRequires the relevant above settings to be toggled"
     )
-    @ConfigEditorKeybind(defaultKey = GLFW.GLFW_KEY_UNKNOWN)
-    var keyBind: Int = GLFW.GLFW_KEY_UNKNOWN
+    @ConfigEditorKeybind(defaultKey = Keyboard.KEY_NONE)
+    var keyBind: Int = Keyboard.KEY_NONE
 
     @Expose
     @ConfigOption(name = "Trapper Cooldown", desc = "Change the color of Trevor and adds a cooldown over his head.")

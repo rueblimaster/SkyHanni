@@ -10,37 +10,47 @@ import javax.swing.UIManager
 
 object DialogUtils {
 
-    private val closeListener = object : MouseAdapter() {
-        override fun mouseClicked(event: MouseEvent) {
-            (event.source as? JFrame)?.isVisible = false
+    /**
+     * Taken and modified from Skytils
+     */
+    fun openPopupWindow(title: String, message: String) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
+        } catch (e: java.lang.Exception) {
+            ErrorManager.logErrorWithData(
+                e, "Failed to open a popup window",
+                "message" to message,
+            )
         }
-    }
 
-    private val baseFrame by lazy {
-        JFrame().apply {
+        val frame = JFrame().apply {
             isUndecorated = true
             isAlwaysOnTop = true
             setLocationRelativeTo(null)
             isVisible = true
         }
-    }
 
-    private val okButton = JButton("Ok").apply { addMouseListener(closeListener) }
-
-    /**
-     * Taken and modified from Skytils
-     */
-    fun openPopupWindow(title: String, message: String) = runCatching {
-        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
-        JOptionPane.showOptionDialog(
-            baseFrame, message, title,
-            JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null,
-            listOf(okButton).toTypedArray(), okButton,
+        val buttons = mutableListOf<JButton>()
+        val close = JButton("Ok")
+        close.addMouseListener(
+            object : MouseAdapter() {
+                override fun mouseClicked(event: MouseEvent) {
+                    frame.isVisible = false
+                }
+            },
         )
-    }.onFailure { e ->
-        ErrorManager.logErrorWithData(
-            e, "Failed to open a popup window",
-            "message" to message,
+        buttons.add(close)
+
+        val allOptions = buttons.toTypedArray()
+        JOptionPane.showOptionDialog(
+            frame,
+            message,
+            title,
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.INFORMATION_MESSAGE,
+            null,
+            allOptions,
+            allOptions[0],
         )
     }
 }

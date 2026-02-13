@@ -26,11 +26,10 @@ import at.hannibal2.skyhanni.utils.ColorUtils.toColor
 import at.hannibal2.skyhanni.utils.DialogUtils
 import at.hannibal2.skyhanni.utils.HypixelCommands
 import at.hannibal2.skyhanni.utils.InventoryDetector
-import at.hannibal2.skyhanni.utils.ItemUtils.addEnchantGlint
-import at.hannibal2.skyhanni.utils.ItemUtils.getLoreComponent
+import at.hannibal2.skyhanni.utils.ItemUtils.getLore
 import at.hannibal2.skyhanni.utils.NumberUtil.formatPercentage
 import at.hannibal2.skyhanni.utils.RegexUtils.groupOrNull
-import at.hannibal2.skyhanni.utils.RegexUtils.matchAllComponents
+import at.hannibal2.skyhanni.utils.RegexUtils.matchAll
 import at.hannibal2.skyhanni.utils.RegexUtils.matchGroups
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
@@ -42,7 +41,7 @@ import at.hannibal2.skyhanni.utils.SoundUtils
 import at.hannibal2.skyhanni.utils.TimeUtils.format
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.takeIfNotEmpty
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
+import at.hannibal2.skyhanni.utils.compat.EnchantmentsCompat
 import at.hannibal2.skyhanni.utils.json.toJsonArray
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.Renderable.Companion.renderBounds
@@ -54,7 +53,7 @@ import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 import com.google.gson.JsonPrimitive
 import kotlinx.coroutines.sync.Mutex
 import net.minecraft.client.Minecraft
-import net.minecraft.world.item.ItemStack
+import net.minecraft.item.ItemStack
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
@@ -91,10 +90,10 @@ object GardenNextJacobContest {
         contest.crops.contains(cropName) && config.otherGuis
     } ?: false
 
-    fun resetContestData(force: Boolean = false) {
+    fun resetContestData() {
         knownContests = listOf()
         fetchedFromElite = false
-        if (force) lastFetchAttempted = SimpleTimeMark.farPast()
+        lastFetchAttempted = SimpleTimeMark.farPast()
         fetchContestsIfAble()
     }
 
@@ -119,25 +118,25 @@ object GardenNextJacobContest {
 
     // This pattern covers both the tab list widget, and calendar item lore.
     /**
-     * REGEX-TEST: ○ Cactus
-     * REGEX-TEST: ☘ Carrot
-     * REGEX-TEST: ○ Melon
-     * REGEX-TEST:  ☘ Mushroom
-     * REGEX-TEST:  ○ Pumpkin
-     * REGEX-TEST:  ○ Wheat
+     * REGEX-TEST: §e○ §7Cactus
+     * REGEX-TEST: §6☘ §7Carrot
+     * REGEX-TEST: §e○ §7Melon
+     * REGEX-TEST:  §r§6☘ §r§fMushroom
+     * REGEX-TEST:  §r§e○ §r§fPumpkin
+     * REGEX-TEST:  §r§e○ §r§fWheat
      */
     private val cropPattern by patternGroup.pattern(
-        "crop-no-color",
-        " ?(?:○|(?<boosted>☘)) (?<crop>.*)",
+        "crop",
+        " ?(?:§.)*(?:○|(?<boosted>☘)) (?:§.)*(?<crop>.*)",
     )
 
     /**
-     * REGEX-TEST: Jacob's Contest: 19m left
-     * REGEX-TEST: Jacob's Contest: 8m left
+     * REGEX-TEST: §e§lJacob's Contest: §r§a19m left
+     * REGEX-TEST: §e§lJacob's Contest: §r§a8m left
      */
     private val timeLeftPattern by patternGroup.pattern(
-        "time-left-no-color",
-        "Jacob's Contest: (?<timeleft>\\d+[smh]+) left",
+        "time-left",
+        "(?:§.)+Jacob's Contest: (?:§.)+(?<timeleft>\\d+[smh]+) left",
     )
 
     @HandleEvent
@@ -192,7 +191,7 @@ object GardenNextJacobContest {
     fun onWidgetUpdate(event: WidgetUpdateEvent) {
         if (!event.isWidget(TabWidget.JACOB_CONTEST)) return
         simpleDisplay = Renderable.vertical {
-            event.lines.forEach { add(Renderable.text(it)) }
+            event.lines.forEach { addString(it) }
             if (isCloseToNewYear()) addString(CLOSE_TO_NEW_YEAR_TEXT)
             else {
                 addString("§cOpen calendar for")
@@ -206,9 +205,9 @@ object GardenNextJacobContest {
         nextContest ?: return
         val firstLine = lines.firstOrNull() ?: return
         if (timeLeftPattern.matches(firstLine)) return
-        cropPattern.matchAllComponents(lines) {
-            if (groupOrNull("boosted") == null) return@matchAllComponents
-            val cropType = CropType.getByNameOrNull(groupOrNull("crop") ?: return@matchAllComponents)
+        cropPattern.matchAll(lines) {
+            if (groupOrNull("boosted") == null) return@matchAll
+            val cropType = CropType.getByNameOrNull(groupOrNull("crop") ?: return@matchAll)
             nextContest?.boostedCrop = cropType
         }
     }
@@ -253,10 +252,10 @@ object GardenNextJacobContest {
         if (haveAllContests) return
 
         val contestsOnPage = items.mapNotNull { item ->
-            val lore = item.getLoreComponent()
-            if (!lore.any { it.string.contains("Jacob's Farming Contest") }) return@mapNotNull null
+            val lore = item.getLore()
+            if (!lore.any { it.contains("§6§eJacob's Farming Contest") }) return@mapNotNull null
 
-            val day = dayPattern.matchMatcher(item.hoverName.formattedTextCompatLeadingWhiteLessResets()) {
+            val day = dayPattern.matchMatcher(item.displayName) {
                 group("day").toInt()
             } ?: return@mapNotNull null
 
@@ -301,7 +300,7 @@ object GardenNextJacobContest {
         if (config.shareAutomatically == ShareContestsEntry.ASK) {
             ChatUtils.clickableChat(
                 "§2Click here to submit this year's farming contests. Thank you for helping everyone out!",
-                onClick = ::shareContests,
+                onClick = { shareContests() },
                 "§eClick to submit!",
                 oneTimeClick = true,
             )
@@ -403,7 +402,7 @@ object GardenNextJacobContest {
         for (crop in contest.crops) {
             val isBoosted = crop == contest.boostedCrop
             val cropStack = crop.getItemStackCopy("garden_next_jacob:$crop-$isBoosted-$activeContest").apply {
-                if (isBoosted) addEnchantGlint()
+                if (isBoosted) addEnchantment(EnchantmentsCompat.PROTECTION.enchantment, 1)
             }
             val stack = Renderable.item(cropStack, 1.0)
             if (config.additionalBoostedHighlight && isBoosted) {
@@ -432,8 +431,8 @@ object GardenNextJacobContest {
         val cropTextNoColor = crops.joinToString(", ") {
             if (it == boostedCrop) "<b>${it.cropName}</b>" else it.cropName
         }
-        if (config.warnPopup && !Minecraft.getInstance().isWindowActive) {
-            SkyHanniMod.launchCoroutine("garden jacob contest openPopupWindow") {
+        if (config.warnPopup && !Minecraft.getMinecraft().inGameHasFocus) {
+            SkyHanniMod.launchIOCoroutine {
                 DialogUtils.openPopupWindow(
                     title = "SkyHanni Jacob Contest Notification",
                     message = "<html>Farming Contest soon!<br />Crops: $cropTextNoColor</html>",
@@ -468,8 +467,8 @@ object GardenNextJacobContest {
         // Allows retries every 10 minutes when it's after 1 day into the new year
         if (lastFetchAttempted.passedSince() < 10.minutes || nextContestsAvailableAt.isInFuture()) return
 
-        SkyHanniMod.launchIOCoroutineWithMutex("garden jacob contest fetch", fetchingContestsMutex) {
-            knownContests = EliteDevApi.fetchUpcomingContests()
+        SkyHanniMod.launchIOCoroutineWithMutex(fetchingContestsMutex) {
+            knownContests = EliteDevApi.fetchUpcomingContests().orEmpty()
             handleFetchedContests()
             lastFetchAttempted = SimpleTimeMark.now()
         }
@@ -497,7 +496,7 @@ object GardenNextJacobContest {
 
     private fun sendContestsIfAble() {
         if (!haveAllContests || isCloseToNewYear()) return
-        SkyHanniMod.launchIOCoroutineWithMutex("garden jacob contest send", sendingContestsMutex) {
+        SkyHanniMod.launchIOCoroutineWithMutex(sendingContestsMutex) {
             if (EliteDevApi.submitContests(knownContests)) {
                 ChatUtils.chat("Successfully submitted this years upcoming contests, thank you for helping everyone out!")
             } else ErrorManager.logErrorStateWithData(
@@ -531,13 +530,5 @@ object GardenNextJacobContest {
         val base = "garden.jacobContest.nextContest"
         event.move(101, "misc.inventoryLoadPos", "$base.inventoryPosition")
         event.move(101, "$base.pos", "$base.position")
-
-        event.transform(111, "$base.warnFor") { element ->
-            element.asJsonArray.apply {
-                add(JsonPrimitive(CropType.SUNFLOWER.name))
-                add(JsonPrimitive(CropType.MOONFLOWER.name))
-                add(JsonPrimitive(CropType.WILD_ROSE.name))
-            }
-        }
     }
 }

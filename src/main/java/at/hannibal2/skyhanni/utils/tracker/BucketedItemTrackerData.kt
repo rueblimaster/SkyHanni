@@ -33,11 +33,10 @@ abstract class BucketedItemTrackerData<E : Enum<E>>(clazz: KClass<E>) : ItemTrac
         }
     }
 
-    @Deprecated("Make data class extend Resettable instead")
-    final override fun reset() {
-        super.reset()
+    override fun reset() {
         bucketedItems.clear()
         selectedBucket = null
+        resetItems()
     }
 
     final override fun removeItem(internalName: NeuInternalName) =
@@ -78,10 +77,10 @@ abstract class BucketedItemTrackerData<E : Enum<E>>(clazz: KClass<E>) : ItemTrac
     @Expose
     val bucketedItems: MutableMap<E, MutableMap<NeuInternalName, TrackedItem>> = mutableMapOf()
 
-    open fun getBucketedItems(bucket: E) = bucketedItems[bucket] ?: flattenBucketsItems()
+    fun getBucketedItems(bucket: E) = bucketedItems[bucket] ?: flattenBucketsItems()
 
     private val E.items get() = bucketedItems[this] ?: mutableMapOf()
-    open val selectedBucketItems get() = selectedBucket?.items ?: flattenBucketsItems()
+    val selectedBucketItems get() = selectedBucket?.items ?: flattenBucketsItems()
 
     private fun flattenBucketsItems(): MutableMap<NeuInternalName, TrackedItem> =
         buckets.distinct().fold(mutableMapOf()) { acc, bucket ->

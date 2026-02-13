@@ -24,7 +24,6 @@ import at.hannibal2.skyhanni.utils.RegexUtils.matches
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.StringUtils.isVowel
 import at.hannibal2.skyhanni.utils.chat.TextHelper.asComponent
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompat
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 import kotlin.time.Duration.Companion.seconds
 
@@ -46,11 +45,11 @@ object RareDropMessages {
     )
 
     /**
-     * REGEX-TEST: §6⛃ §r§6§lGREAT CATCH! §r§fYou caught a §r§7[Lvl 1] §r§aSquid§r§f!
+     * REGEX-TEST: §5§lGREAT CATCH! §r§bYou found a §r§7[Lvl 1] §r§aGuardian§r§b.
      */
     private val petFishedPattern by petGroup.pattern(
         "fishedmessage",
-        "(?<start>(?:§.)*⛃ (?:§.)*(?:GOOD|GREAT|OUTSTANDING) CATCH! (?:§.)*You caught a (?:§.)*\\[Lvl 1] )(?:§.)*§(?<rarityColor>.)(?<petName>[^§(.]+)(?<end>.*)",
+        "(?<start>(?:§.)*GREAT CATCH! (?:§.)*You found a (?:§.)*\\[Lvl 1] )(?:§.)*§(?<rarityColor>.)(?<petName>[^§(.]+)(?<end>.*)",
     )
 
     /**
@@ -113,7 +112,7 @@ object RareDropMessages {
     private val config get() = SkyHanniMod.feature.chat.rareDropMessages
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onChat(event: SkyHanniChatEvent.Modify) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!config.petRarity) return
 
         petPatterns.matchMatchers(event.message) {
@@ -126,10 +125,7 @@ object RareDropMessages {
             if (start.endsWith("a ") && rarityName.first().isVowel())
                 start = start.substring(0..start.length - 2) + "n "
 
-
-            val newComponent = "$start§$rarityColor§l$rarityName §$rarityColor$petName$end".asComponent()
-            event.replaceComponent(newComponent, "pet_rarity")
-
+            event.chatComponent = "$start§$rarityColor§l$rarityName §$rarityColor$petName$end".asComponent()
         }
     }
 
@@ -156,7 +152,7 @@ object RareDropMessages {
 
         if (anyRecentMessage && config.enchantedBook) {
             ChatUtils.editFirstMessage(
-                component = { it.formattedTextCompat().replace("Enchanted Book", internalName.repoItemName).asComponent() },
+                component = { it.formattedText.replace("Enchanted Book", internalName.repoItemName).asComponent() },
                 "enchanted book",
                 predicate = { it.passedSinceSent() < 1.seconds && enchantedBookPattern.matches(it.chatMessage) },
             )

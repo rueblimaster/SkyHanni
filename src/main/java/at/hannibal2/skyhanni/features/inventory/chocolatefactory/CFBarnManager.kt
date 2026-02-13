@@ -20,7 +20,6 @@ import at.hannibal2.skyhanni.utils.chat.TextHelper.asComponent
 import at.hannibal2.skyhanni.utils.collection.TimeLimitedCache
 import kotlin.time.Duration.Companion.seconds
 
-@Suppress("UnnecessarySafeCall")
 @SkyHanniModule
 object CFBarnManager {
 
@@ -55,7 +54,7 @@ object CFBarnManager {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         HoppityEggsManager.newRabbitFound.matchMatcher(event.message) {
             val profileStorage = profileStorage ?: return@matchMatcher
             profileStorage.currentRabbits += 1
@@ -74,14 +73,7 @@ object CFBarnManager {
         }
     }
 
-    @HandleEvent(onlyOnSkyblock = true)
-    fun onChat(event: SkyHanniChatEvent.Modify) {
-        HoppityEggsManager.duplicateRabbitFound.matchMatcher(event.message) {
-            event.duplicateFoundMessage(group("amount"))
-        }
-    }
-
-    private fun SkyHanniChatEvent.Allow.duplicateFoundMessage(rawAmount: String) {
+    private fun SkyHanniChatEvent.duplicateFoundMessage(rawAmount: String) {
         val amount = rawAmount.formatLong()
         if (config.showDuplicateTime && !hoppityChatConfig.compact) {
             val format = CFApi.timeUntilNeed(amount).format(maxUnits = 2)
@@ -91,9 +83,7 @@ object CFBarnManager {
         }
         ChocolateAmount.addToAll(amount)
         HoppityApi.attemptFireRabbitFound(this, lastDuplicateAmount = amount)
-    }
 
-    private fun SkyHanniChatEvent.Modify.duplicateFoundMessage(rawAmount: String) {
         var changedMessage = message
 
         // Add duplicate number to the duplicate rabbit message
@@ -121,7 +111,7 @@ object CFBarnManager {
             )
         }
 
-        if (message != changedMessage) replaceComponent(changedMessage.asComponent(), "duplicate_egg")
+        if (message != changedMessage) chatComponent = changedMessage.asComponent()
     }
 
     @HandleEvent(InventoryCloseEvent::class)

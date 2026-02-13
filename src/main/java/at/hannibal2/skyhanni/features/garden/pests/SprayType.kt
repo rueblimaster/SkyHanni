@@ -10,7 +10,6 @@ enum class SprayType(val displayName: String) {
     HONEY_JAR("Honey Jar"),
     TASTY_CHEESE("Tasty Cheese"),
     FINE_FLOUR("Fine Flour"),
-    JELLY("Jelly"),
     ;
 
     fun toInternalName(): NeuInternalName = name.toInternalName()

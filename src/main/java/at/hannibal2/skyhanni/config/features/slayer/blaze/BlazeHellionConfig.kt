@@ -9,13 +9,10 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigLink
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 
 class BlazeHellionConfig {
-
-
-    // TODO rename to highlight phase or similar
     @Expose
     @ConfigOption(
         name = "Colored Mobs",
-        desc = "Color the Blaze Slayer boss and the demons in the right hellion shield color and show the name."
+        desc = "Color the Blaze Slayer boss and the demons in the right hellion shield color."
     )
     @ConfigEditorBoolean
     @FeatureToggle

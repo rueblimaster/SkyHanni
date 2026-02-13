@@ -98,16 +98,6 @@ enum class ElectionCandidate(
         Perk.DOUBLE_MOBS_HP,
         Perk.MOAR_SKILLZ,
     ),
-    AURA(
-        "Aura",
-        "§b",
-        Perk.FUNDRAISING,
-        Perk.MINION_UNION,
-        Perk.UNIVERSAL_INCOME,
-        Perk.WORK_BETTER,
-        Perk.WORK_HARDER,
-        Perk.WORK_SMARTER,
-    ),
 
     UNKNOWN("Unknown", "§c"),
     DISABLED("§cDisabled", "§7"),
@@ -119,10 +109,6 @@ enum class ElectionCandidate(
 
     fun addPerks(perks: List<Perk>) {
         this.perks.forEach { it.isActive = false }
-        perks.forEach { it.isActive = true }
-    }
-
-    fun addAdditionalPerks(perks: List<Perk>) {
         perks.forEach { it.isActive = true }
     }
 
@@ -152,7 +138,6 @@ enum class ElectionCandidate(
             }
 
             mayor.addPerks(perksJson.mapNotNull { it.toPerk() })
-            ElectionApi.repoPerks?.let { mayor.addAdditionalPerks(it) }
             return mayor
         }
     }
@@ -221,14 +206,6 @@ enum class Perk(val perkName: String) {
     QUAD_TAXES("QUAD TAXES!!!"),
     DOUBLE_MOBS_HP("DOUBLE MOBS HP!!!"),
     MOAR_SKILLZ("MOAR SKILLZ!!!"),
-
-    // Aura
-    FUNDRAISING("Fundraising"),
-    MINION_UNION("Minion Union"),
-    UNIVERSAL_INCOME("Universal Income"),
-    WORK_BETTER("Work Better"),
-    WORK_HARDER("Work Harder"),
-    WORK_SMARTER("Work Smarter"),
     ;
 
     var isActive = false

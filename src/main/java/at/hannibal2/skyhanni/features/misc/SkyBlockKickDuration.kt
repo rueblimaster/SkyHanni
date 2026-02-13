@@ -54,7 +54,7 @@ object SkyBlockKickDuration {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled() || !(lastKickTime.isFarFuture())) return
 
         if (kickPattern.matches(event.message)) {

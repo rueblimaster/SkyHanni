@@ -4,7 +4,6 @@ import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.events.RenderInventoryItemTipEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
 
 @SkyHanniModule
 object BrewingStandOverlay {
@@ -16,9 +15,9 @@ object BrewingStandOverlay {
         if (event.inventoryName != "Brewing Stand") return
 
         val stack = event.stack
-        val name = stack.hoverName.formattedTextCompatLeadingWhiteLessResets()
+        val name = stack.displayName
 
-        val slotNumber = event.slot.index
+        val slotNumber = event.slot.slotNumber
         when (slotNumber) {
             13, // Ingredient input
             21, // Progress

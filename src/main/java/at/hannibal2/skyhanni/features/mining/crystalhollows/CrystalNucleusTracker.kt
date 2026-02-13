@@ -11,9 +11,7 @@ import at.hannibal2.skyhanni.events.ConfigLoadEvent
 import at.hannibal2.skyhanni.events.IslandChangeEvent
 import at.hannibal2.skyhanni.events.ItemAddEvent
 import at.hannibal2.skyhanni.events.chat.SkyHanniChatEvent
-import at.hannibal2.skyhanni.events.item.ShardGainEvent
 import at.hannibal2.skyhanni.events.mining.CrystalNucleusLootEvent
-import at.hannibal2.skyhanni.features.mining.crystalhollows.CrystalNucleusApi.BAL_SHARD_ITEM
 import at.hannibal2.skyhanni.features.mining.crystalhollows.CrystalNucleusApi.EPIC_BAL_ITEM
 import at.hannibal2.skyhanni.features.mining.crystalhollows.CrystalNucleusApi.JUNGLE_KEY_ITEM
 import at.hannibal2.skyhanni.features.mining.crystalhollows.CrystalNucleusApi.LEGENDARY_BAL_ITEM
@@ -35,6 +33,7 @@ import at.hannibal2.skyhanni.utils.renderables.toSearchable
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
 import at.hannibal2.skyhanni.utils.tracker.ItemTrackerData
 import at.hannibal2.skyhanni.utils.tracker.SkyHanniItemTracker
+import at.hannibal2.skyhanni.utils.tracker.SkyHanniTracker
 import com.google.gson.annotations.Expose
 
 @SkyHanniModule
@@ -56,14 +55,15 @@ object CrystalNucleusTracker {
 
     private val tracker = SkyHanniItemTracker(
         "Crystal Nucleus Tracker",
-        ::Data,
+        { Data() },
         { it.mining.crystalNucleusTracker },
-        trackerConfig = { config.perTrackerConfig }
     ) { drawDisplay(it) }
 
-    data class Data(
-        @Expose var runsCompleted: Long = 0L
-    ) : ItemTrackerData() {
+    class Data : ItemTrackerData() {
+        override fun resetItems() {
+            runsCompleted = 0L
+        }
+
         override fun getDescription(timesGained: Long): List<String> {
             val percentage = timesGained.toDouble() / runsCompleted
             val dropRate = percentage.coerceAtMost(1.0).formatPercentage()
@@ -76,10 +76,13 @@ object CrystalNucleusTracker {
         // No direct coin drops from nuc runs
         override fun getCoinName(item: TrackedItem) = ""
         override fun getCoinDescription(item: TrackedItem) = mutableListOf<String>()
+
+        @Expose
+        var runsCompleted = 0L
     }
 
-    @HandleEvent(onlyOnIsland = IslandType.CRYSTAL_HOLLOWS)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    @HandleEvent(onlyOnSkyblock = true)
+    fun onChat(event: SkyHanniChatEvent) {
         balObtainedPattern.matchMatcher(event.message) {
             if (!group("player").equals(PlayerUtils.getName(), ignoreCase = true)) return@matchMatcher
 
@@ -89,26 +92,17 @@ object CrystalNucleusTracker {
                 else -> return@matchMatcher
             }
             tracker.modify {
-                it.addItem(item, amount = 1, command = false)
+                it.addItem(item, amount = 1, false)
             }
-        }
-    }
-
-    @HandleEvent(onlyOnIsland = IslandType.CRYSTAL_HOLLOWS)
-    fun onShardGain(event: ShardGainEvent) {
-        if (event.shardInternalName != BAL_SHARD_ITEM) return
-
-        tracker.modify {
-            it.addItem(BAL_SHARD_ITEM, event.amount, command = false)
         }
     }
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerBrigadier("shresetcrystalnucleustracker") {
+        event.register("shresetcrystalnucleustracker") {
             description = "Resets the Crystal Nucleus Tracker."
             category = CommandCategory.USERS_RESET
-            simpleCallback { tracker.resetCommand() }
+            callback { tracker.resetCommand() }
         }
     }
 
@@ -133,7 +127,7 @@ object CrystalNucleusTracker {
         val runsCompleted = data.runsCompleted
         if (runsCompleted > 0) {
             var profit = tracker.drawItems(data, { true }, this)
-            val jungleKeyCost: Double = tracker.getPricePer(JUNGLE_KEY_ITEM) * runsCompleted
+            val jungleKeyCost: Double = SkyHanniTracker.getPricePer(JUNGLE_KEY_ITEM) * runsCompleted
             profit -= jungleKeyCost
             val jungleKeyCostFormat = jungleKeyCost.shortFormat()
             add(
@@ -147,7 +141,7 @@ object CrystalNucleusTracker {
             )
 
             val usesApparatus = CrystalNucleusApi.usesApparatus()
-            val partsCost = CrystalNucleusApi.getPrecursorRunPrice { tracker.getPricePer(it) }
+            val partsCost = CrystalNucleusApi.getPrecursorRunPrice { SkyHanniTracker.getPricePer(it) }
             val totalSapphireCost: Double = partsCost * runsCompleted
             val rawConfigString = config.professorUsage.get().toString()
             val usageString = if (usesApparatus) StringUtils.pluralize(
@@ -177,8 +171,7 @@ object CrystalNucleusTracker {
                 ).toSearchable(),
             )
 
-            val duration = data.getTotalUptime()
-            addAll(tracker.addTotalProfit(profit, data.runsCompleted, "run", duration, "Runs"))
+            add(tracker.addTotalProfit(profit, data.runsCompleted, "run"))
         } else {
             addSearchString("§7Do a run to start tracking!")
         }
@@ -199,7 +192,7 @@ object CrystalNucleusTracker {
         RenderDisplayHelper(
             outsideInventory = true,
             inOwnInventory = true,
-            condition = ::isEnabled,
+            condition = { isEnabled() },
             onRender = {
                 tracker.renderDisplay(config.position)
             },

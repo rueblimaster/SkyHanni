@@ -173,7 +173,7 @@ object KingTalismanHelper {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
         if (!MiningApi.inDwarvenMines) return
 
@@ -185,10 +185,10 @@ object KingTalismanHelper {
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerBrigadier("shresetkinghelper") {
+        event.register("shresetkinghelper") {
             description = "Resets the King Talisman Helper"
             category = CommandCategory.USERS_RESET
-            simpleCallback { resetKings() }
+            callback { resetKings() }
         }
     }
 }

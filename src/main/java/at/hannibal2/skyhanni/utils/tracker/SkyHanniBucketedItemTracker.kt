@@ -1,6 +1,5 @@
 package at.hannibal2.skyhanni.utils.tracker
 
-import at.hannibal2.skyhanni.config.features.misc.tracker.IndividualItemTrackerConfig
 import at.hannibal2.skyhanni.config.storage.ProfileSpecificStorage
 import at.hannibal2.skyhanni.data.ItemAddManager
 import at.hannibal2.skyhanni.events.ItemAddEvent
@@ -11,23 +10,19 @@ import at.hannibal2.skyhanni.utils.renderables.RenderableUtils.addNullableButton
 import at.hannibal2.skyhanni.utils.renderables.Searchable
 
 @Suppress("SpreadOperator")
-abstract class SkyHanniBucketedItemTracker<E : Enum<E>, BucketedData : BucketedItemTrackerData<E>>(
+class SkyHanniBucketedItemTracker<E : Enum<E>, BucketedData : BucketedItemTrackerData<E>>(
     name: String,
     createNewSession: () -> BucketedData,
     getStorage: (ProfileSpecificStorage) -> BucketedData,
     drawDisplay: (BucketedData) -> List<Searchable>,
     extraDisplayModes: Map<DisplayMode, (ProfileSpecificStorage) -> BucketedData> = emptyMap(),
-    trackerConfig: () -> IndividualItemTrackerConfig
-) : SkyHanniItemTracker<BucketedData>(
-    name,
-    createNewSession,
-    getStorage,
-    extraDisplayModes,
-    drawDisplay = drawDisplay,
-    trackerConfig = { trackerConfig() },
-) {
+) : SkyHanniItemTracker<BucketedData>(name, createNewSession, getStorage, extraDisplayModes, drawDisplay = drawDisplay) {
 
-    final override fun addCoins(amount: Int, command: Boolean) =
+    @Deprecated(
+        "Use addCoins(bucket, coins, command) instead",
+        ReplaceWith("addCoins(bucket, coins, command)")
+    )
+    override fun addCoins(amount: Int, command: Boolean) =
         throw UnsupportedOperationException("Use addCoins(bucket, coins, command) instead")
 
     fun addCoins(bucket: E, coins: Int, command: Boolean) {
@@ -37,28 +32,24 @@ abstract class SkyHanniBucketedItemTracker<E : Enum<E>, BucketedData : BucketedI
     override fun ItemAddEvent.addItemFromEvent() {
         val command = source == ItemAddManager.Source.COMMAND
         lateinit var bucket: E
-        // TODO find out why those two booleans are necessary, fix the cause properly, and then remove the  two booleans
-        var done = false
-        var errorMessage: String? = null
         modify { data ->
             bucket = data.selectedBucket ?: run {
-                errorMessage = "No §b${data.bucketName()} §cselected for §b$name§c.\n§cSelect one in the §b$name §cGUI, then try again."
+                ChatUtils.userError(
+                    "No §b${data.bucketName()} §cselected for §b$name§c.\n§cSelect one in the §b$name §cGUI, then try again.",
+                )
                 cancel()
                 return@modify
             }
             data.addItem(bucket, internalName, amount, command)
-            done = true
-        }
-        if (done) {
             logCompletedAddEvent()
-        } else {
-            errorMessage?.let {
-                ChatUtils.userError(it)
-            }
         }
     }
 
-    final override fun addItem(internalName: NeuInternalName, amount: Int, command: Boolean, message: Boolean) =
+    @Deprecated(
+        "Use addItem(bucket, internalName, amount, command, message) instead",
+        ReplaceWith("addItem(bucket, internalName, amount, command, message)"),
+    )
+    override fun addItem(internalName: NeuInternalName, amount: Int, command: Boolean, message: Boolean) =
         throw UnsupportedOperationException("Use addItem(bucket, internalName, amount, command, message) instead")
 
     fun addItem(bucket: E, internalName: NeuInternalName, amount: Int, command: Boolean, message: Boolean = true) {

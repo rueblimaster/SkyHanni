@@ -13,6 +13,7 @@ import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.LorenzVec
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
+import at.hannibal2.skyhanni.utils.system.PlatformUtils
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -56,7 +57,7 @@ object ForagingTutorialQuest {
     }
 
     @HandleEvent
-    fun onChat(event: SystemMessageEvent.Allow) {
+    fun onChat(event: SystemMessageEvent) {
         if (event.message == "§cYou don't have the requirements to use this warp!" ||
             event.message == "§cYou haven't unlocked this fast travel destination!"
         ) {
@@ -99,7 +100,7 @@ object ForagingTutorialQuest {
         IslandGraphs.pathFind(
             quest.nextPortal,
             "Next Quest",
-            condition = ::isEnabled,
+            condition = { isEnabled() },
         )
     }
 
@@ -112,7 +113,7 @@ object ForagingTutorialQuest {
         IslandGraphs.pathFind(
             step.npcLocation,
             step.npcName,
-            condition = ::isEnabled,
+            condition = { isEnabled() },
         )
     }
 
@@ -124,6 +125,10 @@ object ForagingTutorialQuest {
         ChatUtils.clickableChat(
             "Do you want to have help solving the Foraging Tutorial Quest? Click here!",
             onClick = {
+                if (PlatformUtils.IS_LEGACY) {
+                    ChatUtils.chat("§cYou need to be on a modern version of Minecraft to use this feature!")
+                    return@clickableChat
+                }
                 config.enabled = true
                 start(step)
             },
@@ -137,5 +142,5 @@ object ForagingTutorialQuest {
         )
     }
 
-    private fun isEnabled() = config.enabled
+    private fun isEnabled() = config.enabled && !PlatformUtils.IS_LEGACY
 }

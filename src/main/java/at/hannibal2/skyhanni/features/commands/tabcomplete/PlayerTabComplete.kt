@@ -12,7 +12,6 @@ import at.hannibal2.skyhanni.features.commands.suggestions.LazySuggestionEntry
 import at.hannibal2.skyhanni.features.commands.suggestions.SuggestionProvider
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.EntityUtils
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLessResets
 
 @SkyHanniModule
 object PlayerTabComplete {
@@ -24,7 +23,7 @@ object PlayerTabComplete {
     private val partyMembersEntry = lazyEntry { PartyApi.partyMembers }
     private val guildMembersEntry = lazyEntry { GuildApi.getAllMembers() }
     private val vipVisitsEntry = lazyEntry { vipVisits }
-    private val islandPlayersEntry = lazyEntry { EntityUtils.getPlayerEntities().map { it.name.string } }
+    private val islandPlayersEntry = lazyEntry { EntityUtils.getPlayerEntities().map { it.name } }
 
     private val suggestions = SuggestionProvider.build {
         parent("f", "friend") {
@@ -89,7 +88,7 @@ object PlayerTabComplete {
             addAll(FriendApi.getAllFriends().filter { it.bestFriend || !config.onlyBestFriends }.map { it.name })
         }
         if (config.islandPlayers && PlayerCategory.ISLAND_PLAYERS !in categories) {
-            addAll(EntityUtils.getPlayerEntities().map { it.name.string })
+            addAll(EntityUtils.getPlayerEntities().map { it.name })
         }
         if (config.party && PlayerCategory.PARTY !in categories) {
             addAll(PartyApi.partyMembers)

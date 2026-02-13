@@ -1,14 +1,12 @@
 package at.hannibal2.skyhanni.config.features.garden.pests
 
+import at.hannibal2.skyhanni.config.FeatureToggle
 import at.hannibal2.skyhanni.config.core.config.Position
-import at.hannibal2.skyhanni.features.garden.pests.BonusPestChanceDisplay.DisplayFormat
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
-import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDropdown
 import io.github.notenoughupdates.moulconfig.annotations.ConfigLink
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
-import io.github.notenoughupdates.moulconfig.observer.Property
 
 class PestsConfig {
     @Expose
@@ -58,11 +56,6 @@ class PestsConfig {
     val pesthunterShop: PesthunterShopConfig = PesthunterShopConfig()
 
     @Expose
-    @ConfigOption(name = "Mantid Kill Display", desc = "")
-    @Accordion
-    val mantidDisplay: MantidDisplayConfig = MantidDisplayConfig()
-
-    @Expose
     @ConfigOption(
         name = "Mute Vacuum",
         desc = "Mute the pest vacuum when using its right click ability.",
@@ -72,8 +65,9 @@ class PestsConfig {
 
     @Expose
     @ConfigOption(name = "Bonus Chance Display", desc = "Displays your bonus pest chance and if it is enabled or not.")
-    @ConfigEditorDropdown
-    val pestChanceDisplay: Property<DisplayFormat> = Property.of(DisplayFormat.DISABLED)
+    @ConfigEditorBoolean
+    @FeatureToggle
+    var pestChanceDisplay: Boolean = false
 
     @Expose
     @ConfigLink(owner = PestsConfig::class, field = "pestChanceDisplay")

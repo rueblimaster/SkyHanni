@@ -9,7 +9,6 @@ import at.hannibal2.skyhanni.utils.DisplayTableEntry
 import at.hannibal2.skyhanni.utils.InventoryDetector
 import at.hannibal2.skyhanni.utils.InventoryUtils
 import at.hannibal2.skyhanni.utils.ItemCategory
-import at.hannibal2.skyhanni.utils.ItemPriceUtils.getPrice
 import at.hannibal2.skyhanni.utils.ItemPriceUtils.getPriceName
 import at.hannibal2.skyhanni.utils.ItemUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.getInternalName
@@ -23,16 +22,13 @@ import at.hannibal2.skyhanni.utils.NumberUtil.shortFormat
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.RenderDisplayHelper
 import at.hannibal2.skyhanni.utils.RenderUtils.renderRenderables
-import at.hannibal2.skyhanni.utils.chat.TextHelper.asComponent
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.add
 import at.hannibal2.skyhanni.utils.collection.RenderableCollectionUtils.addString
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
-import at.hannibal2.skyhanni.utils.compat.mapToComponents
 import at.hannibal2.skyhanni.utils.renderables.Renderable
 import at.hannibal2.skyhanni.utils.renderables.RenderableUtils
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.network.chat.Component
-import net.minecraft.world.item.ItemStack
+import at.hannibal2.skyhanni.utils.tracker.SkyHanniTracker
+import net.minecraft.item.ItemStack
 
 @SkyHanniModule
 object FishyTreatProfit {
@@ -41,9 +37,6 @@ object FishyTreatProfit {
     private var display = emptyList<Renderable>()
     private val inventory = InventoryDetector { name -> name == "Lukas the Aquarist" }
     private val FISHY_TREAT = "FISHY_TREAT".toInternalName()
-    // I don't know why this fetches price source based on tracker config,
-    // but it already did before I changed how tracker config worked
-    val priceSource get() = SkyHanniMod.feature.misc.tracker.priceSource
 
     private val patternGroup = RepoPattern.group("event.year-of-the-seal.fishy-treat")
 
@@ -63,7 +56,7 @@ object FishyTreatProfit {
             // ignore the last line of menu items
             if (slot > 44) continue
             // background items
-            if (item.hoverName.string == " ") continue
+            if (item.displayName == " ") continue
             try {
                 readItem(slot, item, table)
             } catch (e: Throwable) {
@@ -100,14 +93,14 @@ object FishyTreatProfit {
 
         val additionalCost = getAdditionalCost(additionalMaterials)
 
-        val (name, amount) = ItemUtils.readItemAmount(itemName.formattedTextCompatLeadingWhiteLessResets()) ?: return
+        val (name, amount) = ItemUtils.readItemAmount(itemName) ?: return
 
         var internalName = NeuInternalName.fromItemNameOrNull(name)
         if (internalName == null) {
             internalName = item.getInternalName()
         }
 
-        val itemPrice = internalName.getPrice(priceSource) * amount
+        val itemPrice = SkyHanniTracker.getPricePer(internalName) * amount
         if (itemPrice < 0) return
 
         val profitPerSell = itemPrice - additionalCost
@@ -136,26 +129,26 @@ object FishyTreatProfit {
         table.add(
             DisplayTableEntry(
                 itemName,
-                "$color$profitPerFishyFormat".asComponent(),
+                "$color$profitPerFishyFormat",
                 profitPerFishy,
                 internalName,
-                hover.mapToComponents(),
+                hover,
                 highlightsOnHoverSlots = listOf(slot),
             ),
         )
     }
 
-    private fun MutableList<Any>.addAdditionalMaterials(additionalMaterials: Map<NeuInternalName, Int>) {
+    private fun MutableList<String>.addAdditionalMaterials(additionalMaterials: Map<NeuInternalName, Int>) {
         for ((internalName, amount) in additionalMaterials) {
-            add(internalName.getPriceName(amount, internalName.getPrice(priceSource)))
+            add(internalName.getPriceName(amount, SkyHanniTracker.getPricePer(internalName)))
         }
     }
 
-    private fun getItemName(item: ItemStack): Component {
-        val name = item.hoverName
+    private fun getItemName(item: ItemStack): String {
+        val name = item.displayName
         val isEnchantedBook = item.getItemCategoryOrNull() == ItemCategory.ENCHANTED_BOOK
         return if (isEnchantedBook) {
-            item.repoItemName.asComponent()
+            item.repoItemName
         } else name
     }
 
@@ -174,7 +167,7 @@ object FishyTreatProfit {
     private fun getAdditionalCost(requiredItems: Map<NeuInternalName, Int>): Double {
         var otherItemsPrice = 0.0
         for ((name, amount) in requiredItems) {
-            otherItemsPrice += name.getPrice(priceSource) * amount
+            otherItemsPrice += SkyHanniTracker.getPricePer(name) * amount
         }
         return otherItemsPrice
     }
@@ -201,7 +194,7 @@ object FishyTreatProfit {
                     ErrorManager.logErrorStateWithData(
                         "Error in FishyTreat Profit", "Could not read item amount",
                         "rawItemName" to rawItemName,
-                        "name" to item.hoverName.formattedTextCompatLeadingWhiteLessResets(),
+                        "name" to item.displayName,
                         "lore" to lore,
                     )
                     continue

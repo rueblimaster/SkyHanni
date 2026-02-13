@@ -30,10 +30,9 @@ import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.TimeUtils.format
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.countBy
-import at.hannibal2.skyhanni.utils.collection.CollectionUtils.removeIf
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.world.level.block.Blocks
-import java.util.concurrent.ConcurrentHashMap
+import io.netty.util.internal.ConcurrentSet
+import net.minecraft.init.Blocks
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.math.absoluteValue
 import kotlin.time.Duration.Companion.milliseconds
@@ -116,7 +115,7 @@ object MiningApi {
     }
 
     // normal mining
-    private val recentClickedBlocks = ConcurrentHashMap<LorenzVec, SimpleTimeMark>()
+    private val recentClickedBlocks = ConcurrentSet<Pair<LorenzVec, SimpleTimeMark>>()
     private val surroundingMinedBlocks = ConcurrentLinkedQueue<Pair<MinedBlock, LorenzVec>>()
 
     private var lastClickedPos: LorenzVec? = null
@@ -165,7 +164,12 @@ object MiningApi {
 
     val blockStrengths = mutableMapOf<OreBlock, Int>()
 
-    private val allowedSoundNames = setOf("dig.glass", "dig.stone", "dig.gravel", "dig.cloth", "random.orb", "block.metal.place")
+    private val allowedSoundNames = setOf(
+        "dig.glass", "dig.stone", "dig.gravel", "dig.cloth", "random.orb",
+        //#if MC > 1.21
+        //$$ "block.metal.place",
+        //#endif
+    )
 
     var heat: Int = 0
         private set
@@ -244,13 +248,13 @@ object MiningApi {
         if (event.clickType != ClickType.LEFT_CLICK) return
         if (OreBlock.getByStateOrNull(event.getBlockState) == null) return
         val now = SimpleTimeMark.now()
-        recentClickedBlocks[event.position] = now
+        recentClickedBlocks += event.position to now
         lastClickedPos = event.position
         lastClicked = now
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!IslandTypeTags.CUSTOM_MINING.inAny()) return
         if (IslandTypeTags.IS_COLD.inAny()) {
             if (coldResetPattern.matches(event.message)) {
@@ -308,7 +312,7 @@ object MiningApi {
             if (event.soundName != "random.orb") {
                 if (event.pitch != 0.7936508f) return
                 val pos = event.location.roundToBlock()
-                if (!recentClickedBlocks.containsKey(pos)) return
+                if (recentClickedBlocks.none { it.first == pos }) return
                 waitingForInitSound = false
                 waitingForEffMinerBlock = true
                 initBlockPos = event.location.roundToBlock()
@@ -342,8 +346,8 @@ object MiningApi {
         val newBlock = newState.block
 
         if (oldState == newState) return
-        if (oldBlock == Blocks.AIR || oldBlock == Blocks.BEDROCK) return
-        if (newBlock != Blocks.AIR && newBlock != Blocks.BEDROCK && !isTitanium(newState)) return
+        if (oldBlock == Blocks.air || oldBlock == Blocks.bedrock) return
+        if (newBlock != Blocks.air && newBlock != Blocks.bedrock && !isTitanium(newState)) return
 
         val pos = event.location
         if (pickobulusActive && pickobulusWaitingForBlock) {
@@ -383,7 +387,7 @@ object MiningApi {
         if (currentAreaOreBlocks.isEmpty()) return
 
         // if somehow you take more than 10 seconds to mine a single block, congrats
-        recentClickedBlocks.removeIf { it.value.passedSince() >= 10.seconds }
+        recentClickedBlocks.removeIf { it.second.passedSince() >= 10.seconds }
         surroundingMinedBlocks.removeIf { it.first.time.passedSince() >= 5.seconds }
 
         if (!waitingForInitSound && lastInitSound.passedSince() > 200.milliseconds) {
@@ -433,7 +437,7 @@ object MiningApi {
         lastOreMinedTime = SimpleTimeMark.now()
 
         surroundingMinedBlocks.clear()
-        recentClickedBlocks.removeIf { it.value.passedSince() >= originalBlock.time.passedSince() }
+        recentClickedBlocks.removeIf { it.second.passedSince() >= originalBlock.time.passedSince() }
         lastClickedPos = null
     }
 
@@ -504,7 +508,7 @@ object MiningApi {
             add("pickobulusWaitingForSound: $pickobulusWaitingForSound")
             add("pickobulusWaitingForBlock: $pickobulusWaitingForBlock")
             add("")
-            add("recentlyClickedBlocks: ${recentClickedBlocks.keys.joinToString { "(${it.toCleanString()})" }}")
+            add("recentlyClickedBlocks: ${recentClickedBlocks.joinToString { "(${it.first.toCleanString()}" }}")
         }
     }
 

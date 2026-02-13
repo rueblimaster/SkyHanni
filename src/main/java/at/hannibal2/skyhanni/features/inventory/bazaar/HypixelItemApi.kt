@@ -14,25 +14,27 @@ import at.hannibal2.skyhanni.utils.NeuItems
 import at.hannibal2.skyhanni.utils.api.ApiStaticGetPath
 import at.hannibal2.skyhanni.utils.api.ApiUtils
 import at.hannibal2.skyhanni.utils.json.fromJson
-import kotlin.time.Duration.Companion.minutes
 
 class HypixelItemApi {
 
     @SkyHanniModule
     companion object {
 
-        // prices = george prices + npc prices
-        private var prices = mapOf<NeuInternalName, Double>()
         private var npcPrices = mapOf<NeuInternalName, Double>()
         private var georgePrices = mapOf<NeuInternalName, Double>()
 
-        fun getNpcPrice(internalName: NeuInternalName) = prices[internalName]
+        fun getNpcPrice(internalName: NeuInternalName) = npcPrices[internalName]
 
         @HandleEvent
         fun onNeuRepoReload(event: NeuRepositoryReloadEvent) {
             val constant = event.getConstant<NeuGeorgeJson>("george")
-            georgePrices = constant.prices ?: return
-            prices = georgePrices + npcPrices
+            val prices = constant.prices ?: return
+            georgePrices = prices
+            val newMap = npcPrices.toMutableMap()
+            for (price in prices) {
+                newMap[price.key] = price.value
+            }
+            npcPrices = newMap
         }
     }
 
@@ -41,28 +43,27 @@ class HypixelItemApi {
         "Hypixel SkyBlock Items",
     )
 
-    private suspend fun loadItemData() {
-        val (_, apiResponseData) = ApiUtils.getJsonResponse(hypixelItemStatic).assertSuccessWithData() ?: return
+    private suspend fun loadNpcPrices(): MutableMap<NeuInternalName, Double> {
+        val list = mutableMapOf<NeuInternalName, Double>()
+        val (_, apiResponseData) = ApiUtils.getJsonResponse(hypixelItemStatic).assertSuccessWithData() ?: return list
         val itemsData = ConfigManager.gson.fromJson<SkyblockItemsDataJson>(apiResponseData)
 
-        val npcPrices = mutableMapOf<NeuInternalName, Double>()
         val motesPrice = mutableMapOf<NeuInternalName, Double>()
         val allStats = mutableMapOf<NeuInternalName, Map<String, Int>>()
         for (item in itemsData.items) {
             val neuItemId = NeuItems.transHypixelNameToInternalName(item.id ?: continue)
-            item.npcPrice?.let { npcPrices[neuItemId] = it }
+            item.npcPrice?.let { list[neuItemId] = it }
             item.motesPrice?.let { motesPrice[neuItemId] = it }
             item.stats?.let { stats -> allStats[neuItemId] = stats }
         }
         ItemUtils.updateBaseStats(allStats)
         RiftApi.motesPrice = motesPrice
-        HypixelItemApi.npcPrices = npcPrices
+        return list
     }
 
     fun start() {
-        SkyHanniMod.launchIOCoroutine("hypixel item api fetch", timeout = 1.minutes) {
-            loadItemData()
-            prices = georgePrices + npcPrices
+        SkyHanniMod.launchIOCoroutine {
+            npcPrices = loadNpcPrices() + georgePrices
         }
 
         // TODO use SecondPassedEvent

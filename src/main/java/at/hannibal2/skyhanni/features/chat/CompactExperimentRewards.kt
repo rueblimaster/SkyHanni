@@ -66,7 +66,7 @@ object CompactExperimentRewards {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled() || lastTimeTableOpened.passedSince() >= 3.seconds || event.blockedReason != "") return
 
         val message = event.message

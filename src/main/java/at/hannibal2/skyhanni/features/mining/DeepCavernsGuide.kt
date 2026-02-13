@@ -24,8 +24,8 @@ import at.hannibal2.skyhanni.utils.ParkourHelper
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.world.SimpleContainer
-import net.minecraft.world.item.Items
+import net.minecraft.client.player.inventory.ContainerLocalMenu
+import net.minecraft.init.Items
 
 @SkyHanniModule
 object DeepCavernsGuide {
@@ -38,7 +38,7 @@ object DeepCavernsGuide {
 
     private val startIcon by lazy {
         ItemUtils.createItemStack(
-            Items.MAP,
+            Items.map,
             "§bDeep Caverns Guide",
             "§8(From SkyHanni)",
             "",
@@ -92,7 +92,7 @@ object DeepCavernsGuide {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
         if (SkyBlockUtils.graphArea != "Gunpowder Mines") return
         if (notUnlockedPattern.matches(event.message)) {
@@ -111,7 +111,7 @@ object DeepCavernsGuide {
         showStartIcon = true
 
         event.inventoryItems[31]?.let {
-            if (it.hoverName.string != "Obsidian Sanctuary") {
+            if (it.displayName != "§aObsidian Sanctuary") {
                 start()
             }
         }
@@ -122,11 +122,10 @@ object DeepCavernsGuide {
         show = true
         parkourHelper?.reset()
         if (parkourHelper == null) {
-            // TODO add generic repo outdated error logic here
             ChatUtils.clickableChat(
                 "DeepCavernsParkour missing in SkyHanni Repo! Try /shupdaterepo to fix it!",
                 onClick = {
-                    SkyHanniRepoManager.updateRepo("click on chat after deep caverns parkour error")
+                    SkyHanniRepoManager.updateRepo()
                 },
                 "§eClick to update the repo!",
                 prefixColor = "§c",
@@ -146,7 +145,7 @@ object DeepCavernsGuide {
     @HandleEvent
     fun replaceItem(event: ReplaceItemEvent) {
         if (show) return
-        if (event.inventory is SimpleContainer && showStartIcon && event.slot == 49) {
+        if (event.inventory is ContainerLocalMenu && showStartIcon && event.slot == 49) {
             event.replace(startIcon)
         }
     }
@@ -168,7 +167,7 @@ object DeepCavernsGuide {
         parkourHelper?.render(event)
     }
 
-    private fun isEnabled() = IslandType.DEEP_CAVERNS.isCurrent() && config.enabled
+    fun isEnabled() = IslandType.DEEP_CAVERNS.isCurrent() && config.enabled
 
     @HandleEvent
     fun onConfigFix(event: ConfigUpdaterMigrator.ConfigFixEvent) {

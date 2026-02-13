@@ -4,7 +4,7 @@ import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.ConfigUpdaterMigrator
 import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.events.GuiContainerEvent
-import at.hannibal2.skyhanni.events.minecraft.ToolTipTextEvent
+import at.hannibal2.skyhanni.events.minecraft.ToolTipEvent
 import at.hannibal2.skyhanni.features.garden.GardenApi
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.test.command.ErrorManager
@@ -17,10 +17,8 @@ import at.hannibal2.skyhanni.utils.LorenzColor
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NumberUtil.shortFormat
 import at.hannibal2.skyhanni.utils.RenderUtils.highlight
-import at.hannibal2.skyhanni.utils.compat.append
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLessResets
-import net.minecraft.client.gui.screens.inventory.ContainerScreen
-import net.minecraft.world.inventory.ChestMenu
+import net.minecraft.client.gui.inventory.GuiChest
+import net.minecraft.inventory.ContainerChest
 
 @SkyHanniModule
 object GardenComposterInventoryFeatures {
@@ -28,7 +26,7 @@ object GardenComposterInventoryFeatures {
     private val config get() = GardenApi.config.composters
 
     @HandleEvent(onlyOnIsland = IslandType.GARDEN)
-    fun onToolTip(event: ToolTipTextEvent) {
+    fun onToolTip(event: ToolTipEvent) {
         if (!config.upgradePrice) return
 
         if (InventoryUtils.openInventoryName() != "Composter Upgrades") return
@@ -39,18 +37,18 @@ object GardenComposterInventoryFeatures {
         var indexFullCost = 0
         var fullPrice = 0.0
         var amountItems = 0
-        for (line in event.toolTip) {
+        for (line in event.toolTipRemovedPrefix()) {
             i++
-            if (line.string == "Upgrade Cost:") {
+            if (line == "§7Upgrade Cost:") {
                 next = true
                 indexFullCost = i
                 continue
             }
 
             if (next) {
-                if (line.string.endsWith(" Copper")) continue
-                if (line.string == "") break
-                val (itemName, amount) = ItemUtils.readItemAmount(line.formattedTextCompatLessResets().removePrefix("§5")) ?: run {
+                if (line.endsWith(" Copper")) continue
+                if (line == "") break
+                val (itemName, amount) = ItemUtils.readItemAmount(line) ?: run {
                     ErrorManager.logErrorStateWithData(
                         "Error reading item line",
                         "could not read item line",
@@ -63,14 +61,14 @@ object GardenComposterInventoryFeatures {
                 val price = lowestBin * amount
                 fullPrice += price
                 val format = price.shortFormat()
-                list[i] = list[i].append(" §7(§6$format§7)")
+                list[i] = list[i] + " §7(§6$format§7)"
                 amountItems++
             }
         }
 
         if (amountItems > 1) {
             val format = fullPrice.shortFormat()
-            list[indexFullCost] = list[indexFullCost].append(" §7(§6$format§7)")
+            list[indexFullCost] = list[indexFullCost] + " §7(§6$format§7)"
         }
     }
 
@@ -79,8 +77,8 @@ object GardenComposterInventoryFeatures {
         if (!config.highlightUpgrade) return
 
         if (InventoryUtils.openInventoryName() == "Composter Upgrades") {
-            if (event.gui !is ContainerScreen) return
-            val chest = event.container as ChestMenu
+            if (event.gui !is GuiChest) return
+            val chest = event.container as ContainerChest
 
             for ((slot, stack) in chest.getUpperItems()) {
                 if (stack.getLore().any { it == "§eClick to upgrade!" }) {

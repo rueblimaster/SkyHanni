@@ -29,7 +29,7 @@ object CompactSplashPotionMessage {
     )
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
         if (!event.message.isPotionMessage()) return
         event.blockedReason = "compact_potion_effect"

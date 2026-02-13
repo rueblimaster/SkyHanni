@@ -41,7 +41,7 @@ object DungeonMilestonesDisplay {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
 
         if (milestonePattern.matches(event.message)) {

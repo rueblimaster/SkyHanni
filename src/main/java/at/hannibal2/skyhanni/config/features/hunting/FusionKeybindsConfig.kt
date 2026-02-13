@@ -1,11 +1,12 @@
 package at.hannibal2.skyhanni.config.features.hunting
 
+import at.hannibal2.skyhanni.config.OnlyModern
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorInfoText
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorKeybind
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 import io.github.notenoughupdates.moulconfig.annotations.SearchTag
-import org.lwjgl.glfw.GLFW
+import org.lwjgl.input.Keyboard
 
 class FusionKeybindsConfig {
 
@@ -15,17 +16,20 @@ class FusionKeybindsConfig {
     )
     @SearchTag("fusion hunting box")
     @ConfigEditorInfoText
+    @OnlyModern
     var notice: String = ""
 
     @Expose
     @ConfigOption(name = "Repeat Fusion Keybind", desc = "Keybind to repeat the previous fusion.")
     @SearchTag("hunting box")
-    @ConfigEditorKeybind(defaultKey = GLFW.GLFW_KEY_UNKNOWN)
-    var repeatFusionKeybind: Int = GLFW.GLFW_KEY_UNKNOWN
+    @ConfigEditorKeybind(defaultKey = Keyboard.KEY_NONE)
+    @OnlyModern
+    var repeatFusionKeybind: Int = Keyboard.KEY_NONE
 
     @Expose
     @ConfigOption(name = "Confirm Fusion Keybind", desc = "Keybind to confirm the current fusion.")
     @SearchTag("hunting box")
-    @ConfigEditorKeybind(defaultKey = GLFW.GLFW_KEY_UNKNOWN)
-    var confirmFusionKeybind: Int = GLFW.GLFW_KEY_UNKNOWN
+    @ConfigEditorKeybind(defaultKey = Keyboard.KEY_NONE)
+    @OnlyModern
+    var confirmFusionKeybind: Int = Keyboard.KEY_NONE
 }

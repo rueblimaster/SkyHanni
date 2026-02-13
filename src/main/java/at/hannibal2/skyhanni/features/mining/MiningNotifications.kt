@@ -60,7 +60,7 @@ object MiningNotifications {
     private var hasSentAscensionRope = false
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!IslandTypeTags.MINING.inAny()) return
         if (!config.enabled) return
         val message = event.message

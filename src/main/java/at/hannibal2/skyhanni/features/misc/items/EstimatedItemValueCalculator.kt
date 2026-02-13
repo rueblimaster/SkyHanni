@@ -4,9 +4,9 @@ import at.hannibal2.skyhanni.SkyHanniMod
 import at.hannibal2.skyhanni.api.ReforgeApi
 import at.hannibal2.skyhanni.data.jsonobjects.repo.ItemValueCalculationDataJson
 import at.hannibal2.skyhanni.features.inventory.bazaar.BazaarApi.isBazaarItem
-import at.hannibal2.skyhanni.features.nether.kuudra.KuudraApi.getArmorKuudraTier
+import at.hannibal2.skyhanni.features.nether.kuudra.KuudraApi.getKuudraTier
 import at.hannibal2.skyhanni.features.nether.kuudra.KuudraApi.isKuudraArmor
-import at.hannibal2.skyhanni.features.nether.kuudra.KuudraApi.kuudraArmorTiers
+import at.hannibal2.skyhanni.features.nether.kuudra.KuudraApi.kuudraTiers
 import at.hannibal2.skyhanni.features.nether.kuudra.KuudraApi.removeKuudraTier
 import at.hannibal2.skyhanni.test.command.ErrorManager
 import at.hannibal2.skyhanni.utils.EssenceUtils
@@ -52,7 +52,6 @@ import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.getHypixelEnchantme
 import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.getItemId
 import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.getManaDisintegrators
 import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.getMithrilInfusion
-import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.getOverclockerCount
 import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.getPolarvoidBookCount
 import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.getPowerScroll
 import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.getReforgeModifier
@@ -77,11 +76,8 @@ import at.hannibal2.skyhanni.utils.collection.CollectionUtils.sorted
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.sortedDesc
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.sumByKey
 import at.hannibal2.skyhanni.utils.compat.NbtCompat
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
-import at.hannibal2.skyhanni.utils.compat.getCompoundOrDefault
-import at.hannibal2.skyhanni.utils.compat.getStringOrDefault
 import io.github.notenoughupdates.moulconfig.observer.Property
-import net.minecraft.world.item.ItemStack
+import net.minecraft.item.ItemStack
 import java.util.Locale
 
 // TODO split into smaller sub classes
@@ -117,7 +113,6 @@ object EstimatedItemValueCalculator {
         ::addHotPotatoBooks,
         ::addWetBook,
         ::addFarmingForDummies,
-        ::addOverclocker,
         ::addSilex,
         ::addTransmissionTuners,
         ::addManaDisintegrators,
@@ -141,7 +136,6 @@ object EstimatedItemValueCalculator {
     )
 
     private val FARMING_FOR_DUMMIES = "FARMING_FOR_DUMMIES".toInternalName()
-    private val OVERCLOCKER_3000 = "OVERCLOCKER_3000".toInternalName()
     private val ETHERWARP_CONDUIT = "ETHERWARP_CONDUIT".toInternalName()
     private val ETHERWARP_MERGER = "ETHERWARP_MERGER".toInternalName()
     private val FUMING_POTATO_BOOK = "FUMING_POTATO_BOOK".toInternalName()
@@ -164,7 +158,6 @@ object EstimatedItemValueCalculator {
     private val MITHRIL_INFUSION = "MITHRIL_INFUSION".toInternalName()
     private val FREE_WILL = "FREE_WILL".toInternalName()
 
-    // TODO Extend this to actually take a price source instead of having price source be decided by Estimated Item Value config
     fun getTotalPrice(stack: ItemStack, ignoreBasePrice: Boolean = false): Double? {
         val (totalPrice, basePrice) = calculate(stack, mutableListOf())
         if (ignoreBasePrice && totalPrice == basePrice) {
@@ -216,11 +209,11 @@ object EstimatedItemValueCalculator {
                 val oneBelow = itemRarity.oneBelow(logError = false)
                 if (oneBelow == null) {
                     ErrorManager.logErrorStateWithData(
-                        "Wrong item rarity detected in estimated item value for item ${stack.hoverName.formattedTextCompatLeadingWhiteLessResets()}",
+                        "Wrong item rarity detected in estimated item value for item ${stack.displayName}",
                         "Recombobulated item is common",
                         "internal name" to stack.getInternalName(),
                         "itemRarity" to itemRarity,
-                        "item name" to stack.hoverName.formattedTextCompatLeadingWhiteLessResets(),
+                        "item name" to stack.displayName,
                         "item nbt" to stack.readNbtDump(),
                     )
                     return null
@@ -231,12 +224,12 @@ object EstimatedItemValueCalculator {
 
         return reforgeCosts[itemRarity]?.toInt() ?: run {
             ErrorManager.logErrorStateWithData(
-                "Could not calculate reforge cost for item ${stack.hoverName.formattedTextCompatLeadingWhiteLessResets()}",
+                "Could not calculate reforge cost for item ${stack.displayName}",
                 "Item not in NEU repo reforge cost",
                 "reforgeCosts" to reforgeCosts,
                 "itemRarity" to itemRarity,
                 "internal name" to stack.getInternalName(),
-                "item name" to stack.hoverName.formattedTextCompatLeadingWhiteLessResets(),
+                "item name" to stack.displayName,
                 "reforgeStone" to reforgeStone,
                 "item nbt" to stack.readNbtDump(),
             )
@@ -390,14 +383,6 @@ object EstimatedItemValueCalculator {
         return price
     }
 
-    private fun addOverclocker(stack: ItemStack, list: MutableList<String>): Double {
-        val count = stack.getOverclockerCount() ?: return 0.0
-
-        val price = OVERCLOCKER_3000.getPrice() * count
-        list.add(formatProgress("Overclocker 3000", count, max = 10, price))
-        return price
-    }
-
     private fun addPolarvoidBook(stack: ItemStack, list: MutableList<String>): Double {
         val count = stack.getPolarvoidBookCount() ?: return 0.0
 
@@ -456,14 +441,14 @@ object EstimatedItemValueCalculator {
     private fun addCrimsonPrestige(stack: ItemStack, list: MutableList<String>): Double {
         val internalName = stack.getInternalNameOrNull() ?: return 0.0
         if (!internalName.isKuudraArmor()) return 0.0
-        val tierIndex = internalName.getArmorKuudraTier()?.takeIf { it > 1 } ?: return 0.0
-        val armorTier = kuudraArmorTiers.getOrNull(tierIndex - 1) ?: return 0.0
+        val tierIndex = internalName.getKuudraTier()?.takeIf { it > 1 } ?: return 0.0
+        val armorTier = kuudraTiers.getOrNull(tierIndex - 1) ?: return 0.0
 
         val allTiersCost = (1 until tierIndex).mapNotNull { index ->
-            kuudraArmorTiers.getOrNull(index)?.let { tierName ->
+            kuudraTiers.getOrNull(index)?.let { tierName ->
                 EstimatedItemValue.crimsonPrestigeCosts[tierName] ?: run {
                     ErrorManager.logErrorStateWithData(
-                        "Could not find crimson prestige cost for ${stack.hoverName.formattedTextCompatLeadingWhiteLessResets()}",
+                        "Could not find crimson prestige cost for ${stack.displayName}",
                         "EstimatedItemValue has no crimsonPrestigeCosts for $tierName tier",
                         "internalName" to internalName,
                         "tierIndex" to tierIndex,
@@ -524,7 +509,7 @@ object EstimatedItemValueCalculator {
     ): Pair<EssenceUtils.EssenceUpgradePrice, Pair<Int, Int>>? {
         var totalStars = inputStars
         val (price, maxStars) = if (internalName.isKuudraArmor()) {
-            val tier = (internalName.getArmorKuudraTier() ?: 0) - 1
+            val tier = (internalName.getKuudraTier() ?: 0) - 1
             totalStars += tier * 10
 
             var remainingStars = totalStars
@@ -537,7 +522,7 @@ object EstimatedItemValueCalculator {
 
             for ((id, _) in EssenceUtils.itemPrices) {
                 if (!id.contains(removed)) continue
-                tiers[id] = (id.getArmorKuudraTier() ?: 0) - 1
+                tiers[id] = (id.getKuudraTier() ?: 0) - 1
 
             }
             for ((id, _) in tiers.sorted()) {
@@ -888,7 +873,7 @@ object EstimatedItemValueCalculator {
 
     private fun ItemStack.readUnlockedSlots(): String? {
         // item have to contains gems.unlocked_slots NBT array for unlocked slot detection
-        val unlockedSlots = getExtraAttributes()?.getCompoundOrDefault("gems")?.get("unlocked_slots")?.toString() ?: return null
+        val unlockedSlots = getExtraAttributes()?.getCompoundTag("gems")?.getTag("unlocked_slots")?.toString() ?: return null
 
         // TODO detection for old items which doesn't have gems.unlocked_slots NBT array
 //        if (unlockedSlots == "null") return 0.0
@@ -900,11 +885,11 @@ object EstimatedItemValueCalculator {
             // Do not error out on items if their data was changed.
             if (getLore().any { it.contains("This item has unused Gemstones!") }) return null
             ErrorManager.logErrorStateWithData(
-                "Could not find gemstone slot price for ${this.hoverName.formattedTextCompatLeadingWhiteLessResets()}",
+                "Could not find gemstone slot price for ${this.displayName}",
                 "EstimatedItemValue has no gemstoneUnlockCosts for $internalName",
                 "internal name" to internalName,
                 "gemstoneUnlockCosts" to EstimatedItemValue.gemstoneUnlockCosts,
-                "item name" to hoverName.formattedTextCompatLeadingWhiteLessResets(),
+                "item name" to displayName,
                 "item nbt" to readNbtDump(),
             )
             return null
@@ -915,10 +900,10 @@ object EstimatedItemValueCalculator {
 
     private fun ItemStack.readBoosters(): List<NeuInternalName> {
         val list = NbtCompat.getStringTagList(extraAttributes, "boosters")
-        if (list.size == 0) return emptyList()
+        if (list.tagCount() == 0) return emptyList()
         val boosters = mutableListOf<NeuInternalName>()
-        for (i in 0..list.size) {
-            var internalName = list.getStringOrDefault(i)
+        for (i in 0..list.tagCount()) {
+            var internalName = list.getStringTagAt(i)
             if (internalName.isBlank()) continue
             internalName += "_BOOSTER"
             boosters.add(internalName.toInternalName())

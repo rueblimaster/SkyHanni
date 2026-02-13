@@ -123,7 +123,7 @@ object CompactStarlynSisters {
         var hadPreviousPB: Boolean = false,
         var lastScoreDisplay: String = "",
         var lastSister: String = "",
-    ) : Resettable
+    ) : Resettable()
 
     data class StarlynCollectionPersonalBests(
         var lastPBWoodType: String = "",
@@ -131,7 +131,7 @@ object CompactStarlynSisters {
         var lastPBCollectionIncreaseDuringContestDisplay: String = "",
         var lastPBPreviousBestDifferenceDisplay: String = "",
         var lastPBSweepIncreaseDisplay: String = "",
-    ) : Resettable
+    ) : Resettable()
 
     private var isInResults = false
     private var contestVariablesAreDirty = false
@@ -142,7 +142,7 @@ object CompactStarlynSisters {
     private var collectionPB = StarlynCollectionPersonalBests()
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isInIsland()) return
         event.blockAndCompact()
     }
@@ -154,7 +154,7 @@ object CompactStarlynSisters {
         resetPersonalBestVariables()
     }
 
-    private fun SkyHanniChatEvent.Allow.blockAndCompact() {
+    private fun SkyHanniChatEvent.blockAndCompact() {
         val message = this.message
         if (config.compactPersonalBest)
             compactCollectionPB(message)
@@ -162,7 +162,7 @@ object CompactStarlynSisters {
             compactContestResults(message)
     }
 
-    private fun SkyHanniChatEvent.Allow.compactCollectionPB(message: String) {
+    private fun SkyHanniChatEvent.compactCollectionPB(message: String) {
         sisterCollPBDuringContestPattern.matchMatcher(message) {
             val foragingSister = group("foragingSister")
             val previousRecord = group("previousRecord")
@@ -172,7 +172,7 @@ object CompactStarlynSisters {
                     "§b$previousRecord §6$woodType logs §ecollected during a contest! Keep it up!"
                 )
             val hoverableLockInWarning = formattedLockInWarning.asComponent()
-            ChatUtils.chat(hoverableLockInWarning, prefix = false)
+            ChatUtils.chat(hoverableLockInWarning)
             blockedReason = "STARLYN_COLLECTION"
             return
         }
@@ -214,7 +214,7 @@ object CompactStarlynSisters {
                 hoverablePersonalBest.onClick(onClick = {
                     HypixelCommands.starlynSisters()
                 })
-                ChatUtils.chat(hoverablePersonalBest, prefix = false)
+                ChatUtils.chat(hoverablePersonalBest)
                 isInPersonalBest = false
                 blockedReason = "STARLYN_COLLECTION"
                 resetPersonalBestVariables()
@@ -222,7 +222,7 @@ object CompactStarlynSisters {
         }
     }
 
-    private fun SkyHanniChatEvent.Allow.compactContestResults(message: String) {
+    private fun SkyHanniChatEvent.compactContestResults(message: String) {
         if (!isInResults) {
             startContestResultsPattern.matchMatcher(message) {
                 isInResults = true
@@ -265,7 +265,7 @@ object CompactStarlynSisters {
                         HypixelCommands.starlynSisters()
                     },
                 )
-                ChatUtils.chat(hoverableResults, prefix = false)
+                ChatUtils.chat(hoverableResults)
                 isInResults = false
                 blockedReason = "STARLYN_RESULTS"
                 resetContestResultVariables()

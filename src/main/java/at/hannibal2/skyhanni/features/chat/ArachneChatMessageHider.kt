@@ -53,7 +53,7 @@ object ArachneChatMessageHider {
     )
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
         if (!shouldHide(event.message)) return
 

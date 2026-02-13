@@ -1,20 +1,13 @@
 package at.hannibal2.skyhanni.utils.tracker
 
 import at.hannibal2.skyhanni.SkyHanniMod
-import at.hannibal2.skyhanni.config.features.misc.tracker.IndividualItemTrackerConfig
-import at.hannibal2.skyhanni.config.features.misc.tracker.ItemTrackerGenericConfig
-import at.hannibal2.skyhanni.config.features.misc.tracker.ItemTrackerGenericConfig.ItemTrackerConfig.TextPart
+import at.hannibal2.skyhanni.config.features.misc.TrackerConfig.TextPart
 import at.hannibal2.skyhanni.config.storage.ProfileSpecificStorage
 import at.hannibal2.skyhanni.data.ItemAddManager
-import at.hannibal2.skyhanni.data.SlayerApi
 import at.hannibal2.skyhanni.data.TrackerManager
-import at.hannibal2.skyhanni.data.title.TitleManager
 import at.hannibal2.skyhanni.events.ItemAddEvent
 import at.hannibal2.skyhanni.utils.ChatUtils
-import at.hannibal2.skyhanni.utils.ClipboardUtils
-import at.hannibal2.skyhanni.utils.ItemPriceSource
 import at.hannibal2.skyhanni.utils.ItemPriceUtils.formatCoin
-import at.hannibal2.skyhanni.utils.ItemPriceUtils.getPriceName
 import at.hannibal2.skyhanni.utils.ItemUtils
 import at.hannibal2.skyhanni.utils.ItemUtils.readableInternalName
 import at.hannibal2.skyhanni.utils.ItemUtils.repoItemName
@@ -23,28 +16,18 @@ import at.hannibal2.skyhanni.utils.KeyboardManager
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.SKYBLOCK_COIN
 import at.hannibal2.skyhanni.utils.NumberUtil.addSeparators
-import at.hannibal2.skyhanni.utils.NumberUtil.roundTo
 import at.hannibal2.skyhanni.utils.NumberUtil.shortFormat
 import at.hannibal2.skyhanni.utils.SkyBlockUtils
 import at.hannibal2.skyhanni.utils.StringUtils.pluralize
 import at.hannibal2.skyhanni.utils.StringUtils.removeColor
-import at.hannibal2.skyhanni.utils.TimeUtils.format
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.sortedDesc
-import at.hannibal2.skyhanni.utils.compat.appendWithColor
-import at.hannibal2.skyhanni.utils.compat.componentBuilder
-import at.hannibal2.skyhanni.utils.inPartialHours
 import at.hannibal2.skyhanni.utils.renderables.Renderable
-import at.hannibal2.skyhanni.utils.renderables.RenderableUtils.addButton
 import at.hannibal2.skyhanni.utils.renderables.ScrollValue
 import at.hannibal2.skyhanni.utils.renderables.Searchable
 import at.hannibal2.skyhanni.utils.renderables.primitives.ItemStackRenderable.Companion.item
-import at.hannibal2.skyhanni.utils.renderables.primitives.empty
 import at.hannibal2.skyhanni.utils.renderables.primitives.text
 import at.hannibal2.skyhanni.utils.renderables.toSearchable
-import net.minecraft.ChatFormatting
-import kotlin.math.absoluteValue
 import kotlin.math.min
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 open class
@@ -53,24 +36,12 @@ SkyHanniItemTracker<Data : ItemTrackerData>(
     createNewSession: () -> Data,
     getStorage: (ProfileSpecificStorage) -> Data,
     extraDisplayModes: Map<DisplayMode, (ProfileSpecificStorage) -> Data> = emptyMap(),
-    trackerConfig: () -> IndividualItemTrackerConfig,
-    drawDisplay: (Data) -> List<Searchable>
-) : SkyHanniTracker<Data, IndividualItemTrackerConfig>(
-    name,
-    createNewSession,
-    getStorage,
-    extraDisplayModes,
-    drawDisplay = drawDisplay,
-    trackerConfig = { trackerConfig() }
-) {
+    drawDisplay: (Data) -> List<Searchable>,
+) : SkyHanniTracker<Data>(name, createNewSession, getStorage, extraDisplayModes, drawDisplay = drawDisplay) {
+
     companion object {
-        private val universalTracker get() = SkyHanniMod.feature.misc.tracker
+        private val config get() = SkyHanniMod.feature.misc.tracker
     }
-
-    private val config: ItemTrackerGenericConfig get() =
-        if (trackerSpecificConfig.useUniversalConfig) universalTracker else trackerSpecificConfig.trackerConfig
-
-    private val itemTrackerConfig: ItemTrackerGenericConfig.ItemTrackerConfig get() = config.itemTracker
 
     private var scrollValue = ScrollValue()
 
@@ -102,8 +73,13 @@ SkyHanniItemTracker<Data : ItemTrackerData>(
     }
 
     fun logCommandAdd(internalName: NeuInternalName, amount: Int) {
-        val action = if (amount > 0) "added to" else "removed from"
-        ChatUtils.chat("Manually $action $name: ${internalName.getPriceName(amount.absoluteValue)}")
+        val displayName = internalName.repoItemName
+        val message = if (amount > 0) {
+            "Manually added to $name: §r$displayName §7(${amount}x§7)"
+        } else {
+            "Manually removed from $name: §r$displayName §7(${-amount}x§7)"
+        }
+        ChatUtils.chat(message)
     }
 
     fun ItemAddEvent.logCompletedAddEvent() {
@@ -144,7 +120,7 @@ SkyHanniItemTracker<Data : ItemTrackerData>(
         },
         getLoreList: (NeuInternalName, ItemTrackerData.TrackedItem) -> List<String> = { internalName, item ->
             if (internalName == SKYBLOCK_COIN) data.getCoinDescription(item)
-            else data.getDescription(item)
+            else data.getDescription(item.timesGained)
         },
     ): Double {
         var profit = 0.0
@@ -154,14 +130,14 @@ SkyHanniItemTracker<Data : ItemTrackerData>(
             if (!filter(internalName)) continue
 
             val amount = itemProfit.totalAmount
-            val pricePer = if (internalName == SKYBLOCK_COIN) 1.0 else data.getCustomPricePer(internalName, this)
+            val pricePer = if (internalName == SKYBLOCK_COIN) 1.0 else data.getCustomPricePer(internalName)
             val price = (pricePer * amount).toLong()
             val hidden = itemProfit.hidden
 
             if (isInventoryOpen() || !hidden) {
                 items[internalName] = price
             }
-            if (!hidden || !itemTrackerConfig.excludeHiddenItemsInPrice) {
+            if (!hidden || !config.excludeHiddenItemsInPrice) {
                 profit += price
             }
         }
@@ -178,7 +154,7 @@ SkyHanniItemTracker<Data : ItemTrackerData>(
 
             val hidden = itemProfit.hidden
             val priceFormat = price.formatCoin(gray = hidden)
-            val newDrop = itemProfit.lastTimeUpdated.passedSince() < 10.seconds && itemTrackerConfig.showRecentDrops
+            val newDrop = itemProfit.lastTimeUpdated.passedSince() < 10.seconds && config.showRecentDrops
             val numberColor = if (newDrop) "§a§l" else "§7"
 
             val formattedName = cleanName.removeColor(keepFormatting = true).replace("§r", "")
@@ -211,7 +187,7 @@ SkyHanniItemTracker<Data : ItemTrackerData>(
             row[TextPart.TOTAL_PRICE] = string(" $priceFormat")
             row[TextPart.AMOUNT] = string(" $numberColor${displayAmount.addSeparators()}x")
 
-            val line = itemTrackerConfig.textOrder.get().mapNotNull { row[it] }
+            val line = config.textOrder.get().mapNotNull { row[it] }
             table[line] = cleanName
         }
 
@@ -219,11 +195,11 @@ SkyHanniItemTracker<Data : ItemTrackerData>(
         Renderable.searchableScrollable(
             table,
             key = 99,
-            lines = min(items.size, itemTrackerConfig.itemsShown.get()),
+            lines = min(items.size, config.itemsShown.get()),
             velocity = 5.0,
             textInput = textInput,
             scrollValue = scrollValue,
-            asTable = itemTrackerConfig.showTable.get(),
+            asTable = config.showTable.get(),
             showScrollableTipsInList = isInventoryOpen(),
         )?.let {
             lists.add(it.toSearchable())
@@ -261,134 +237,18 @@ SkyHanniItemTracker<Data : ItemTrackerData>(
         }
     }
 
-    fun addTotalProfit(
-        profit: Double,
-        totalAmount: Long,
-        action: String,
-        duration: Duration,
-        actionPluralized: String = ""
-    ): List<Searchable> {
+    fun addTotalProfit(profit: Double, totalAmount: Long, action: String): Searchable {
         val profitFormat = profit.toLong().addSeparators()
         val profitPrefix = if (profit < 0) "§c" else "§6"
 
-        val profitTips = buildList {
-            if (totalAmount > 0) {
-                val profitPerCatch = profit / totalAmount
-                add("§7Profit per $action: $profitPrefix${profitPerCatch.shortFormat()}")
-            }
-
-            if (duration > 0.seconds) {
-                val profitPerHour = profit / duration.inPartialHours
-                add("§7Profit per hour: $profitPrefix${profitPerHour.shortFormat()}")
-            }
-
-            if (totalAmount > 0 && duration > 0.seconds && actionPluralized != "") {
-                val amountPerHour = totalAmount / duration.inPartialHours
-                add("§7$actionPluralized per hour: §e${amountPerHour.shortFormat()}")
-            }
-        }
-
-
-        val tips: List<String> = buildList {
-            addAll(profitTips)
-            addAll(
-                listOf(
-                    "",
-                    "§eClick to copy line!",
-                    "§eShift Click to include stats in this tooltip!"
-                )
-            )
-        }
+        val tips = if (totalAmount > 0) {
+            val profitPerCatch = profit / totalAmount
+            val profitPerCatchFormat = profitPerCatch.shortFormat()
+            listOf("§7Profit per $action: $profitPrefix$profitPerCatchFormat")
+        } else emptyList()
 
         val coinFormat = "coin".pluralize(profit.toInt())
-        val text = "§e${getDisplayMode().shortenedName} Profit: $profitPrefix$profitFormat $coinFormat"
-
-        val profitRenderable = Renderable.clickable(
-            text,
-            tips = tips,
-            onLeftClick = {
-                val line = "$name: ${text.removeColor()}"
-                val tipStats = profitTips.take(2)
-                val fullTipsLine = line + "\n " + tipStats.joinToString(" \n") { it.removeColor() }
-                copyOnClick(line, fullTipsLine, "profit")
-            }
-        )
-        val profitPerHourRenderable =
-            if (shouldShowProfitPerHour()) profitPerHourRenderable(profit, duration) else Renderable.empty()
-        return listOf(profitRenderable.toSearchable(), profitPerHourRenderable.toSearchable())
-    }
-
-    private fun shouldShowProfitPerHour() =
-        config.itemTracker.profitPerHour.get() && !(getDisplayMode() == DisplayMode.TOTAL && config.onlyShowSession.get())
-
-    private fun profitPerHourRenderable(profit: Double, duration: Duration): Renderable {
-        if (duration == 0.seconds) return Renderable.empty()
-        val profitPerHour = profit / duration.inPartialHours
-        val profitPerHourFormat = profitPerHour.roundTo(0).addSeparators()
-        val coinFormat = "coin".pluralize(profitPerHour.toInt())
-        val profitPrefix = if (profitPerHour < 0) "§c" else "§6"
-        val text = "§eProfit Per Hour: $profitPrefix$profitPerHourFormat $coinFormat"
-
-        val tips = listOf(
-            "§7Uptime: §b${duration.format()}",
-            "",
-            "§eClick to copy line!",
-            "§eShift Click to include stats in this tooltip!"
-        )
-        return Renderable.clickable(
-            text,
-            tips = tips,
-            onLeftClick = {
-                val line = "$name: ${text.removeColor()}"
-                val tipStats = tips[0]
-                val fullTipsLine = "$line\n${tipStats.removeColor()}"
-                copyOnClick(line, fullTipsLine, "profit per hour")
-            }
-        )
-    }
-
-    private fun copyOnClick(line: String, fullTipsLine: String, type: String) {
-        if (KeyboardManager.isShiftKeyDown()) ClipboardUtils.copyToClipboard(fullTipsLine)
-        else ClipboardUtils.copyToClipboard(line)
-        ChatUtils.chat("§eCopied $name $type to clipboard!")
-    }
-
-    fun handlePossibleRareDrop(internalName: NeuInternalName, amount: Int, message: Boolean = true) {
-        val (itemName, price) = SlayerApi.getItemNameAndPrice(internalName, amount)
-        if (itemTrackerConfig.warnings.chat && price >= itemTrackerConfig.warnings.minimumChat && message) {
-            ChatUtils.chat(
-                componentBuilder {
-                    appendWithColor("+Tracker Drop", ChatFormatting.GREEN)
-                    appendWithColor(": ", ChatFormatting.GRAY)
-                    append("§r$itemName")
-                }
-            )
-        }
-        if (itemTrackerConfig.warnings.title && price >= itemTrackerConfig.warnings.minimumTitle) {
-            TitleManager.sendTitle("§a+ $itemName", weight = price)
-        }
-    }
-
-    fun addPriceFromButton(lists: MutableList<Searchable>) {
-        if (isInventoryOpen()) {
-            lists.addButton<ItemPriceSource>(
-                label = "Price Source",
-                current = config.priceSource,
-                getName = { it.sellName },
-                onChange = {
-                    config.priceSource = it
-                    update()
-                },
-                universe = ItemPriceSource.entries,
-            )
-        }
-    }
-
-    override fun hideInEstimatedItemValue(): Boolean {
-        return config.itemTracker.hideInEstimatedItemValue
-    }
-
-    override fun hideOutsideInventory(): Boolean {
-        return config.itemTracker.hideOutsideInventory
+        val text = "§eTotal Profit: $profitPrefix$profitFormat $coinFormat"
+        return Renderable.hoverTips(text, tips).toSearchable()
     }
 }

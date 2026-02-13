@@ -5,7 +5,6 @@ import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.config.ConfigUpdaterMigrator
 import at.hannibal2.skyhanni.config.commands.CommandCategory
 import at.hannibal2.skyhanni.config.commands.CommandRegistrationEvent
-import at.hannibal2.skyhanni.config.commands.brigadier.BrigadierArguments
 import at.hannibal2.skyhanni.data.PartyApi
 import at.hannibal2.skyhanni.data.PartyApi.partyLeader
 import at.hannibal2.skyhanni.data.PartyApi.transferVoluntaryPattern
@@ -40,16 +39,19 @@ object PartyCommands {
         HypixelCommands.partyWarp()
     }
 
-    private fun kick(kickedPlayer: String, kickedReason: String? = null) {
+    private fun kick(args: Array<String>) {
         if (!config.shortCommands) return
-        if (kickedReason != null && config.partyKickReason) {
+        if (args.isEmpty()) return
+        val kickedPlayer = args[0]
+        val kickedReason = args.drop(1).joinToString(" ").trim()
+        if (kickedReason.isNotEmpty() && config.partyKickReason) {
             HypixelCommands.partyChat("Kicking $kickedPlayer: $kickedReason")
         }
         HypixelCommands.partyKick(kickedPlayer)
     }
 
-    private fun transfer(name: String? = null) {
-        if (name == null) {
+    private fun transfer(args: Array<String>) {
+        if (args.isEmpty()) {
             if (LimboTimeTracker.inLimbo) {
                 LimboTimeTracker.printStats(true)
                 return
@@ -58,12 +60,13 @@ object PartyCommands {
             return
         }
         if (!config.shortCommands) return
-        HypixelCommands.partyTransfer(name)
+        HypixelCommands.partyTransfer(args[0])
     }
 
-    private fun promote(name: String) {
+    private fun promote(args: Array<String>) {
         if (!config.shortCommands) return
-        HypixelCommands.partyPromote(name)
+        if (args.isEmpty()) return
+        HypixelCommands.partyPromote(args[0])
     }
 
     private fun reverseTransfer() {
@@ -113,12 +116,8 @@ object PartyCommands {
     }
 
     @HandleEvent(priority = HandleEvent.LOW)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!config.reversePT.clickable) return
-
-        // The message was likely already modified by us, return to avoid infinite recursion
-        if (event.chatComponent.style.clickEvent != null) return
-
         if (!transferVoluntaryPattern.matches(event.message.trimWhiteSpace().removeColor())) return
         if (partyLeader != PlayerUtils.getName()) return
 
@@ -134,54 +133,40 @@ object PartyCommands {
 
     @HandleEvent
     fun onCommandRegistration(event: CommandRegistrationEvent) {
-        event.registerBrigadier("pko") {
+        event.register("pko") {
             description = "Kicks offline party members"
             category = CommandCategory.SHORTENED_COMMANDS
-            simpleCallback { kickOffline() }
+            callback { kickOffline() }
         }
-        event.registerBrigadier("pw") {
+        event.register("pw") {
             description = "Warps your party"
             category = CommandCategory.SHORTENED_COMMANDS
-            simpleCallback { warp() }
+            callback { warp() }
         }
-        event.registerBrigadier("pk") {
+        event.register("pk") {
             description = "Kick a specific party member"
             category = CommandCategory.SHORTENED_COMMANDS
-            arg("name", BrigadierArguments.string()) { name ->
-                argCallback("reason", BrigadierArguments.greedyString()) { reason ->
-                    kick(getArg(name), reason)
-                }
-                callback {
-                    kick(getArg(name))
-                }
-            }
+            callback { kick(it) }
         }
-        event.registerBrigadier("pt") {
+        event.register("pt") {
             description = "Transfer the party to another party member"
             category = CommandCategory.SHORTENED_COMMANDS
-            argCallback("name", BrigadierArguments.string()) { name ->
-                transfer(name)
-            }
-            simpleCallback {
-                transfer()
-            }
+            callback { transfer(it) }
         }
-        event.registerBrigadier("pp") {
+        event.register("pp") {
             description = "Promote a specific party member"
             category = CommandCategory.SHORTENED_COMMANDS
-            argCallback("name", BrigadierArguments.string()) { name ->
-                promote(name)
-            }
+            callback { promote(it) }
         }
-        event.registerBrigadier("pd") {
+        event.register("pd") {
             description = "Disbands the party"
             category = CommandCategory.SHORTENED_COMMANDS
-            simpleCallback { disband() }
+            callback { disband() }
         }
-        event.registerBrigadier("rpt") {
+        event.register("rpt") {
             description = "Reverse transfer party to the previous leader"
             category = CommandCategory.SHORTENED_COMMANDS
-            simpleCallback { reverseTransfer() }
+            callback { reverseTransfer() }
         }
     }
 }

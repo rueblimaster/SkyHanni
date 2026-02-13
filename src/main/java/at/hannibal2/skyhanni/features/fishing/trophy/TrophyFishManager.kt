@@ -15,10 +15,10 @@ import at.hannibal2.skyhanni.utils.ItemUtils.getLore
 import at.hannibal2.skyhanni.utils.NumberUtil.formatInt
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.compat.defaultStyleConstructor
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLeadingWhiteLessResets
 import at.hannibal2.skyhanni.utils.compat.setHoverShowText
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.network.chat.Style
+import at.hannibal2.skyhanni.utils.system.PlatformUtils
+import net.minecraft.util.ChatStyle
 
 @SkyHanniModule
 object TrophyFishManager {
@@ -92,7 +92,8 @@ object TrophyFishManager {
             }
         }
         if (changed) {
-            val message = "Click here to load Trophy Fishing data from SkyBlock Profile Viewer!"
+            val message = if (PlatformUtils.IS_LEGACY) "Click here to load Trophy Fishing data from NEU PV!"
+            else "Click here to load Trophy Fishing data from SkyBlock Profile Viewer!"
 
             ChatUtils.clickableChat(
                 message,
@@ -113,14 +114,14 @@ object TrophyFishManager {
         var updatedFishes = loadMissingTrophyFish()
         val savedFishes = fish ?: return
         for (stack in event.inventoryItems.values) {
-            val internalName = TrophyFishApi.getInternalName(stack.hoverName.string.replace("§k", ""))
+            val internalName = TrophyFishApi.getInternalName(stack.displayName.replace("§k", ""))
 
             fun getRarity(rawRarity: String, line: String): TrophyRarity =
                 TrophyRarity.getByName(rawRarity) ?: ErrorManager.skyHanniError(
                     "unknown trophy fish rarity in odger inventory",
                     "rawRarity" to rawRarity,
                     "line" to line,
-                    "stack.name" to stack.hoverName.formattedTextCompatLeadingWhiteLessResets(),
+                    "stack.name" to stack.displayName,
                     "internalName" to internalName,
                 )
 
@@ -162,12 +163,14 @@ object TrophyFishManager {
             val current = saved[rarity] ?: 0
             if (newValue > current) {
                 saved[rarity] = newValue
-                val message = "Updated trophy fishing data from SkyBlock Profile Viewer:  $name $rarity: $current -> $newValue"
+                val message = if (PlatformUtils.IS_LEGACY) "Updated trophy fishing data from NEU PV:  $name $rarity: $current -> $newValue"
+                else "Updated trophy fishing data from SkyBlock Profile Viewer:  $name $rarity: $current -> $newValue"
                 ChatUtils.debug(message)
             }
         }
         TrophyFishDisplay.update()
-        val message = "Updated Trophy Fishing data via SkyBlock Profile Viewer!"
+        val message = if (PlatformUtils.IS_LEGACY) "Updated Trophy Fishing data via NEU PV!"
+        else "Updated Trophy Fishing data via SkyBlock Profile Viewer!"
         ChatUtils.chat(message)
     }
 
@@ -181,7 +184,7 @@ object TrophyFishManager {
         return fillet.getOrDefault(rarity, -1)
     }
 
-    fun getTooltip(internalName: String): Style? {
+    fun getTooltip(internalName: String): ChatStyle? {
         val display = TrophyFishApi.hoverInfo(internalName) ?: return null
         return defaultStyleConstructor.setHoverShowText(display)
     }

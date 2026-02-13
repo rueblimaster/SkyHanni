@@ -18,8 +18,7 @@ object HighlightJerries {
 
     private val config get() = SkyHanniMod.feature.event.jerry
 
-    /**
-     * REGEX-TEST: Blue Jerry
+    /** REGEX-TEST: Blue Jerry
      */
     private val jerryPattern by RepoPattern.pattern("jerry.highlight", "(?<color>\\w+) Jerry")
 

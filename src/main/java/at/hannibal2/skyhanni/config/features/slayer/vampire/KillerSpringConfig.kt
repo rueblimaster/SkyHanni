@@ -1,6 +1,7 @@
 package at.hannibal2.skyhanni.config.features.slayer.vampire
 
 import at.hannibal2.skyhanni.config.FeatureToggle
+import at.hannibal2.skyhanni.config.OnlyModern
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.ChromaColour
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
@@ -43,5 +44,6 @@ class KillerSpringConfig {
     @SearchTag("mute wither")
     @ConfigEditorBoolean
     @FeatureToggle
+    @OnlyModern
     var fixSoundSpam: Boolean = true
 }

@@ -8,9 +8,8 @@ import at.hannibal2.skyhanni.events.minecraft.SkyHanniRenderWorldEvent
 import at.hannibal2.skyhanni.features.rift.RiftApi
 import at.hannibal2.skyhanni.mixins.hooks.RenderLivingEntityHelper
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import at.hannibal2.skyhanni.utils.AllEntitiesGetter
 import at.hannibal2.skyhanni.utils.ColorUtils.toColor
-import at.hannibal2.skyhanni.utils.EntityUtils
+import at.hannibal2.skyhanni.utils.EntityUtils.getEntities
 import at.hannibal2.skyhanni.utils.ItemUtils.getSkullTexture
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.SkullTextureHolder
@@ -22,10 +21,10 @@ import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawCylinderInWorld
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.drawDynamicText
 import at.hannibal2.skyhanni.utils.render.WorldRenderUtils.exactLocation
 import io.github.notenoughupdates.moulconfig.ChromaColour
-import net.minecraft.world.entity.Entity
-import net.minecraft.world.entity.LivingEntity
-import net.minecraft.world.entity.decoration.ArmorStand
-import net.minecraft.world.item.ItemStack
+import net.minecraft.entity.Entity
+import net.minecraft.entity.EntityLivingBase
+import net.minecraft.entity.item.EntityArmorStand
+import net.minecraft.item.ItemStack
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -47,7 +46,7 @@ object VoltHighlighter {
         if (!config.voltWarning) return
         val player = MinecraftCompat.localPlayerOrNull ?: return
         if (event.isHead && getVoltState(event.entity) == VoltState.DOING_LIGHTNING &&
-            event.entity.position().distanceToSqr(player.position()) <= LIGHTNING_DISTANCE * LIGHTNING_DISTANCE
+            event.entity.positionVector.squareDistanceTo(player.positionVector) <= LIGHTNING_DISTANCE * LIGHTNING_DISTANCE
         ) {
             chargingSince = chargingSince.editCopy {
                 this[event.entity] = SimpleTimeMark.now()
@@ -55,11 +54,10 @@ object VoltHighlighter {
         }
     }
 
-    @OptIn(AllEntitiesGetter::class)
     @HandleEvent(onlyOnIsland = IslandType.THE_RIFT)
     fun onRenderWorld(event: SkyHanniRenderWorldEvent) {
         if (!(config.voltRange || config.voltMoodMeter)) return
-        for (entity in EntityUtils.getEntities<LivingEntity>()) {
+        for (entity in getEntities<EntityLivingBase>()) {
             val state = getVoltState(entity).takeIf { it != VoltState.NO_VOLT } ?: continue
 
             if (config.voltMoodMeter) RenderLivingEntityHelper.setEntityColorWithNoHurtTime(
@@ -70,9 +68,9 @@ object VoltHighlighter {
             if (state == VoltState.DOING_LIGHTNING && config.voltRange) {
                 event.drawCylinderInWorld(
                     config.voltColor.toColor(),
-                    entity.position().x,
-                    entity.position().y - 4f,
-                    entity.position().z,
+                    entity.posX,
+                    entity.posY - 4f,
+                    entity.posZ,
                     radius = LIGHTNING_DISTANCE,
                     height = 20F,
                 )
@@ -106,7 +104,7 @@ object VoltHighlighter {
     }
 
     private fun getVoltState(entity: Entity): VoltState {
-        if (entity !is ArmorStand) return VoltState.NO_VOLT
+        if (entity !is EntityArmorStand) return VoltState.NO_VOLT
         val helmet = entity.getStandHelmet() ?: return VoltState.NO_VOLT
         return getVoltState(helmet)
     }

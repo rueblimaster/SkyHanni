@@ -54,7 +54,7 @@ class AttributeShardsConfig {
     var tierAsStackSize: Boolean = true
 
     @Expose
-    @ConfigOption(name = "Highlight Disabled Attributes", desc = "Highlight disabled attributes in §e/attributemenu§7.")
+    @ConfigOption(name = "Highlight Disabled Attributes", desc = "Highlight disabled attributes in /attributemenu.")
     @ConfigEditorBoolean
     @FeatureToggle
     var highlightDisabledAttributes: Boolean = true
@@ -64,11 +64,6 @@ class AttributeShardsConfig {
     @ConfigEditorBoolean
     @FeatureToggle
     var huntingBoxValue: Boolean = true
-
-    @Expose
-    @ConfigOption(name = "Export to SkyShards", desc = "Displays a button in the hunting box to export to and open SkyShards.")
-    @ConfigEditorBoolean
-    var exportToSkyShards: Boolean = true
 
     @Expose
     @ConfigLink(owner = AttributeShardsConfig::class, field = "enabled")

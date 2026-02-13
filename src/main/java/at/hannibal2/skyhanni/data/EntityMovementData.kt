@@ -12,11 +12,10 @@ import at.hannibal2.skyhanni.utils.LorenzVec
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.compat.MinecraftCompat
-import at.hannibal2.skyhanni.utils.compat.deceased
 import at.hannibal2.skyhanni.utils.getLorenzVec
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
-import net.minecraft.client.player.LocalPlayer
-import net.minecraft.world.entity.LivingEntity
+import net.minecraft.client.entity.EntityPlayerSP
+import net.minecraft.entity.EntityLivingBase
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -43,9 +42,9 @@ object EntityMovementData {
         val startTime: SimpleTimeMark = SimpleTimeMark.now()
     }
 
-    private val entityLocation = mutableMapOf<LivingEntity, LorenzVec>()
+    private val entityLocation = mutableMapOf<EntityLivingBase, LorenzVec>()
 
-    fun addToTrack(entity: LivingEntity) {
+    fun addToTrack(entity: EntityLivingBase) {
         if (entity !in entityLocation) {
             entityLocation[entity] = entity.getLorenzVec()
         }
@@ -72,7 +71,7 @@ object EntityMovementData {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onPlayerMove(event: EntityMoveEvent<LocalPlayer>) {
+    fun onPlayerMove(event: EntityMoveEvent<EntityPlayerSP>) {
         if (!event.isLocalPlayer) return
 
         val nextData = nextTeleport ?: return
@@ -94,7 +93,7 @@ object EntityMovementData {
         addToTrack(MinecraftCompat.localPlayer)
 
         for (entity in entityLocation.keys) {
-            if (entity.deceased) continue
+            if (entity.isDead) continue
 
             val newLocation = entity.getLorenzVec()
             val oldLocation = entityLocation[entity]!!
@@ -107,7 +106,7 @@ object EntityMovementData {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!warpingPattern.matches(event.message)) return
         DelayedRun.runNextTick {
             SkyHanniWarpEvent.post()

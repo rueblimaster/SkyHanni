@@ -30,7 +30,7 @@ object DungeonArchitectFeatures {
     private val architectsFirstDraftItem = "ARCHITECT_FIRST_DRAFT".toInternalName()
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isEnabled()) return
 
         puzzleFailPattern.matchMatcher(event.message) {
@@ -43,7 +43,7 @@ object DungeonArchitectFeatures {
 
     private val architectsFirstDraft = "ARCHITECT_FIRST_DRAFT".toInternalName().makePrimitiveStack()
 
-    private fun generateMessage(name: String, event: SkyHanniChatEvent.Allow) {
+    private fun generateMessage(name: String, event: SkyHanniChatEvent) {
         val architectItemAmount = architectsFirstDraftItem.getAmountInSacks()
         if (architectItemAmount <= 0) return
 

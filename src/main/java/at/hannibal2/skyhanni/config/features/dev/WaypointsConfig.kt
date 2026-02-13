@@ -4,7 +4,7 @@ import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorKeybind
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
-import org.lwjgl.glfw.GLFW
+import org.lwjgl.input.Keyboard
 
 class WaypointsConfig {
     @Expose
@@ -12,13 +12,13 @@ class WaypointsConfig {
         name = "Save Hotkey",
         desc = "Saves block location to a temporarily parkour and copies everything to your clipboard."
     )
-    @ConfigEditorKeybind(defaultKey = GLFW.GLFW_KEY_UNKNOWN)
-    var saveKey: Int = GLFW.GLFW_KEY_UNKNOWN
+    @ConfigEditorKeybind(defaultKey = Keyboard.KEY_NONE)
+    var saveKey: Int = Keyboard.KEY_NONE
 
     @Expose
     @ConfigOption(name = "Delete Hotkey", desc = "Deletes the last saved location for when you make a mistake.")
-    @ConfigEditorKeybind(defaultKey = GLFW.GLFW_KEY_UNKNOWN)
-    var deleteKey: Int = GLFW.GLFW_KEY_UNKNOWN
+    @ConfigEditorKeybind(defaultKey = Keyboard.KEY_NONE)
+    var deleteKey: Int = Keyboard.KEY_NONE
 
     @Expose
     @ConfigOption(name = "Show Platform Number", desc = "Show the index number over the platform for every parkour.")

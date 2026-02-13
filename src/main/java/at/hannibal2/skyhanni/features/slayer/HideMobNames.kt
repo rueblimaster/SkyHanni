@@ -6,8 +6,7 @@ import at.hannibal2.skyhanni.events.CheckRenderEntityEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
 import at.hannibal2.skyhanni.utils.RegexUtils.matchMatcher
 import at.hannibal2.skyhanni.utils.collection.TimeLimitedCache
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLessResets
-import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.entity.item.EntityArmorStand
 import java.util.regex.Pattern
 import kotlin.time.Duration.Companion.minutes
 
@@ -50,14 +49,14 @@ object HideMobNames {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onCheckRender(event: CheckRenderEntityEvent<ArmorStand>) {
+    fun onCheckRender(event: CheckRenderEntityEvent<EntityArmorStand>) {
         if (!SlayerApi.config.hideMobNames) return
 
         val entity = event.entity
         if (!entity.hasCustomName()) return
 
-        val name = entity.name.formattedTextCompatLessResets()
-        val id = entity.id
+        val name = entity.name
+        val id = entity.entityId
         if (lastMobName[id] == name) {
             if (id in mobNamesHidden) {
                 event.cancel()

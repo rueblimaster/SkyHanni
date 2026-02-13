@@ -4,13 +4,12 @@ import at.hannibal2.skyhanni.api.event.SkyHanniEvent
 import at.hannibal2.skyhanni.data.model.TabWidget
 import at.hannibal2.skyhanni.skyhannimodule.PrimaryFunction
 import at.hannibal2.skyhanni.utils.EnumUtils.isAnyOf
-import net.minecraft.network.chat.Component
 
 /** The events get send on change of the widget and on island switch */
 @PrimaryFunction("onWidgetUpdate")
 class WidgetUpdateEvent(
     val widget: TabWidget,
-    val lines: List<Component>,
+    val lines: List<String>,
 ) : SkyHanniEvent() {
 
     fun isWidget(widgetType: TabWidget) = widget == widgetType

@@ -9,7 +9,7 @@ import at.hannibal2.skyhanni.events.SecondPassedEvent
 import at.hannibal2.skyhanni.features.combat.damageindicator.BossType
 import at.hannibal2.skyhanni.features.combat.damageindicator.DamageIndicatorManager
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import net.minecraft.world.entity.projectile.hurtingprojectile.Fireball
+import net.minecraft.entity.projectile.EntityFireball
 
 @SkyHanniModule
 object BlazeSlayerClearView {
@@ -43,7 +43,7 @@ object BlazeSlayerClearView {
     }
 
     @HandleEvent(onlyOnSkyblock = true)
-    fun onCheckRender(event: CheckRenderEntityEvent<Fireball>) {
+    fun onCheckRender(event: CheckRenderEntityEvent<EntityFireball>) {
         if (isEnabled()) {
             event.cancel()
         }

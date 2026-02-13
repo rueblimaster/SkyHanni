@@ -107,7 +107,7 @@ object MiningEventTracker {
     }
 
     @HandleEvent
-    fun onChat(event: SkyHanniChatEvent.Allow) {
+    fun onChat(event: SkyHanniChatEvent) {
         if (!isMiningIsland()) return
 
         eventStartedPattern.matchMatcher(event.message) {
@@ -124,7 +124,7 @@ object MiningEventTracker {
         if (!config.outsideMining && !isMiningIsland()) return
         if (!canRequestAt.isInPast()) return
 
-        SkyHanniMod.launchIOCoroutine("mining event tracker fetch data") {
+        SkyHanniMod.launchIOCoroutine {
             fetchData()
         }
     }
@@ -177,7 +177,7 @@ object MiningEventTracker {
             ChatUtils.debug("blocked sending mining event data: api error")
             return
         }
-        SkyHanniMod.launchIOCoroutine("mining event tracker send data") {
+        SkyHanniMod.launchIOCoroutine {
             sendData(miningEventJson)
         }
     }

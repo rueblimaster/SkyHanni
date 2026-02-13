@@ -20,8 +20,11 @@ data class ModVersion(val stable: Int, val beta: Int, val bugfix: Int) : Compara
     fun isValid() = stable != 0
 
     /** Inclusive for both borders */
-    fun isInBetween(lower: ModVersion, higher: ModVersion): Boolean {
-        return this in lower..higher
+    fun isInBetween(current: ModVersion, target: ModVersion): Boolean {
+        if (this > target) return false
+        if (this < current) return false
+        if (this == current) return true
+        return true
     }
 
     companion object {

@@ -4,15 +4,13 @@ import at.hannibal2.skyhanni.api.event.HandleEvent
 import at.hannibal2.skyhanni.data.IslandType
 import at.hannibal2.skyhanni.events.minecraft.SkyHanniTickEvent
 import at.hannibal2.skyhanni.skyhannimodule.SkyHanniModule
-import at.hannibal2.skyhanni.utils.AllEntitiesGetter
 import at.hannibal2.skyhanni.utils.ChatUtils
 import at.hannibal2.skyhanni.utils.EntityUtils
 import at.hannibal2.skyhanni.utils.NeuInternalName
 import at.hannibal2.skyhanni.utils.NeuInternalName.Companion.toInternalName
 import at.hannibal2.skyhanni.utils.SimpleTimeMark
 import at.hannibal2.skyhanni.utils.collection.CollectionUtils.addOrPut
-import at.hannibal2.skyhanni.utils.compat.formattedTextCompatLessResets
-import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.entity.item.EntityArmorStand
 import java.util.UUID
 import kotlin.math.floor
 import kotlin.time.Duration.Companion.seconds
@@ -27,15 +25,17 @@ object ProfitPerDragon {
     private val ENCHANTED_ENDER_PEARL = "ENCHANTED_ENDER_PEARL".toInternalName()
     private val ENDER_PEARL = "ENDER_PEARL".toInternalName()
 
-    // This can probably be optimized to not use getEntities, but it's not a big issue right now
-    @OptIn(AllEntitiesGetter::class)
     private fun scanForLoot() {
-        val entities = EntityUtils.getEntities<ArmorStand>()
+        val entities = EntityUtils.getEntities<EntityArmorStand>()
 
-        scannedLootUUIDs.removeIf { uuid -> entities.none { it.uuid == uuid } }
+        for (uuid in scannedLootUUIDs) {
+            if (entities.none { it.uniqueID == uuid }) {
+                scannedLootUUIDs.remove(uuid)
+            }
+        }
 
         for (entity in entities) {
-            val entityName = entity.name.formattedTextCompatLessResets()
+            val entityName = entity.name
             val amount: Int = entityName.split("§8x").last().toIntOrNull() ?: 1
             val internalNameFromEntityName = NeuInternalName.fromItemNameOrNull(entityName)
 
@@ -44,13 +44,13 @@ object ProfitPerDragon {
                     ChatUtils.debug("Could not find internal name for entity name: $entityName")
                     continue
                 }
-                if (entity.uuid in scannedLootUUIDs) continue
+                if (entity.uniqueID in scannedLootUUIDs) continue
 
                 ChatUtils.debug("Adding $internalNameFromEntityName x$amount to dragon loot")
 
                 dragonLoot.addOrPut(internalNameFromEntityName, amount)
 
-                scannedLootUUIDs.add(entity.uuid)
+                scannedLootUUIDs.add(entity.uniqueID)
             }
         }
 
