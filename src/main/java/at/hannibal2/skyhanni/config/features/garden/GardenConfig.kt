@@ -87,6 +87,11 @@ class GardenConfig {
     val armorDropTracker: ArmorDropTrackerConfig = ArmorDropTrackerConfig()
 
     @Expose
+    @ConfigOption(name = "Crop Break Tracker", desc = "")
+    @Accordion
+    val gardenBpsTracker: GardenBpsTrackerConfig = GardenBpsTrackerConfig()
+
+    @Expose
     @ConfigOption(name = "Anita Shop", desc = "")
     @Accordion
     val anitaShop: AnitaShopConfig = AnitaShopConfig()
@@ -147,6 +152,11 @@ class GardenConfig {
     @ConfigOption(name = "Atmospheric Filter Display", desc = "")
     @Accordion
     val atmosphericFilterDisplay: AtmosphericFilterDisplayConfig = AtmosphericFilterDisplayConfig()
+
+    @Expose
+    @ConfigOption(name = "Garden Tracker Uptime Settings", desc = "")
+    @Accordion
+    val trackerUptimeSettings: GardenTrackerUptimeConfig = GardenTrackerUptimeConfig()
 
     @Expose
     @ConfigOption(name = "Hoe Levels Display", desc = "")
