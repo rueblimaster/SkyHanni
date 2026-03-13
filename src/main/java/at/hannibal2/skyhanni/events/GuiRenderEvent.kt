@@ -6,14 +6,16 @@ import net.minecraft.client.gui.GuiGraphics
 sealed class GuiRenderEvent(context: GuiGraphics) : RenderingSkyHanniEvent(context) {
 
     /**
+     * Render event for inside inventories.
+     *
      * Renders only while inside an inventory.
-     * This event does not render on signs.
-     * Use ScreenDrawnEvent instead.
-     * Also, ensure you do not render with this event while in a sign, as it will override ScreenDrawnEvent.
+     * Will override ScreenDrawnEvent but not render anything inside of a sign!
      */
     class ChestGuiOverlayRenderEvent(context: GuiGraphics) : GuiRenderEvent(context)
 
     /**
+     * Render event for everywhere else.
+     *
      * Renders always, and while in an inventory it renders a bit darker, gray.
      */
     class GuiOverlayRenderEvent(context: GuiGraphics) : GuiRenderEvent(context)
