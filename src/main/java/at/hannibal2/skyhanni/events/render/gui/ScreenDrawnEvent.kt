@@ -5,8 +5,7 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
 
 /**
- * Renders only while inside an inventory, a sign, chat or the game menu
- * While in an inventory it renders a bit darker, gray
- * Use this for signs and chat
+ * Renders only while inside an inventory, a sign, chat or the game menu.
+ * Gets grayed out while in an inventory.
  */
 class ScreenDrawnEvent(context: GuiGraphics, val gui: Screen?) : RenderingSkyHanniEvent(context)
